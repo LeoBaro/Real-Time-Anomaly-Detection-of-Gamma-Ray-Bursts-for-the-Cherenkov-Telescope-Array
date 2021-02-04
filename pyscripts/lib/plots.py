@@ -45,7 +45,6 @@ def showSkymap(file, reg='none', col='black', suffix='none', title='skymap', xla
     plt.close()
     return
 
-
 def showLightCurve(file, figsize=(15,15), axisLim ='auto', title='lightcurve', yscale=('lin','log'), xscale=('lin','log'),
                    show = True, tex=True):
 
