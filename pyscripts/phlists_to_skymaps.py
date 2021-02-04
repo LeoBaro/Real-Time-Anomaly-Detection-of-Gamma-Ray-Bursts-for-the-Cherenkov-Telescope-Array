@@ -8,6 +8,7 @@ from RTAscience.cfg.Config import Config
 if __name__=="__main__":
 
     parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--subtraction', type=str, choices=["NONE","IRF"], required=True)
     parser.add_argument('--override', type=int, choices=[1,0], required=False, default=0)
     args = parser.parse_args()
 
@@ -19,7 +20,7 @@ if __name__=="__main__":
 
         rta = RTACtoolsAnalysis()
         rta.usepnt = True
-        rta.sky_subtraction = 'IRF' # NONE
+        rta.sky_subtraction = args.subtraction
 
         for root, subdirs, files in os.walk(os.path.join(os.path.expandvars(os.environ["DATA"]), "obs")):
 
@@ -28,12 +29,12 @@ if __name__=="__main__":
             for filename in fits_files: 
 
                 rta.input = os.path.join(root, filename)
-                rta.output = rta.input.replace(".fits",".skymap.fits")
+                rta.output = rta.input.replace(".fits",f"_sub_{rta.sky_subtraction}.skymap.fits")
             
                 cfg = Config(os.path.join(root, "../", "config.yaml"))
-                rta.e = [cfg.get("emin"), cfg.get("emax")]
+                rta.configure(cfg)
 
-                # print(f"Producing.. {rta.output}")
+                print(f"Producing.. {rta.output}")
 
                 if not os.path.isfile(rta.output) or args.override == 1:
                     rta.run_skymap(wbin=0.02)

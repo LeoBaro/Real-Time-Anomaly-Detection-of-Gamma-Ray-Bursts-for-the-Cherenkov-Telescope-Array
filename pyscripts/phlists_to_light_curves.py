@@ -28,15 +28,16 @@ if __name__=="__main__":
             for filename in fits_files: 
 
                 rta.input = os.path.join(root, filename)
-                rta.output = rta.input.replace(".fits",".skymap.fits")
+                rta.output = rta.input.replace(".fits",".lightcurve.fits")
             
                 cfg = Config(os.path.join(root, "../", "config.yaml"))
-                rta.e = [cfg.get("emin"), cfg.get("emax")]
+                cfg.inmodel = 
+                rta.configure(cfg)
 
                 # print(f"Producing.. {rta.output}")
 
                 if not os.path.isfile(rta.output) or args.override == 1:
-                    rta.run_skymap(wbin=0.02)
+                    rta.run_lightcurve(nbins=20, bin_type='LIN')
                 else:
                     print(f"File {rta.output} already exists!")
                     
