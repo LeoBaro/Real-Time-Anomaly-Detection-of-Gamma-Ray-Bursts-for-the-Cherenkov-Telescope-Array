@@ -2,13 +2,13 @@
   setup:
     simtype: bkg                      # grb -> src+bkg; bkg -> empty fields
     runid: run0406_ID000126           # can be all or any template (list or str) in catalog
-    trials: 1                         # realisations per runid
+    trials: 10                       # realisations per runid
     start_count: 0                    # starting count for seed
 
   simulation:
     caldb: prod3b                     # calibration database
     irf: South_z40_average_LST_30m    # istrument response function
-    tobs: 3600                        # total obs time (s)
+    tobs: 86400                         # total obs time (s)
     onset: 0                        # time of bkg only a.k.a. delayed onset of burst (s)
     emin: 0.03                        # simulation minimum energy (TeV)
     emax: 0.15                        # simulation maximum energy (TeV)

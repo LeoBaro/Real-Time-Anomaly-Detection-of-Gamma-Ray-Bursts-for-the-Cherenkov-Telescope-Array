@@ -7,3 +7,4 @@
 
 ## Requirements
 * pip install ipympl
+* pip install tqdm

@@ -37,7 +37,7 @@ class DataUtils:
 
 
 
-(energies, times, spectra) = DataUtils.getTheoreticalEmissionModel("run0406_ID000126")
+# (energies, times, spectra) = DataUtils.getTheoreticalEmissionModel("run0406_ID000126")
 
 """
 print("energies", energies[0])
@@ -51,4 +51,4 @@ print("spectra", spectra[1].shape)
 print("spectra", spectra[1][0][0])
 """
 
-DataUtils.fitsInfo("/data01/home/baroncelli/phd/DATA/obs/obs_st_bkg_tr_1_os_0_emin_0.03_emax_0.15_roi_2.5/backgrounds/bkg000001.fits")
+# DataUtils.fitsInfo("/data01/home/baroncelli/phd/DATA/obs/obs_st_bkg_tr_1_os_0_emin_0.03_emax_0.15_roi_2.5/backgrounds/bkg000001.fits")

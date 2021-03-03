@@ -8,6 +8,8 @@ from abc import ABC
 from astro.lib.photometry import Photometrics
 import random
 import string
+import  ntpath
+from tqdm import tqdm
 
 from rtapipe.pyscripts.data_utils import DataUtils
 
@@ -49,7 +51,7 @@ class PhotometryPlot(ABC):
         return col
 
     def getForbidden(self):
-        return ["datapath", "simtype", "runid", "obs_dir", "override", "plot"]
+        return ["datapath", "simtype", "runid", "input_file", "override", "plot"]
 
     def addData(self, photometry_csv_file, args, label_on, integration):
         pass
@@ -236,7 +238,7 @@ class Photometry:
         letters = string.ascii_lowercase
         result_str = ''.join(random.choice(letters) for i in range(length))
         return result_str
-
+    
 
     def integrate(self, photometry_params, sim_params, integration):
         # print(f"\ngenerate() has been called! integration={integration}")
@@ -248,28 +250,17 @@ class Photometry:
         time_windows = self.getWindows(0, sim_params["t_window_stop"], photometry_params["t_window_size"], photometry_params["t_window_step"])
         energy_windows = self.getWindows(sim_params["e_window_start"], sim_params["e_window_stop"], photometry_params["e_window_size"], photometry_params["e_window_step"])
 
-        #print(f"time_windows: {time_windows}")
-        #print(f"energy_windows: {energy_windows}")
+        input_file = sim_params["input_file"]
+        # print("input_file: ", input_file)
+
+        input_file_basename = ntpath.basename(input_file)
+        # print("input_file_basename: ", input_file_basename)
         
-        
-        input_file = None
-        if simtype == 'grb':
-            input_file = os.path.join(sim_params["obs_dir"], runid, "ebl000001.fits")
-            output_dir = os.path.join(sim_params["obs_dir"], runid, "ap")
-            output_file = os.path.join(output_dir, f"ebl000001_ap_mode")   
-        elif simtype == 'bkg': # bkg
-            input_file = os.path.join(sim_params["obs_dir"], "backgrounds", "bkg000001.fits")
-            output_dir = os.path.join(sim_params["obs_dir"], "backgrounds", "ap")
-            output_file = os.path.join(output_dir, f"bkg000001_ap_mode")
+        output_dir = os.path.join(sim_params["output_dir"], "csv")   
 
-        try: 
-            os.mkdir(output_dir) 
-        except OSError as error: 
-            pass 
-
-
-        output_file += f"_windowed-mode_integration_{integration}_"
-        output_file += self.get_random_string(15)+".csv"
+        input_file_basename = re.sub('\.fits$', '', input_file_basename)
+        output_filename = f"{input_file_basename}_{simtype}_{self.get_random_string(15)}.csv"
+        output_file = os.path.join(output_dir, output_filename)
 
         phm = Photometrics({ 'events_filename': input_file })
         region = {
@@ -285,12 +276,14 @@ class Photometry:
             print(f"File {output_file} already exists!")
         else:
 
+            # pool = multiprocessing.Pool(4)
+            # out1, out2, out3 = zip(*pool.map(calc_stuff, range(0, 10 * offset, offset)))
 
             if integration == "t":
                 windows = time_windows
                 with open(output_file, "w") as of:
                     of.write("VALMIN,VALMAX,VALCENTER,COUNTS,ERROR\n")    
-                    for window in windows:
+                    for window in tqdm(windows):
                         region_count = phm.region_counter(region, photometry_params["region_radius"], tmin=window[0], tmax=window[1], emin=sim_params["e_window_start"], emax=sim_params["e_window_stop"])
                         total += region_count
                         # print(f'tmin {window[0]} tmax {window[1]} -> counts: {region_count}')
@@ -303,7 +296,7 @@ class Photometry:
                 windows = energy_windows
                 with open(output_file, "w") as of:
                     of.write("VALMIN,VALMAX,VALCENTER,COUNTS,ERROR\n")    
-                    for window in windows:
+                    for window in tqdm(windows):
                         region_count = phm.region_counter(region, photometry_params["region_radius"], tmin=sim_params["t_window_start"], tmax=sim_params["t_window_stop"], emin=window[0], emax=window[1])
                         total += round(region_count, 2)
                         # print(f'tmin {window[0]} tmax {window[1]} -> counts: {region_count}')
