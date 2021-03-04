@@ -1,4 +1,4 @@
 Traceback (most recent call last):
-  File "/data01/home/baroncelli/phd/repos/cta-sag-sci/RTAscience/simGRB.py", line 48, in <module>
+  File "/data01/home/baroncelli/phd/repos/cta-sag-sci/RTAscience/simGRB.py", line 49, in <module>
     raise ValueError(f"Output folder {datapath} already exists! You can ovverride it with --override 1")
 ValueError: Output folder /data01/home/baroncelli/phd/DATA already exists! You can ovverride it with --override 1

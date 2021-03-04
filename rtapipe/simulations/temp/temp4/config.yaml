@@ -1,0 +1,26 @@
+ 
+  setup:
+    simtype: bkg                      # grb -> src+bkg; bkg -> empty fields
+    runid: run0406_ID000126           # can be all or any template (list or str) in catalog
+    trials: 10                       # realisations per runid
+    start_count: 0                    # starting count for seed
+
+  simulation:
+    caldb: prod3b                     # calibration database
+    irf: South_z40_average_LST_30m    # istrument response function
+    tobs: 3600                         # total obs time (s)
+    onset: 0                        # time of bkg only a.k.a. delayed onset of burst (s)
+    emin: 0.03                        # simulation minimum energy (TeV)
+    emax: 0.15                        # simulation maximum energy (TeV)
+    roi: 2.5                          # region of interest radius (deg)
+
+  options:
+    set_ebl: True                     # uses the EBL absorbed template
+    extract_data: True                # if True extracts lightcurves and spectra 
+
+  path: 
+    data: /data01/home/baroncelli/phd/DATA                       # all data should be under this folder
+    ebl: /data01/home/baroncelli/phd/DATA/ebl_tables/gilmore_tau_fiducial.csv
+    model: /data01/home/baroncelli/phd/DATA/models
+    catalog: /data01/home/baroncelli/phd/DATA/templates/grb_afterglow/GammaCatalogV1.0
+  

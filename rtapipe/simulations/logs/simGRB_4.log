@@ -1,0 +1,50 @@
+GCTAModelIrfBackground::mc("Background": rate=109.3 cts/s)
+ Interval 0 events=393530
+ Killed by ROI=44194
+GCTAModelIrfBackground::mc("Background": rate=109.3 cts/s)
+ Interval 0 events=393296
+ Killed by ROI=44576
+GCTAModelIrfBackground::mc("Background": rate=109.3 cts/s)
+ Interval 0 events=393266
+ Killed by ROI=44762
+GCTAModelIrfBackground::mc("Background": rate=109.3 cts/s)
+ Interval 0 events=393887
+ Killed by ROI=44460
+GCTAModelIrfBackground::mc("Background": rate=109.3 cts/s)
+ Interval 0 events=393292
+ Killed by ROI=44420
+GCTAModelIrfBackground::mc("Background": rate=109.3 cts/s)
+ Interval 0 events=393108
+ Killed by ROI=44428
+GCTAModelIrfBackground::mc("Background": rate=109.3 cts/s)
+ Interval 0 events=392817
+ Killed by ROI=44530
+GCTAModelIrfBackground::mc("Background": rate=109.3 cts/s)
+ Interval 0 events=394406
+ Killed by ROI=44899
+GCTAModelIrfBackground::mc("Background": rate=109.3 cts/s)
+ Interval 0 events=393833
+ Killed by ROI=44969
+GCTAModelIrfBackground::mc("Background": rate=109.3 cts/s)
+ Interval 0 events=393405
+ Killed by ROI=44819
+Simulate empty fields
+bkg000001
+Simulate empty fields
+bkg000002
+Simulate empty fields
+bkg000003
+Simulate empty fields
+bkg000004
+Simulate empty fields
+bkg000005
+Simulate empty fields
+bkg000006
+Simulate empty fields
+bkg000007
+Simulate empty fields
+bkg000008
+Simulate empty fields
+bkg000009
+Simulate empty fields
+bkg000010

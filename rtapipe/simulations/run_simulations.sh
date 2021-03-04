@@ -35,45 +35,46 @@ else
     catalog: $DATA/templates/grb_afterglow/GammaCatalogV1.0
   " > $DIR/config.yaml
 
-
-  echo "Only background simulations"
-
   mkdir -p $DIR/logs
 
-  mkdir -p $DIR/temp/temp1 
 
+
+  echo "Only background simulations"
+  mkdir -p $DIR/temp/temp1 
   sed 's/simtype: XXX/simtype: bkg/g'  $DIR/config.yaml > $DIR/temp/temp1/config.yaml
   sed 's/onset: XXX/onset: 0/g' -i $DIR/temp/temp1/config.yaml
   sed 's/tobs: XXX/tobs: 86400/g' -i $DIR/temp/temp1/config.yaml
   sed 's/trials: XXX/trials: 10/g' -i $DIR/temp/temp1/config.yaml
-
   nohup python ~/phd/repos/cta-sag-sci/RTAscience/simGRB.py --cfgfile $DIR/temp/temp1/config.yaml > "$DIR/logs/simGRB_1.log" &
 
 
 
   echo "GRB+BKG"
-
   mkdir -p $DIR/temp/temp2 
-
   sed 's/simtype: XXX/simtype: grb/g' $DIR/config.yaml > $DIR/temp/temp2/config.yaml
   sed 's/onset: XXX/onset: 0/g' -i $DIR/temp/temp2/config.yaml
   sed 's/tobs: XXX/tobs: 3600/g'  -i $DIR/temp/temp2/config.yaml
   sed 's/trials: XXX/trials: 10/g'  -i $DIR/temp/temp2/config.yaml
-
   nohup python ~/phd/repos/cta-sag-sci/RTAscience/simGRB.py --cfgfile $DIR/temp/temp2/config.yaml  2>&1 > "$DIR/logs/simGRB_2.log" &
 
 
 
   echo "BKG only + GRB+BKG"
-
   mkdir -p $DIR/temp/temp3
-
   sed 's/simtype: XXX/simtype: grb/g' $DIR/config.yaml > $DIR/temp/temp3/config.yaml
   sed 's/onset: XXX/onset: 1800/g' -i $DIR/temp/temp3/config.yaml
   sed 's/tobs: XXX/tobs: 3600/g' -i $DIR/temp/temp3/config.yaml
   sed 's/trials: XXX/trials: 10/g'  -i $DIR/temp/temp3/config.yaml
-
   nohup python ~/phd/repos/cta-sag-sci/RTAscience/simGRB.py --cfgfile $DIR/temp/temp3/config.yaml 2>&1 > "$DIR/logs/simGRB_3.log" &
+
+
+  echo "Only background simulations (shorter)"
+  mkdir -p $DIR/temp/temp4
+  sed 's/simtype: XXX/simtype: bkg/g'  $DIR/config.yaml > $DIR/temp/temp4/config.yaml
+  sed 's/onset: XXX/onset: 0/g' -i $DIR/temp/temp4/config.yaml
+  sed 's/tobs: XXX/tobs: 3600/g' -i $DIR/temp/temp4/config.yaml
+  sed 's/trials: XXX/trials: 10/g' -i $DIR/temp/temp4/config.yaml
+  nohup python ~/phd/repos/cta-sag-sci/RTAscience/simGRB.py --cfgfile $DIR/temp/temp4/config.yaml > "$DIR/logs/simGRB_4.log" &
 
 
   # rm -r $DIR/temp
