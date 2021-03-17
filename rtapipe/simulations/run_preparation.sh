@@ -53,11 +53,11 @@ else
         irf: South_z40_average_LST_5h    # istrument response function
         tobs: XXX                         # total obs time (s)
         onset: XXX                        # time of bkg only a.k.a. delayed onset of burst (s)
-        delay: 0                         # delayed start of observation (s) (float)
+        delay: 0                          # delayed start of observation (s) (float)
         emin: XXX                        # simulation minimum energy (TeV)
         emax: XXX                        # simulation maximum energy (TeV)
         roi: XXX                          # region of interest radius (deg)
-        offset: 0                      # 'gw' -> from alert; value -> otherwise (deg) (str/float)
+        offset: 0                       # 'gw' -> from alert; value -> otherwise (deg) (str/float)
         nruns:                        # numer of runs (of lenght=tobs) for wobble simtype (int)
 
 
@@ -91,21 +91,13 @@ else
 
 
 
-    log_id=0
 
     mkdir -p $DIR/logs
 
-    #cfgfile=$(getConfiguration $DIR $log_id "bkg" 0 18000 5 0 0.03 0.15 2.5)
-    #echo "Generated: $cfgfile"
-    #echo "Calling simGRBcatalog for bkg simulations..please wait!"
-    #python ~/phd/repos/cta-sag-sci/RTAscience/simGRBcatalog.py -f $cfgfile 2>&1 > "$DIR/logs/prepareGRBcatalog.log"
-    #log_id=$((log_id+1))
-
-    cfgfile=$(getConfiguration $DIR $log_id "grb" 5000 18000 5 0 0.03 0.15 2.5)
+    cfgfile=$(getConfiguration $DIR 0 "grb" $ONSET 18000 1 4 0.03 0.15 2.5)
     echo "Generated: $cfgfile"
-    echo "Calling simGRBcatalog for grb simulations..please wait!"
-    python ~/phd/repos/cta-sag-sci/RTAscience/simGRBcatalog.py -f $cfgfile --print "true" # 2>&1 > "$DIR/logs/prepareGRBcatalog.log"
-    log_id=$((log_id+1))
+    python ~/phd/repos/cta-sag-sci/RTAscience/prepareGRBcatalog.py -f $cfgfile 2>&1 > "$DIR/logs/prepareGRBcatalog.log"
+    
 
 
 
