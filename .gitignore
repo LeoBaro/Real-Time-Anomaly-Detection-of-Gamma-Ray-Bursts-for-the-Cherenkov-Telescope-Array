@@ -1,3 +1,5 @@
-simulations/temp/*
-
+temp/**
+logs/**
 __pycache__
+
+*checkpoint.ipynb

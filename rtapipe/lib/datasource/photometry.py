@@ -49,6 +49,7 @@ class Photometry:
         with open(output_file, "w") as of:
             of.write("VALMIN,VALMAX,VALCENTER,COUNTS,ERROR\n")    
             total = 0
+            ## PARALLELIZE ME! PLEASE :(
             for w in tqdm(windows):
                 if integration_on == "t":
                     region_count = phm.region_counter(region, photometry_params["region_radius"], tmin=w[0], tmax=w[1], emin=target_window[0], emax=target_window[1])
@@ -63,17 +64,22 @@ class Photometry:
     def getOutFilename(self, photometry_params, sim_params, suffix=""):
         
         output_dir = os.path.join(sim_params["output_dir"], "csv")   
+        
+        if sim_params["onset"] == 0:
+            simtype = sim_params['simtype']
+        else:
+            simtype = sim_params['simtype']+"_onset"+str(sim_params["onset"])
 
         input_file_basename = ntpath.basename(sim_params["input_file"])
         input_file_basename = re.sub('\.fits$', '', input_file_basename)        
-        output_filename = f"{input_file_basename}_simtype_{sim_params['simtype']}_{suffix}.csv"
+        output_filename = f"{input_file_basename}_simtype_{simtype}_{suffix}.csv"
 
         return os.path.join(output_dir, output_filename)    
 
 
     def integrate(self, photometry_params, sim_params, integration):
         # print(f"\ngenerate() has been called! integration={integration}")
-        
+
         runid = sim_params["runid"]  
         simtype = sim_params["simtype"]  
         region_radius = photometry_params["region_radius"]
