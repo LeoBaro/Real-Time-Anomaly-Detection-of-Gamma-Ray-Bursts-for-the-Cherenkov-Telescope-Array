@@ -50,7 +50,7 @@ else
 
     simulation:
         caldb: prod3b                     # calibration database
-        irf: South_z40_average_LST_5h    # istrument response function
+        irf: South_z40_average_LST_30m    # istrument response function
         tobs: XXX                         # total obs time (s)
         onset: XXX                        # time of bkg only a.k.a. delayed onset of burst (s)
         delay: 0                          # delayed start of observation (s) (float)
@@ -94,7 +94,7 @@ else
 
     mkdir -p $DIR/logs
 
-    cfgfile=$(getConfiguration $DIR 0 "grb" $ONSET 18000 1 4 0.03 0.15 2.5)
+    cfgfile=$(getConfiguration $DIR 0 "grb" 100 1800 1 1 0.03 0.15 2.5)
     echo "Generated: $cfgfile"
     python ~/phd/repos/cta-sag-sci/RTAscience/prepareGRBcatalog.py -f $cfgfile 2>&1 > "$DIR/logs/prepareGRBcatalog.log"
     

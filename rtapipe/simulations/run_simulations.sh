@@ -50,7 +50,7 @@ else
 
     simulation:
         caldb: prod3b                     # calibration database
-        irf: South_z40_average_LST_5h    # istrument response function
+        irf: South_z40_average_LST_30m    # istrument response function
         tobs: XXX                         # total obs time (s)
         onset: XXX                        # time of bkg only a.k.a. delayed onset of burst (s)
         delay: 0                         # delayed start of observation (s) (float)
@@ -95,17 +95,17 @@ else
 
     mkdir -p $DIR/logs
 
-    #cfgfile=$(getConfiguration $DIR $log_id "bkg" 0 18000 5 0 0.03 0.15 2.5)
-    #echo "Generated: $cfgfile"
-    #echo "Calling simGRBcatalog for bkg simulations..please wait!"
-    #python ~/phd/repos/cta-sag-sci/RTAscience/simGRBcatalog.py -f $cfgfile 2>&1 > "$DIR/logs/prepareGRBcatalog.log"
-    #log_id=$((log_id+1))
-
-    cfgfile=$(getConfiguration $DIR $log_id "grb" 5000 18000 5 0 0.03 0.15 2.5)
+    cfgfile=$(getConfiguration $DIR $log_id bkg 0 1800 5 110 0.03 0.15 2.5)
     echo "Generated: $cfgfile"
-    echo "Calling simGRBcatalog for grb simulations..please wait!"
-    python ~/phd/repos/cta-sag-sci/RTAscience/simGRBcatalog.py -f $cfgfile --print "true" # 2>&1 > "$DIR/logs/prepareGRBcatalog.log"
+    echo "Calling simBkg for bkg simulations..please wait!"
+    python ~/phd/repos/cta-sag-sci/RTAscience/simBkg.py -f $cfgfile --mp-enabled "false" --mp-threads 35 2>&1 > "$DIR/logs/simGRBcatalog_bkg.log"
     log_id=$((log_id+1))
+
+    #cfgfile=$(getConfiguration $DIR $log_id grb 100 1800 2 115 0.03 0.15 2.5)
+    #echo "Generated: $cfgfile"
+    #echo "Calling simGRBcatalog for grb simulations..please wait!"
+    #time python ~/phd/repos/cta-sag-sci/RTAscience/simGRBcatalog.py -f $cfgfile --mp-enabled "true" --mp-threads 30 2>&1 > "$DIR/logs/simGRBcatalog_grb.log"
+    #log_id=$((log_id+1))
 
 
 
