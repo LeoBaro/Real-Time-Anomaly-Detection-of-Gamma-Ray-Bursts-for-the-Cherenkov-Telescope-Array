@@ -46,6 +46,7 @@ class Photometry:
         
         # print(f"\n\nIntegration on {integration_on}, len(windows)={len(windows)} [{windows[0]}-{windows[-1]}], target_window={target_window}")   
 
+        total = 0
         with open(output_file, "w") as of:
             of.write("VALMIN,VALMAX,VALCENTER,COUNTS,ERROR\n")    
             total = 0
@@ -53,14 +54,13 @@ class Photometry:
             for w in tqdm(windows, leave=True):
                 if integration_on == "t":
                     region_count = phm.region_counter(region, photometry_params["region_radius"], tmin=w[0], tmax=w[1], emin=target_window[0], emax=target_window[1])
-                    print(f"region_count: {region_count}, rr: {photometry_params['region_radius']}, tmin={w[0]} tmax={w[1]} emin={target_window[0]} emax={target_window[1]}")
-                    input("..")
-
+                    # print(f"region_count: {region_count}, rr: {photometry_params['region_radius']}, tmin={w[0]} tmax={w[1]} emin={target_window[0]} emax={target_window[1]}")
+                    # input("..")
                 elif integration_on == "e":
                     region_count = phm.region_counter(region, photometry_params["region_radius"], tmin=target_window[0], tmax=target_window[1], emin=w[0], emax=w[1])
                 total += region_count
                 of.write(f"{round(w[0],4)},{round(w[1], 4)},{round( (w[1]+w[0])/2, 4)},{region_count},{round(sqrt(region_count), 4)}\n")
-        print(f"Total counts = {total}, Produced: {output_file}")
+        ###########################=> print(f"Total counts = {total}, Produced: {output_file}")
         return output_file
 
 
@@ -91,12 +91,14 @@ class Photometry:
         energy_windows = self.getWindows(sim_params["e_window_start"], sim_params["e_window_stop"], photometry_params["e_window_size"], photometry_params["e_window_step"])
 
         input_file = sim_params["input_file"]
-       
+
         phm = Photometrics({ 'events_filename': input_file })
         region = {
             'ra': photometry_params["pointing"][0],
             'dec': photometry_params["pointing"][1],
         }        
+        #print(f"region: {region}")
+        #print(f"File: {input_file}, pointing: {region}")
 
         # pool = multiprocessing.Pool(4)
         # out1, out2, out3 = zip(*pool.map(calc_stuff, range(0, 10 * offset, offset)))

@@ -81,7 +81,8 @@ class PhotometrySinglePlot(PhotometryPlot):
         if integration == "t":
             _ = self.FSX.scatter(data["x"], data["y"], s=0.1, label=label_on_string, color=PhotometryPlot.colors[self.ccount])
             _ = self.FSX.errorbar(data["x"], data["y"], yerr=data["err"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
-            _ = self.FSX.axvline(x=sim_params["onset"], color="red", linestyle="--")
+            if sim_params["onset"] > 0:
+                _ = self.FSX.axvline(x=sim_params["onset"], color="red", linestyle="--")
 
         elif integration == "e":
             _ = self.FSX.bar(data["x"], data["y"], yerr=data["err"], label=label_on_string , color=PhotometryPlot.colors[self.ccount], alpha=0.1, width=args["e_window_step"])
@@ -147,8 +148,9 @@ class PhotometrySubPlots(PhotometryPlot):
             axis.scatter(data["x"], data["y"], label = label_on_string, **plotargs, s=0.1)
             axis.errorbar(data["x"], data["y"], yerr=data["err"], fmt="o", **plotargs)
 
-            if not as_baseline: 
-                axis.axvline(x=sim_params["onset"], color="red", linestyle="--")
+            if not as_baseline:
+                if sim_params["onset"] > 0:
+                    axis.axvline(x=sim_params["onset"], color="red", linestyle="--")
 
 
         elif integration == "e":

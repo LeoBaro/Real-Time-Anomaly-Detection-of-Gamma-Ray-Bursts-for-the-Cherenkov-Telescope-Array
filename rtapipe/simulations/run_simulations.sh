@@ -95,19 +95,19 @@ else
 
     mkdir -p $DIR/logs
 
-    #cfgfile=$(getConfiguration $DIR $log_id bkg 0 1800 5 0 0.03 0.15 2.5)
-    #echo "Generated: $cfgfile"
-    #echo "Calling simBkg for bkg simulations..please wait!"
-    # call me with nohup <> & 
-    #python ~/phd/repos/cta-sag-sci/RTAscience/simBkg.py -f $cfgfile --mp-enabled "false" --mp-threads 35 2>&1 > "$DIR/logs/simGRBcatalog_bkg.log"
-    #log_id=$((log_id+1))
-
-    cfgfile=$(getConfiguration $DIR $log_id grb 100 1800 2 115 0.03 0.15 2.5)
+    cfgfile=$(getConfiguration $DIR $log_id bkg 0 1800 100 0 0.03 0.15 2.5)
     echo "Generated: $cfgfile"
-    echo "Calling simGRBcatalog for grb simulations..please wait!"
+    echo "Calling simBkg for bkg simulations..please wait!"
     # call me with nohup <> & 
-    python ~/phd/repos/cta-sag-sci/RTAscience/simGRBcatalog.py -f $cfgfile --mp-enabled "true" --mp-threads 30 2>&1 > "$DIR/logs/simGRBcatalog_grb.log"
+    python ~/phd/repos/cta-sag-sci/RTAscience/simBkg.py -f $cfgfile --mp-enabled "false" --mp-threads 35 2>&1 > "$DIR/logs/simGRBcatalog_bkg.log"
     log_id=$((log_id+1))
+
+    #cfgfile=$(getConfiguration $DIR $log_id grb 100 1800 2 115 0.03 0.15 2.5)
+    #echo "Generated: $cfgfile"
+    #echo "Calling simGRBcatalog for grb simulations..please wait!"
+    # call me with nohup <> & 
+    #python ~/phd/repos/cta-sag-sci/RTAscience/simGRBcatalog.py -f $cfgfile --mp-enabled "true" --mp-threads 30 2>&1 > "$DIR/logs/simGRBcatalog_grb.log"
+    #log_id=$((log_id+1))
 
 
 
