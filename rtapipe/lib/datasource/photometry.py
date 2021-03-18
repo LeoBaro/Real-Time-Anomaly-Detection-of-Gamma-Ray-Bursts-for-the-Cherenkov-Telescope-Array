@@ -50,9 +50,12 @@ class Photometry:
             of.write("VALMIN,VALMAX,VALCENTER,COUNTS,ERROR\n")    
             total = 0
             ## PARALLELIZE ME! PLEASE :(
-            for w in tqdm(windows):
+            for w in tqdm(windows, leave=True):
                 if integration_on == "t":
                     region_count = phm.region_counter(region, photometry_params["region_radius"], tmin=w[0], tmax=w[1], emin=target_window[0], emax=target_window[1])
+                    print(f"region_count: {region_count}, rr: {photometry_params['region_radius']}, tmin={w[0]} tmax={w[1]} emin={target_window[0]} emax={target_window[1]}")
+                    input("..")
+
                 elif integration_on == "e":
                     region_count = phm.region_counter(region, photometry_params["region_radius"], tmin=target_window[0], tmax=target_window[1], emin=w[0], emax=w[1])
                 total += region_count
