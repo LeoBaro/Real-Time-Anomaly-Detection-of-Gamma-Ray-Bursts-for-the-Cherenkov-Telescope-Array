@@ -28,8 +28,8 @@ class PhotometryPlot():
 
 
     def getColor(self):
-        col = colors[ccount]
-        ccount += 1
+        col = PhotometryPlot.colors[self.ccount]
+        self.ccount += 1
         return col
 
     def getForbidden(self):
@@ -75,12 +75,14 @@ class PhotometrySinglePlot(PhotometryPlot):
 
     def addData(self, photometry_csv_file, args, sim_params, label_on, integration, as_baseline=False):
         data = super().getData(photometry_csv_file, integration)
-
+        
         label_on_string = self.getLabel(label_on, args)
+
+        window_size = data["valmax"] - data["valmin"]
 
         if integration == "t":
             _ = self.FSX.scatter(data["x"], data["y"], s=0.1, label=label_on_string, color=PhotometryPlot.colors[self.ccount])
-            _ = self.FSX.errorbar(data["x"], data["y"], yerr=data["err"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
+            _ = self.FSX.errorbar(data["x"], data["y"], xerr=window_size, yerr=data["err"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
             if sim_params["onset"] > 0:
                 _ = self.FSX.axvline(x=sim_params["onset"], color="red", linestyle="--")
 
@@ -138,6 +140,8 @@ class PhotometrySubPlots(PhotometryPlot):
             
         label_on_string = self.getLabel(label_on, args)
 
+        window_size = data["valmax"] - data["valmin"]
+
         if integration == "t":
 
             if not as_baseline: 
@@ -146,7 +150,7 @@ class PhotometrySubPlots(PhotometryPlot):
                 plotargs = {"color": "black"}
 
             axis.scatter(data["x"], data["y"], label = label_on_string, **plotargs, s=0.1)
-            axis.errorbar(data["x"], data["y"], yerr=data["err"], fmt="o", **plotargs)
+            axis.errorbar(data["x"], data["y"], xerr=window_size, yerr=data["err"], fmt="o", **plotargs)
 
             if not as_baseline:
                 if sim_params["onset"] > 0:
