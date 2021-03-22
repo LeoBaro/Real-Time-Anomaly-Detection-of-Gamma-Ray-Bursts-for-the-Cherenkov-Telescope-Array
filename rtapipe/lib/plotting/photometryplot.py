@@ -16,7 +16,7 @@ class PhotometryPlot():
         self.ccount = 0
 
 
-    def getData(self, photometry_csv_file, integration):
+    def getData(self, photometry_csv_file):
         df = pd.read_csv(photometry_csv_file)
         return {
             "x": df['VALCENTER'],
@@ -35,7 +35,7 @@ class PhotometryPlot():
     def getForbidden(self):
         return ["datapath", "simtype", "runid", "input_file", "override", "plot"]
 
-    def addData(self, photometry_csv_file, args, sim_params, label_on, integration, as_baseline=False):
+    def addData(self, photometry_csv_file, args, label_on, integration, vertical_line = False, vertical_line_x=None, as_baseline=False, baseline_color="black"):
         pass
 
     def show(self):
@@ -73,8 +73,8 @@ class PhotometrySinglePlot(PhotometryPlot):
         self.FS.set_size_inches(PhotometryPlot.inch_x, PhotometryPlot.inch_y)
         self.outputfile = None
 
-    def addData(self, photometry_csv_file, args, sim_params, label_on, integration, as_baseline=False):
-        data = super().getData(photometry_csv_file, integration)
+    def addData(self, photometry_csv_file, args, label_on, integration,  vertical_line = False, vertical_line_x=None, as_baseline=False, baseline_color="black"):
+        data = super().getData(photometry_csv_file)
         
         label_on_string = self.getLabel(label_on, args)
 
@@ -83,8 +83,8 @@ class PhotometrySinglePlot(PhotometryPlot):
         if integration == "t":
             _ = self.FSX.scatter(data["x"], data["y"], s=0.1, label=label_on_string, color=PhotometryPlot.colors[self.ccount])
             _ = self.FSX.errorbar(data["x"], data["y"], xerr=window_size, yerr=data["err"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
-            if sim_params["onset"] > 0:
-                _ = self.FSX.axvline(x=sim_params["onset"], color="red", linestyle="--")
+            if vertical_line:
+                _ = self.FSX.axvline(x=vertical_line_x, color="red", linestyle="--")
 
         elif integration == "e":
             _ = self.FSX.bar(data["x"], data["y"], yerr=data["err"], label=label_on_string , color=PhotometryPlot.colors[self.ccount], alpha=0.1, width=args["e_window_step"])
@@ -130,8 +130,8 @@ class PhotometrySubPlots(PhotometryPlot):
         x,y = self.axes[self.current_axis_idx]     
         return self.FMX[x][y]
 
-    def addData(self, photometry_csv_file, args, sim_params, label_on, integration, as_baseline=False):
-        data = super().getData(photometry_csv_file, integration)
+    def addData(self, photometry_csv_file, args, label_on, integration, vertical_line=False, vertical_line_x=None, as_baseline=False, baseline_color="black"):
+        data = super().getData(photometry_csv_file)
 
         if as_baseline:
             axis = self.prevAxis()
@@ -147,14 +147,14 @@ class PhotometrySubPlots(PhotometryPlot):
             if not as_baseline: 
                 plotargs = {"color": PhotometryPlot.colors[self.ccount]}
             else:
-                plotargs = {"color": "black"}
+                plotargs = {"color": baseline_color}
 
             axis.scatter(data["x"], data["y"], label = label_on_string, **plotargs, s=0.1)
             axis.errorbar(data["x"], data["y"], xerr=window_size, yerr=data["err"], fmt="o", **plotargs)
 
             if not as_baseline:
-                if sim_params["onset"] > 0:
-                    axis.axvline(x=sim_params["onset"], color="red", linestyle="--")
+                if vertical_line:
+                    axis.axvline(x=vertical_line_x, color="red", linestyle="--")
 
 
         elif integration == "e":
