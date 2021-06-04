@@ -1,0 +1,7 @@
+[run]
+omit =
+    */testing/*
+include = 
+    */datasource/*
+    */plotting/*
+    */rtapipeutils/*
