@@ -33,19 +33,27 @@ class TestPhotometry2:
 
     def test_init(self):
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits")
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
 
         outputDir = Path(__file__).parent.joinpath("output")
 
         ph = Photometry2(dataDir, outputDir)
 
-        assert len(ph.dataFiles) > 2
+        assert len(ph.dataFiles) == 2
         assert ph.runId == "run0406_ID000126"
 
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
+
+        outputDir = Path(__file__).parent.joinpath("output")
+
+        ph = Photometry2(dataDir, outputDir)
+
+        assert len(ph.dataFiles) == 1
+        assert ph.runId == "run0406_ID000126"
 
     def test_getOutputFilePath(self):
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits")
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
 
         outputDir = Path(__file__).parent.joinpath("output")
 
@@ -59,7 +67,7 @@ class TestPhotometry2:
 
     def test_integrate_full(self):
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits")
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
         outputDir = Path(__file__).parent.joinpath("output", "test_integrate_full")
         inputFilename = dataDir.joinpath("bkg000002.fits")
         ph = Photometry2(dataDir, outputDir)
@@ -71,7 +79,7 @@ class TestPhotometry2:
         assert Path(outputFilePath).is_file() == True
         assert counts == 46706
 
-
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
         inputFilename = dataDir.joinpath("grb000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
@@ -83,7 +91,7 @@ class TestPhotometry2:
 
     def test_integrate_t_e(self):
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits")
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
         outputDir = Path(__file__).parent.joinpath("output", "test_integrate_t_e")
         tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
         eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
@@ -95,7 +103,7 @@ class TestPhotometry2:
         assert Path(outputFilePath).is_file() == True
         assert counts == 46706
 
-
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
         inputFilename = dataDir.joinpath("grb000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
@@ -106,7 +114,7 @@ class TestPhotometry2:
 
     def test_integrate_t(self):
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits")
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
         outputDir = Path(__file__).parent.joinpath("output", "test_integrate_t")
         tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
         eWindows = None
@@ -118,6 +126,7 @@ class TestPhotometry2:
         assert Path(outputFilePath).is_file() == True
         assert counts == 46706
 
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
         inputFilename = dataDir.joinpath("grb000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
@@ -128,7 +137,7 @@ class TestPhotometry2:
 
     def test_integrate_e(self):
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits")
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
         outputDir = Path(__file__).parent.joinpath("output", "test_integrate_e")
         tWindows = None
         eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
@@ -140,6 +149,7 @@ class TestPhotometry2:
         assert Path(outputFilePath).is_file() == True
         assert counts == 46706
 
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
         inputFilename = dataDir.joinpath("grb000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
@@ -149,7 +159,7 @@ class TestPhotometry2:
 
     def test_integrateAll(self):
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits")
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
         outputDir = Path(__file__).parent.joinpath("output", "test_integrate_all")
         tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
         eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
@@ -160,9 +170,10 @@ class TestPhotometry2:
 
         for outputFilePath in outputFiles:
             assert Path(outputFilePath).is_file() == True
-        assert counts == 142465
+        assert counts == 93662
 
 
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
         inputFilename = dataDir.joinpath("grb000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
@@ -172,15 +183,3 @@ class TestPhotometry2:
             assert Path(outputFilePath).is_file() == True
         assert counts == 48803
 
-        # region radius:
-        # 0.8 => 0.2
-
-        # Sistemare labels
-
-        # Cambiare seed simulazioni con start_count e trials
-
-        # Sistemare larghezza bin energetici
-
-        # Equalizzazione:
-        # normalizzare il numero di conteggi per riuscire a prendere più regioni di backgrounds
-        # photons / cm^2 * sec

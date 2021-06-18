@@ -79,7 +79,7 @@ class TestPhotometryPlot:
     def test_singlePlot_time_integration(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "csv")
-        outputDir = Path(__file__).parent.joinpath("output", "test_plot")
+        outputDir = Path(__file__).parent.joinpath("photometry_single_plot_test_output", "test_plot")
 
         inputFileBkg = dataDir.joinpath("bkg000002_simtype_bkg_onset_0_integration_t.csv")
         inputFileGrb = dataDir.joinpath("grb000002_simtype_bkg_onset_0_integration_t.csv")
@@ -96,7 +96,7 @@ class TestPhotometryPlot:
     def test_singlePlot_energy_integration(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "csv")
-        outputDir = Path(__file__).parent.joinpath("output", "test_plot")
+        outputDir = Path(__file__).parent.joinpath("photometry_single_plot_test_output", "test_plot")
 
         inputFileBkg = dataDir.joinpath("bkg000002_simtype_bkg_onset_0_integration_e.csv")
         inputFileGrb = dataDir.joinpath("grb000002_simtype_bkg_onset_0_integration_e.csv")
@@ -114,7 +114,7 @@ class TestPhotometryPlot:
     def test_singlePlot_time_energy_integration(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "csv")
-        outputDir = Path(__file__).parent.joinpath("output", "test_plot")
+        outputDir = Path(__file__).parent.joinpath("photometry_single_plot_test_output", "test_plot")
 
         inputFileBkg = dataDir.joinpath("bkg000002_simtype_bkg_onset_0_integration_t_e.csv")
         inputFileGrb = dataDir.joinpath("grb000002_simtype_bkg_onset_0_integration_t_e.csv")

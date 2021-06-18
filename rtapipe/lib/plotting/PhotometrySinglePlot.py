@@ -7,8 +7,8 @@ class PhotometrySinglePlot(PhotometryPlot):
     
     def __init__(self, title=None):
         super().__init__(title)
-        self.FS, self.FSX  = plt.subplots()
-        self.FS.set_size_inches(PhotometryPlot.inch_x, PhotometryPlot.inch_y)
+        self.fig, self.axes  = plt.subplots(2,1)
+        self.fig.set_size_inches(PhotometryPlot.inch_x, PhotometryPlot.inch_y)
         self.outputfile = None
 
     def getWindowSizes(self, dataframe):
@@ -23,6 +23,14 @@ class PhotometrySinglePlot(PhotometryPlot):
 
         return (t_window_size, e_window_size)
 
+    def getEnergyBinsFromDataframe(self, dataframe):
+        energyBins = set()
+        for eminDf in dataframe.groupby(["EMIN", "EMAX"]):
+            energyBins.add(f"{eminDf[0][0]}-{eminDf[0][1]}")
+        return energyBins
+
+
+
     def addData(self, photometryCsvFile, integration, labelPrefix="", verticalLine=False, verticalLineX=None, as_baseline=False, baseline_color="black"):
         
         dataframe = super().getData(photometryCsvFile)
@@ -31,33 +39,43 @@ class PhotometrySinglePlot(PhotometryPlot):
             
         t_window_size, e_window_size = self.getWindowSizes(dataframe)
 
-
         if integration   == "T":
             label = f"{labelPrefix}"
-            _ = self.FSX.scatter(dataframe["TCENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
-            _ = self.FSX.errorbar(dataframe["TCENTER"], dataframe["COUNTS"], xerr=t_window_size/2, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
+            _ = self.axes[0].scatter(dataframe["TCENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
+            _ = self.axes[0].errorbar(dataframe["TCENTER"], dataframe["COUNTS"], xerr=t_window_size/2, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
         
         elif integration == "E":
             label = f"{labelPrefix}"
-            _ = self.FSX.scatter(dataframe["ECENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
-            _ = self.FSX.errorbar(dataframe["ECENTER"], dataframe["COUNTS"], xerr=e_window_size/2, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
+            binSize = (dataframe["EMAX"] - dataframe["EMIN"]) / 2
+            _ = self.axes[0].scatter(dataframe["ECENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
+            _ = self.axes[0].errorbar(dataframe["ECENTER"], dataframe["COUNTS"], xerr=binSize, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
         
         elif integration == "T_E":
 
             for eminDf in dataframe.groupby(["EMIN", "EMAX"]):
-                label = f"{labelPrefix} {eminDf[0]} TeV"
-                _ = self.FSX.scatter(eminDf[1]["TCENTER"], eminDf[1]["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
-                _ = self.FSX.errorbar(eminDf[1]["TCENTER"], eminDf[1]["COUNTS"], xerr=t_window_size/2, yerr=eminDf[1]["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
+                energyBin = eminDf[0]
+                data = eminDf[1]
+                label = f"{energyBin} TeV"
+                _ = self.axes[0].scatter(data["TCENTER"], data["COUNTS"], s=0.1, label=label) #,color=PhotometryPlot.colors[self.ccount])
+                _ = self.axes[0].errorbar(data["TCENTER"], data["COUNTS"], xerr=t_window_size/2, yerr=data["ERROR"], fmt="o") #, color=PhotometryPlot.colors[self.ccount]) 
+                self.ccount += 1
 
+            """
+            textstr = "Energy bins:\n"
+            textstr += "\n".join(list(self.getEnergyBinsFromDataframe(dataframe)))
+            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+            self.axes[0].text(0.05, 0.95, textstr, transform=self.axes[0].transAxes, fontsize=12,
+                    verticalalignment='top', bbox=props)
+            """
         if verticalLine:
-            _ = self.FSX.axvline(x=verticalLineX, color="red", linestyle="--")
+            _ = self.axes[0].axvline(x=verticalLineX, color="red", linestyle="--")
 
         self.ccount += 1
 
-        # self.FSX.set_title(self.getTitle(label_on, args))
-        self.FSX.set_ylabel('Counts')
-        self.FSX.set_xlabel(f'Window center (integration: "{integration}")')
-        self.FSX.legend(loc="best")
+        # self.axes[0].set_title(self.getTitle(label_on, args))
+        self.axes[0].set_ylabel('Counts')
+        self.axes[0].set_xlabel(f'Window center (integration: "{integration}")')
+        self.axes[0].legend(loc="best")
 
     def show(self):
         plt.show()
@@ -66,6 +84,6 @@ class PhotometrySinglePlot(PhotometryPlot):
         outputDir = Path(outputDir)
         outputDir.mkdir(parents=True, exist_ok=True)
         outputFilePath = outputDir.joinpath(outputFilename).with_suffix(".png")
-        self.FS.savefig(str(outputFilePath))
+        self.fig.savefig(str(outputFilePath))
         print(f"Produced: {outputFilePath}")
         return str(outputFilePath)

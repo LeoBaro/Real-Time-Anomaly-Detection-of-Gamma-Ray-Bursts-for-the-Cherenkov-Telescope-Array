@@ -4,3 +4,4 @@ __pycache__
 notebook_output
 notebook_dataset_generation_for_models_output
 .ipynb_checkpoints
+rtapipe/testing/output/**

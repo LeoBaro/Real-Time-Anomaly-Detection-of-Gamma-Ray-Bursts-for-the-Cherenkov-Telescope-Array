@@ -93,9 +93,9 @@ class Photometry2:
         with open(f"{outputFilePath}", "w") as of:
             of.write("TMIN,TMAX,EMIN,EMAX,COUNTS,ERROR\n")    
 
-            for ewin in tqdm(eWindows):
-
-                for twin in tWindows:
+            for ewin in eWindows:
+                print(f"Energy bin: {ewin}")
+                for twin in tqdm(tWindows):
                 
                     counts = phm.region_counter(region, float(regionRadius), tmin=twin[0], tmax=twin[1], emin=ewin[0], emax=ewin[1])
                     # tcenter = round((twin[1]+twin[0])/2, 4)
@@ -107,12 +107,16 @@ class Photometry2:
 
     
     
-    def integrateAll(self, regionRadius, tWindows=[], eWindows=[], pointing=None):
+    def integrateAll(self, regionRadius, tWindows=[], eWindows=[], pointing=None, limit=None):
         
         totalCounts = 0
         outputFiles = []
 
-        for fitsFile in self.dataFiles:
+        fileToProcess = self.dataFiles
+        if limit:
+            fileToProcess = self.dataFiles[:limit]
+
+        for fitsFile in fileToProcess:
 
             outputFilePath, counts = self.integrate(fitsFile, regionRadius, tWindows, eWindows, pointing)
             

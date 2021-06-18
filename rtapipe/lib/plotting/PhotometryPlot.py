@@ -5,8 +5,8 @@ plt.rcParams.update({'font.size': 10, 'lines.markersize': 0.5,'legend.markerscal
 
 class PhotometryPlot:
     
-    inch_x = 10
-    inch_y = 6
+    inch_x = 15
+    inch_y = 8
     colors = ["tab:blue","tab:orange","tab:green","tab:red","tab:purple","tab:pink","tab:olive","tab:cyan"]
     
     def __init__(self, title=None):
@@ -41,7 +41,7 @@ class PhotometryPlot:
         pass
 
     def show(self):
-        pass
+        plt.show()
     
     def getTitle(self, label_on, args):
         forbidden = self.getForbidden() + label_on
