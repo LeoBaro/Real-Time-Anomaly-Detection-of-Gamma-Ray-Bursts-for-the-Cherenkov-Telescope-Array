@@ -1,3 +1,6 @@
 [submodule "astro"]
 	path = astro
 	url = https://github.com/LeoBaro/astro.git
+[submodule "cta-sag-sci"]
+	path = cta-sag-sci
+	url = https://github.com/ambra-dipiano/cta-sag-sci
