@@ -88,11 +88,16 @@ class TestPhotometryPlot:
         
         #  (self, photometryCsvFile, integration, labelOn, vertical_line=False, vertical_line_x=None, as_baseline=False, baseline_color="black"):
         
-        _ = singleplot.addData(inputFileBkg, "T", labelPrefix="Background")
-        _ = singleplot.addData(inputFileGrb, "T", labelPrefix="GRB (onset 900s)")
+        _ = singleplot.addData(inputFileBkg, labelPrefix="Background")
+        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)")
 
-        singleplot.save(outputDir, "test_singlePlot_time_integration")  
-    
+        _ = singleplot.plotScatter(0, "T")
+        _ = singleplot.plotHist(1, "T")
+        
+        singleplot.save(outputDir, "test_singlePlot_time_integration_scatter_and_histo")  
+
+
+
     def test_singlePlot_energy_integration(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "csv")
@@ -105,10 +110,13 @@ class TestPhotometryPlot:
         
         #  (self, photometryCsvFile, integration, labelOn, vertical_line=False, vertical_line_x=None, as_baseline=False, baseline_color="black"):
         
-        _ = singleplot.addData(inputFileBkg, "E", labelPrefix="Background")
-        _ = singleplot.addData(inputFileGrb, "E", labelPrefix="GRB (onset 900s)")
+        _ = singleplot.addData(inputFileBkg, labelPrefix="Background")
+        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)")
 
-        singleplot.save(outputDir, "test_singlePlot_energy_integration")  
+        _ = singleplot.plotScatter(0, "E")
+        _ = singleplot.plotHist(1, "E")
+
+        singleplot.save(outputDir, "test_singlePlot_energy_integration_scatter_and_histo")  
         
 
     def test_singlePlot_time_energy_integration(self):
@@ -123,8 +131,12 @@ class TestPhotometryPlot:
         
         #  (self, photometryCsvFile, integration, labelOn, vertical_line=False, vertical_line_x=None, as_baseline=False, baseline_color="black"):
         
-        _ = singleplot.addData(inputFileBkg, "T_E", labelPrefix="Background")
-        _ = singleplot.addData(inputFileGrb, "T_E", labelPrefix="GRB (onset 900s)")
+        _ = singleplot.addData(inputFileBkg, labelPrefix="Background")
+        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)")
 
-        singleplot.save(outputDir, "test_singlePlot_time_energy_integration")  
+        _ = singleplot.plotScatter(0, "T_E")
+        _ = singleplot.plotHist(1, "T_E")
+
+        singleplot.save(outputDir, "test_singlePlot_time_energy_integration_scatter_and_histo")  
+        
                 

@@ -5,11 +5,13 @@ from rtapipe.lib.plotting.PhotometryPlot import PhotometryPlot
 
 class PhotometrySinglePlot(PhotometryPlot):
     
-    def __init__(self, title=None):
+    def __init__(self, title = None):
         super().__init__(title)
         self.fig, self.axes  = plt.subplots(2,1)
         self.fig.set_size_inches(PhotometryPlot.inch_x, PhotometryPlot.inch_y)
         self.outputfile = None
+        self.data = []
+        self.labels = []
 
     def getWindowSizes(self, dataframe):
         t_window_size = None
@@ -31,51 +33,114 @@ class PhotometrySinglePlot(PhotometryPlot):
 
 
 
-    def addData(self, photometryCsvFile, integration, labelPrefix="", verticalLine=False, verticalLineX=None, as_baseline=False, baseline_color="black"):
+    def addData(self, photometryCsvFile, labelPrefix=""):
         
         dataframe = super().getData(photometryCsvFile)
                 
         assert dataframe["TCENTER"].isnull().values.any() == False or dataframe["ECENTER"].isnull().values.any() == False
+        
+        self.data.append(dataframe)
+        self.labels.append(labelPrefix)
+
+
+    def plotScatter(self, axesID, integration, verticalLine=False, verticalLineX=None):
+        
+        assert axesID >= 0 and axesID <= 1 
+        self.axes[axesID].clear()
+
+        for ii in range(len(self.data)): 
+        
+            dataframe = self.data[ii]
+            label = self.labels[ii]
+
+            t_window_size, e_window_size = self.getWindowSizes(dataframe)
+
+            if integration   == "T":
+                label = f"{label}"
+                _ = self.axes[axesID].scatter(dataframe["TCENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
+                _ = self.axes[axesID].errorbar(dataframe["TCENTER"], dataframe["COUNTS"], xerr=t_window_size/2, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
             
-        t_window_size, e_window_size = self.getWindowSizes(dataframe)
+            elif integration == "E":
+                label = f"{label}"
+                binSize = (dataframe["EMAX"] - dataframe["EMIN"]) / 2
+                _ = self.axes[axesID].scatter(dataframe["ECENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
+                _ = self.axes[axesID].errorbar(dataframe["ECENTER"], dataframe["COUNTS"], xerr=binSize, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
+            
+            elif integration == "T_E":
 
-        if integration   == "T":
-            label = f"{labelPrefix}"
-            _ = self.axes[0].scatter(dataframe["TCENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
-            _ = self.axes[0].errorbar(dataframe["TCENTER"], dataframe["COUNTS"], xerr=t_window_size/2, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
+                for eminDf in dataframe.groupby(["EMIN", "EMAX"]):
+                    energyBin = eminDf[0]
+                    data = eminDf[1]
+                    label = f"{energyBin} TeV"
+                    _ = self.axes[axesID].scatter(data["TCENTER"], data["COUNTS"], s=0.1, label=label) #,color=PhotometryPlot.colors[self.ccount])
+                    _ = self.axes[axesID].errorbar(data["TCENTER"], data["COUNTS"], xerr=t_window_size/2, yerr=data["ERROR"], fmt="o") #, color=PhotometryPlot.colors[self.ccount]) 
+                    self.ccount += 1
+
+                """
+                textstr = "Energy bins:\n"
+                textstr += "\n".join(list(self.getEnergyBinsFromDataframe(dataframe)))
+                props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+                self.axes[0].text(0.05, 0.95, textstr, transform=self.axes[0].transAxes, fontsize=12,
+                        verticalalignment='top', bbox=props)
+                """
+            if verticalLine:
+                _ = self.axes[axesID].axvline(x=verticalLineX, color="red", linestyle="--")
+
+            self.ccount += 1
+
+            # self.axes[0].set_title(self.getTitle(label_on, args))
+            self.axes[axesID].set_ylabel('Counts')
+            self.axes[axesID].set_xlabel(f'Window center (integration: "{integration}")')
+            self.axes[axesID].legend(loc="best")
         
-        elif integration == "E":
-            label = f"{labelPrefix}"
-            binSize = (dataframe["EMAX"] - dataframe["EMIN"]) / 2
-            _ = self.axes[0].scatter(dataframe["ECENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
-            _ = self.axes[0].errorbar(dataframe["ECENTER"], dataframe["COUNTS"], xerr=binSize, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
+        return None
+
+    def plotHist(self, axesID, integration, bins=None, verticalLine=False, verticalLineX=None):
         
-        elif integration == "T_E":
+        assert axesID >= 0 and axesID <= 1 
+        self.axes[axesID].clear()
 
-            for eminDf in dataframe.groupby(["EMIN", "EMAX"]):
-                energyBin = eminDf[0]
-                data = eminDf[1]
-                label = f"{energyBin} TeV"
-                _ = self.axes[0].scatter(data["TCENTER"], data["COUNTS"], s=0.1, label=label) #,color=PhotometryPlot.colors[self.ccount])
-                _ = self.axes[0].errorbar(data["TCENTER"], data["COUNTS"], xerr=t_window_size/2, yerr=data["ERROR"], fmt="o") #, color=PhotometryPlot.colors[self.ccount]) 
-                self.ccount += 1
+        for ii in range(len(self.data)): 
+        
+            dataframe = self.data[ii]
+            label = self.labels[ii]
 
-            """
-            textstr = "Energy bins:\n"
-            textstr += "\n".join(list(self.getEnergyBinsFromDataframe(dataframe)))
-            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            self.axes[0].text(0.05, 0.95, textstr, transform=self.axes[0].transAxes, fontsize=12,
-                    verticalalignment='top', bbox=props)
-            """
-        if verticalLine:
-            _ = self.axes[0].axvline(x=verticalLineX, color="red", linestyle="--")
+            if integration   == "T":
+                _ = self.axes[axesID].hist(dataframe["COUNTS"], bins=bins, alpha=0.5, label=label)
+                #_ = self.axes[axesID].errorbar(dataframe["TCENTER"], dataframe["COUNTS"], xerr=t_window_size/2, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
+            
+            elif integration == "E":
+                binSize = (dataframe["EMAX"] - dataframe["EMIN"]) / 2
+                _ = self.axes[axesID].hist(dataframe["COUNTS"], bins=bins, alpha=0.5, label=label)
+                #_ = self.axes[axesID].errorbar(dataframe["ECENTER"], dataframe["COUNTS"], xerr=binSize, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
+            
+            elif integration == "T_E":
 
-        self.ccount += 1
+                for eminDf in dataframe.groupby(["EMIN", "EMAX"]):
+                    energyBin = eminDf[0]
+                    data = eminDf[1]
+                    label_eb = f"{label} - {energyBin} TeV"
 
-        # self.axes[0].set_title(self.getTitle(label_on, args))
-        self.axes[0].set_ylabel('Counts')
-        self.axes[0].set_xlabel(f'Window center (integration: "{integration}")')
-        self.axes[0].legend(loc="best")
+                    _ = self.axes[axesID].hist(data["COUNTS"], bins=bins, alpha=0.5, label=label_eb) #,color=PhotometryPlot.colors[self.ccount])
+                    #_ = self.axes[axesID].errorbar(data["TCENTER"], data["COUNTS"], xerr=t_window_size/2, yerr=data["ERROR"], fmt="o") #, color=PhotometryPlot.colors[self.ccount]) 
+                    self.ccount += 1
+
+                """
+                textstr = "Energy bins:\n"
+                textstr += "\n".join(list(self.getEnergyBinsFromDataframe(dataframe)))
+                props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+                self.axes[0].text(0.05, 0.95, textstr, transform=self.axes[0].transAxes, fontsize=12,
+                        verticalalignment='top', bbox=props)
+                """
+            if verticalLine:
+                _ = self.axes[axesID].axvline(x=verticalLineX, color="red", linestyle="--")
+
+            self.ccount += 1
+
+            # self.axes[0].set_title(self.getTitle(label_on, args))
+            self.axes[axesID].set_ylabel('Counts')
+            self.axes[axesID].set_xlabel(f'Window center (integration: "{integration}")')
+            self.axes[axesID].legend(loc="best")
 
     def show(self):
         plt.show()
