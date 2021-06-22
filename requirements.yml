@@ -1,7 +1,8 @@
-tensorflow-gpu
-scikitlear
+#tensorflow-gpu
+pytest
+numpy
+tqdm
 jupyter
 pandas
 matplotlib
 scikit-learn
-seaborn
