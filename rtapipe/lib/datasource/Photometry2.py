@@ -1,14 +1,14 @@
 import os
 import numpy as np
-from math import sqrt
-from tqdm import tqdm
 from pathlib import Path
-
+from functools import partial
+from multiprocessing import Pool
 from RTAscience.cfg.Config import Config
 from RTAscience.lib.RTAUtils import get_pointing
 from astro.lib.photometry import Photometrics
 
 from rtapipe.lib.rtapipeutils.FileSystemUtils import FileSystemUtils
+from rtapipe.lib.datasource.integrationstrat.IntegrationStrategies import IntegrationType, TimeIntegration, EnergyIntegration, TimeEnergyIntegration, FullIntegration
 
 
 class Photometry2:
@@ -38,6 +38,8 @@ class Photometry2:
         # get files
         self.dataFiles = FileSystemUtils.getAllFiles(dataDir)
 
+        self.integrationStrat = None
+
     def updatePointing(self):
         pass
 
@@ -62,66 +64,72 @@ class Photometry2:
             windows.append((round(npwindows[idx],4) , round(npwindows[idx+1], 4)))
         return windows
     
-    def getOutputFilePath(self, inputFilePath):
+    def getOutputFilePath(self, inputFilePath, integrationType):
            
         outputFileNameStr = Path(inputFilePath).with_suffix('').name
 
-        outputFileNameStr += f"_simtype_{self.simtype}_onset_{self.onset}"
+        outputFileNameStr += f"_{integrationType}_simtype_{self.simtype}_onset_{self.onset}"
         
         return self.outputDir.joinpath(outputFileNameStr).with_suffix(".csv")
 
+    def setIntegrationType(self, tWindows, eWindows):
+        
+        self.integrationStrat = None 
 
+        if tWindows and not eWindows:
+            self.integrationStrat = TimeIntegration()
+            return IntegrationType.TIME
+
+        elif not tWindows and eWindows:
+            self.integrationStrat = EnergyIntegration()
+            return IntegrationType.ENERGY
+        
+        elif tWindows and eWindows:
+            self.integrationStrat = TimeEnergyIntegration()
+            return IntegrationType.TIME_ENERGY
+        
+        else:
+            self.integrationStrat = FullIntegration()
+            return IntegrationType.FULL
     
-    def integrate(self, inputFilePath, regionRadius, tWindows=[], eWindows=[], pointing=None):
+    def integrate(self, inputFilePath, regionRadius, tWindows=None, eWindows=None, pointing=None, parallel=False):
+        
+        integrationType = self.setIntegrationType(tWindows, eWindows)
 
-        if tWindows == None:
-            tWindows = [(None, None)]
-
-        if eWindows == None:
-            eWindows = [(None, None)]
-
-        phm = Photometrics({ 'events_filename': inputFilePath })
+        photometrics = Photometrics({ 'events_filename': inputFilePath })
 
         region = {
             'ra': self.pointing[0],
             'dec': self.pointing[1],
         }        
 
-        outputFilePath = self.getOutputFilePath(inputFilePath)
-        totalCounts = 0
-
-        with open(f"{outputFilePath}", "w") as of:
-            of.write("TMIN,TMAX,EMIN,EMAX,COUNTS,ERROR\n")    
-
-            for ewin in eWindows:
-                print(f"Energy bin: {ewin}")
-                for twin in tqdm(tWindows):
-                
-                    counts = phm.region_counter(region, float(regionRadius), tmin=twin[0], tmax=twin[1], emin=ewin[0], emax=ewin[1])
-                    # tcenter = round((twin[1]+twin[0])/2, 4)
-                    # ecenter = round((ewin[1]+ewin[0])/2, 4)
-                    of.write(f"{twin[0]},{twin[1]},{ewin[0]},{ewin[1]},{counts},{round(sqrt(counts), 4)}\n")
-                    totalCounts += counts
-
-        return outputFilePath, totalCounts
-
+        outputFilePath = self.getOutputFilePath(inputFilePath, integrationType)
+        
+        return self.integrationStrat.integrate(photometrics, outputFilePath, region, regionRadius, tWindows, eWindows, parallel)
+        
+        
     
-    
-    def integrateAll(self, regionRadius, tWindows=[], eWindows=[], pointing=None, limit=None):
+    def integrateAll(self, regionRadius, tWindows=None, eWindows=None, pointing=None, limit=None):
         
         totalCounts = 0
         outputFiles = []
 
-        fileToProcess = self.dataFiles
+        filesToProcess = self.dataFiles
         if limit:
-            fileToProcess = self.dataFiles[:limit]
+            filesToProcess = self.dataFiles[:limit]
 
-        for fitsFile in fileToProcess:
+        func = partial(self.integrate, regionRadius=regionRadius, tWindows=tWindows, eWindows=eWindows, pointing=pointing, parallel=True)
 
-            outputFilePath, counts = self.integrate(fitsFile, regionRadius, tWindows, eWindows, pointing)
-            
-            outputFiles.append(outputFilePath)
+        output = None
+
+        with Pool() as p:
+
+            output = p.map(func, filesToProcess)
         
-            totalCounts += counts
+        # print(output) # [ (PosixPath, counts), (PosixPath, counts), ..]
+        
+        outputFiles = [str(tuple[0]) for tuple in output]
+
+        totalCounts = sum([tuple[1] for tuple in output])
 
         return outputFiles, totalCounts

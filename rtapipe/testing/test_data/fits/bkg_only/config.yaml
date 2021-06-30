@@ -40,10 +40,10 @@
         plotsky:                      # if True generates skymap plot (bool)
 
     path: 
-        data: /data01/home/baroncelli/phd/DATA                       # all data should be under this folder
-        ebl: /data01/home/baroncelli/phd/DATA/ebl_tables/gilmore_tau_fiducial.csv
-        model: /data01/home/baroncelli/phd/DATA/models
-        merger: /data01/home/baroncelli/phd/DATA/mergers                     # folder of alerts (str)
-        bkg: /data01/home/baroncelli/phd/DATA/models/CTAIrfBackground.xml    # file of background model (str)
-        catalog: /data01/home/baroncelli/phd/DATA/templates/grb_afterglow/GammaCatalogV1.0
+        data: $DATA                       # all data should be under this folder
+        ebl: $DATA/ebl_tables/gilmore_tau_fiducial.csv
+        model: $DATA/models
+        merger: $DATA/mergers                     # folder of alerts (str)
+        bkg: $DATA/models/CTAIrfBackground.xml    # file of background model (str)
+        catalog: $DATA/templates/grb_afterglow/GammaCatalogV1.0
     

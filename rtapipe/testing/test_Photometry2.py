@@ -1,5 +1,4 @@
-from numpy.lib import twodim_base
-import pytest
+import pandas as pd
 from pathlib import Path
 
 from rtapipe.lib.datasource.Photometry2 import Photometry2
@@ -35,7 +34,7 @@ class TestPhotometry2:
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
 
-        outputDir = Path(__file__).parent.joinpath("output")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output")
 
         ph = Photometry2(dataDir, outputDir)
 
@@ -44,7 +43,7 @@ class TestPhotometry2:
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
 
-        outputDir = Path(__file__).parent.joinpath("output")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output")
 
         ph = Photometry2(dataDir, outputDir)
 
@@ -55,26 +54,50 @@ class TestPhotometry2:
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
 
-        outputDir = Path(__file__).parent.joinpath("output")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output")
 
         ph = Photometry2(dataDir, outputDir)
 
         inputFilename = dataDir.joinpath("bkg000002.fits")
 
-        outputFilePath = ph.getOutputFilePath(inputFilename)
 
-        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_simtype_bkg_onset_0.csv"
+        integrationType = ph.setIntegrationType(None, None)
+
+        outputFilePath = ph.getOutputFilePath(inputFilename, integrationType)
+
+        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_full_simtype_bkg_onset_0.csv"
+
+
+        integrationType = ph.setIntegrationType(ph.getLinearWindows(0,10,2,1), None)
+
+        outputFilePath = ph.getOutputFilePath(inputFilename, integrationType)
+
+        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_t_simtype_bkg_onset_0.csv"
+
+
+        integrationType = ph.setIntegrationType(None, Photometry2.getLogWindows(0.03, 0.15, 4))
+
+        outputFilePath = ph.getOutputFilePath(inputFilename, integrationType)
+
+        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_e_simtype_bkg_onset_0.csv"
+
+
+        integrationType = ph.setIntegrationType(ph.getLinearWindows(0,10,2,1), Photometry2.getLogWindows(0.03, 0.15, 4))
+
+        outputFilePath = ph.getOutputFilePath(inputFilename, integrationType)
+
+        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_te_simtype_bkg_onset_0.csv"
+
+
 
     def test_integrate_full(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("output", "test_integrate_full")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_full")
         inputFilename = dataDir.joinpath("bkg000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
-        tWindows = None
-        eWindows = None
-        outputFilePath, counts = ph.integrate(inputFilename, regionRadius, tWindows=tWindows, eWindows=eWindows)
+        outputFilePath, counts = ph.integrate(inputFilename, regionRadius)
 
         assert Path(outputFilePath).is_file() == True
         assert counts == 46706
@@ -83,16 +106,16 @@ class TestPhotometry2:
         inputFilename = dataDir.joinpath("grb000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
-        outputFilePath, counts = ph.integrate(inputFilename, regionRadius, tWindows=tWindows, eWindows=eWindows)
+        outputFilePath, counts = ph.integrate(inputFilename, regionRadius)
         
         assert Path(outputFilePath).is_file() == True
         assert counts == 48803
-
+        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
 
     def test_integrate_t_e(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("output", "test_integrate_t_e")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_t_e")
         tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
         eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
 
@@ -110,57 +133,60 @@ class TestPhotometry2:
         outputFilePath, counts = ph.integrate(inputFilename, regionRadius, tWindows=tWindows, eWindows=eWindows)
         assert Path(outputFilePath).is_file() == True
         assert counts == 48803
+        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
 
-
+        
     def test_integrate_t(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("output", "test_integrate_t")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_t")
         tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
-        eWindows = None
 
         inputFilename = dataDir.joinpath("bkg000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
-        outputFilePath, counts = ph.integrate(inputFilename, regionRadius, tWindows=tWindows, eWindows=eWindows)
+        outputFilePath, counts = ph.integrate(inputFilename, regionRadius, tWindows=tWindows)
         assert Path(outputFilePath).is_file() == True
         assert counts == 46706
+        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
         inputFilename = dataDir.joinpath("grb000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
-        outputFilePath, counts = ph.integrate(inputFilename, regionRadius, tWindows=tWindows, eWindows=eWindows)
+        outputFilePath, counts = ph.integrate(inputFilename, regionRadius, tWindows=tWindows)
         assert Path(outputFilePath).is_file() == True
         assert counts == 48803
+        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
 
 
     def test_integrate_e(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("output", "test_integrate_e")
-        tWindows = None
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_e")
         eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
 
         inputFilename = dataDir.joinpath("bkg000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
-        outputFilePath, counts = ph.integrate(inputFilename, regionRadius, tWindows=tWindows, eWindows=eWindows)
+        outputFilePath, counts = ph.integrate(inputFilename, regionRadius, eWindows=eWindows)
         assert Path(outputFilePath).is_file() == True
         assert counts == 46706
+        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
         inputFilename = dataDir.joinpath("grb000002.fits")
         ph = Photometry2(dataDir, outputDir)
         regionRadius = 1
-        outputFilePath, counts = ph.integrate(inputFilename, regionRadius, tWindows=tWindows, eWindows=eWindows)
+        outputFilePath, counts = ph.integrate(inputFilename, regionRadius, eWindows=eWindows)
         assert Path(outputFilePath).is_file() == True
         assert counts == 48803
+        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
 
     def test_integrateAll(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("output", "test_integrate_all")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_all")
         tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
         eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
 
@@ -170,6 +196,7 @@ class TestPhotometry2:
 
         for outputFilePath in outputFiles:
             assert Path(outputFilePath).is_file() == True
+            assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
         assert counts == 93662
 
 
@@ -181,5 +208,6 @@ class TestPhotometry2:
         
         for outputFilePath in outputFiles:
             assert Path(outputFilePath).is_file() == True
+            assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
         assert counts == 48803
 

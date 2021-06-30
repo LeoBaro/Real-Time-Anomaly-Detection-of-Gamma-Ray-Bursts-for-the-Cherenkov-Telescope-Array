@@ -17,15 +17,11 @@ class PhotometryPlot:
     def getData(self, photometry_csv_file):
         df = pd.read_csv(str(photometry_csv_file))
 
-        try:
+        if "TMIN" in df.columns:
             df["TCENTER"] = (df["TMAX"] + df['TMIN'])/2
-        except:
-            df["TCENTER"] = None
 
-        try:
+        if "EMIN" in df.columns:
             df["ECENTER"] = (df["EMAX"] + df['EMIN'])/2
-        except:
-            df["ECENTER"] = None
 
         return df
 

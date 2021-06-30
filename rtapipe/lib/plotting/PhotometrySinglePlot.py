@@ -8,19 +8,22 @@ class PhotometrySinglePlot(PhotometryPlot):
     def __init__(self, title = None):
         super().__init__(title)
         self.fig, self.axes  = plt.subplots(2,1)
+        self.fig.suptitle(title, fontsize=15)
         self.fig.set_size_inches(PhotometryPlot.inch_x, PhotometryPlot.inch_y)
+        self.title = title
         self.outputfile = None
         self.data = []
         self.labels = []
 
+
     def getWindowSizes(self, dataframe):
         t_window_size = None
         e_window_size = None
-        
-        if not dataframe["TCENTER"].isnull().values.any():
+
+        if "TCENTER" in dataframe.columns:
             t_window_size = dataframe["TMAX"][0] - dataframe["TMIN"][0]
         
-        if not dataframe["ECENTER"].isnull().values.any():
+        if "ECENTER" in dataframe.columns:
             e_window_size = dataframe["EMAX"][0] - dataframe["EMIN"][0]
 
         return (t_window_size, e_window_size)
@@ -37,7 +40,7 @@ class PhotometrySinglePlot(PhotometryPlot):
         
         dataframe = super().getData(photometryCsvFile)
                 
-        assert dataframe["TCENTER"].isnull().values.any() == False or dataframe["ECENTER"].isnull().values.any() == False
+        # assert dataframe["TCENTER"].isnull().values.any() == False or dataframe["ECENTER"].isnull().values.any() == False
         
         self.data.append(dataframe)
         self.labels.append(labelPrefix)
@@ -55,19 +58,40 @@ class PhotometrySinglePlot(PhotometryPlot):
 
             t_window_size, e_window_size = self.getWindowSizes(dataframe)
 
-            if integration   == "T":
+            if integration == "T":
+
                 label = f"{label}"
+                self.axes[axesID].title.set_text('TIME integration')
                 _ = self.axes[axesID].scatter(dataframe["TCENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
                 _ = self.axes[axesID].errorbar(dataframe["TCENTER"], dataframe["COUNTS"], xerr=t_window_size/2, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
             
             elif integration == "E":
+
                 label = f"{label}"
+                self.axes[axesID].title.set_text('ENERGY integration')
                 binSize = (dataframe["EMAX"] - dataframe["EMIN"]) / 2
                 _ = self.axes[axesID].scatter(dataframe["ECENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
                 _ = self.axes[axesID].errorbar(dataframe["ECENTER"], dataframe["COUNTS"], xerr=binSize, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
             
-            elif integration == "T_E":
+            elif integration == "TE":
 
+
+                self.axes[axesID].title.set_text('TIME-ENERGY integration')
+
+                dataColNames = [col for col in dataframe.columns if "COUNTS" in col]
+                errorDataColNames = [col for col in dataframe.columns if "ERROR" in col]
+
+                for xx, _ in enumerate(dataColNames):
+                    
+                    dataColName = dataColNames[xx]
+                    errorColName = errorDataColNames[xx]
+                    label = f"{dataColName} TeV"
+                    
+                    _ = self.axes[axesID].scatter(dataframe["TCENTER"], dataframe[dataColName], s=0.1, label=label) #,color=PhotometryPlot.colors[self.ccount])
+                    _ = self.axes[axesID].errorbar(dataframe["TCENTER"], dataframe[dataColName], xerr=t_window_size/2, yerr=dataframe[errorColName], fmt="o") #, color=PhotometryPlot.colors[self.ccount]) 
+                    self.ccount += 1
+
+                """
                 for eminDf in dataframe.groupby(["EMIN", "EMAX"]):
                     energyBin = eminDf[0]
                     data = eminDf[1]
@@ -75,22 +99,17 @@ class PhotometrySinglePlot(PhotometryPlot):
                     _ = self.axes[axesID].scatter(data["TCENTER"], data["COUNTS"], s=0.1, label=label) #,color=PhotometryPlot.colors[self.ccount])
                     _ = self.axes[axesID].errorbar(data["TCENTER"], data["COUNTS"], xerr=t_window_size/2, yerr=data["ERROR"], fmt="o") #, color=PhotometryPlot.colors[self.ccount]) 
                     self.ccount += 1
+                """
+            else:
+                raise ValueError(f"integration value {integration} is not supported!")
 
-                """
-                textstr = "Energy bins:\n"
-                textstr += "\n".join(list(self.getEnergyBinsFromDataframe(dataframe)))
-                props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-                self.axes[0].text(0.05, 0.95, textstr, transform=self.axes[0].transAxes, fontsize=12,
-                        verticalalignment='top', bbox=props)
-                """
             if verticalLine:
                 _ = self.axes[axesID].axvline(x=verticalLineX, color="red", linestyle="--")
 
             self.ccount += 1
 
-            # self.axes[0].set_title(self.getTitle(label_on, args))
-            self.axes[axesID].set_ylabel('Counts')
-            self.axes[axesID].set_xlabel(f'Window center (integration: "{integration}")')
+            self.axes[axesID].set_ylabel('Gamma Photons Counts')
+            self.axes[axesID].set_xlabel(f'Window center')
             self.axes[axesID].legend(loc="best")
         
         return None
@@ -106,24 +125,35 @@ class PhotometrySinglePlot(PhotometryPlot):
             label = self.labels[ii]
 
             if integration   == "T":
+                self.axes[axesID].title.set_text('TIME integration') 
                 _ = self.axes[axesID].hist(dataframe["COUNTS"], bins=bins, alpha=0.5, label=label)
                 #_ = self.axes[axesID].errorbar(dataframe["TCENTER"], dataframe["COUNTS"], xerr=t_window_size/2, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
             
             elif integration == "E":
+                self.axes[axesID].title.set_text('ENERGY integration')
                 binSize = (dataframe["EMAX"] - dataframe["EMIN"]) / 2
                 _ = self.axes[axesID].hist(dataframe["COUNTS"], bins=bins, alpha=0.5, label=label)
                 #_ = self.axes[axesID].errorbar(dataframe["ECENTER"], dataframe["COUNTS"], xerr=binSize, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
             
-            elif integration == "T_E":
+            elif integration == "TE":
 
+                self.axes[axesID].title.set_text('TIME-ENERGY integration')
+
+                print("\nDataframe: \n", dataframe)
+
+                
+                """
                 for eminDf in dataframe.groupby(["EMIN", "EMAX"]):
                     energyBin = eminDf[0]
                     data = eminDf[1]
+                    print("\nenergyBin: ",energyBin)
+                    print(data)
                     label_eb = f"{label} - {energyBin} TeV"
 
                     _ = self.axes[axesID].hist(data["COUNTS"], bins=bins, alpha=0.5, label=label_eb) #,color=PhotometryPlot.colors[self.ccount])
                     #_ = self.axes[axesID].errorbar(data["TCENTER"], data["COUNTS"], xerr=t_window_size/2, yerr=data["ERROR"], fmt="o") #, color=PhotometryPlot.colors[self.ccount]) 
                     self.ccount += 1
+                """
 
                 """
                 textstr = "Energy bins:\n"
@@ -132,14 +162,17 @@ class PhotometrySinglePlot(PhotometryPlot):
                 self.axes[0].text(0.05, 0.95, textstr, transform=self.axes[0].transAxes, fontsize=12,
                         verticalalignment='top', bbox=props)
                 """
+            else:
+                raise ValueError(f"integration value {integration} is not supported!")
+
             if verticalLine:
                 _ = self.axes[axesID].axvline(x=verticalLineX, color="red", linestyle="--")
 
             self.ccount += 1
 
             # self.axes[0].set_title(self.getTitle(label_on, args))
-            self.axes[axesID].set_ylabel('Counts')
-            self.axes[axesID].set_xlabel(f'Window center (integration: "{integration}")')
+            self.axes[axesID].set_ylabel('Gamma Photons Counts')
+            self.axes[axesID].set_xlabel(f'Counts')
             self.axes[axesID].legend(loc="best")
 
     def show(self):
