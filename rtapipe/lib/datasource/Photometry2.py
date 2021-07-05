@@ -2,9 +2,12 @@ import os
 import numpy as np
 from pathlib import Path
 from functools import partial
+from os.path import expandvars
 from multiprocessing import Pool
+
 from RTAscience.cfg.Config import Config
-from RTAscience.lib.RTAUtils import get_pointing
+from RTAscience.aph.utils import ObjectConfig
+from RTAscience.lib.RTAUtils import get_pointing, ObjectConfig, phm_options, aeff_eval
 from astro.lib.photometry import Photometrics
 
 from rtapipe.lib.rtapipeutils.FileSystemUtils import FileSystemUtils
@@ -31,7 +34,20 @@ class Photometry2:
         self.pointing = get_pointing(self.template)
         self.simtype = cfg.get('simtype')
         self.onset = cfg.get('onset')
-        
+        self.index = cfg.get('index')
+        self.caldb = cfg.get('caldb')
+        self.irf = cfg.get('irf')
+        self.delay = cfg.get('delay')
+        self.tobs = cfg.get('tobs')
+
+
+        # These parameters are used to normalized the counts
+        self.opts = phm_options(erange=[self.emin, self.emax], texp=self.tobs, time_int=[self.delay, self.delay+self.tobs], target=self.pointing, pointing=pointing, index=self.index, save_off_reg=None, irf_file=Path(expandvars('$CTOOLS')).joinpath(f"share/caldb/data/cta/{self.caldb}/bcf/{self.irf}/irf_file.fits"))
+        self.conf = ObjectConfig(self.opts)
+        self.region_eff_resp = aeff_eval(self.conf, self.region, {'ra': self.pointing[0], 'dec': self.pointing[1]})
+        self.livetime = self.opts['end_time'] - self.opts['begin_time']   
+
+        # Output directories 
         self.outputDir = Path(outputDir)
         self.outputDir.mkdir(parents=True, exist_ok=True)
 
@@ -92,7 +108,7 @@ class Photometry2:
             self.integrationStrat = FullIntegration()
             return IntegrationType.FULL
     
-    def integrate(self, inputFilePath, regionRadius, tWindows=None, eWindows=None, pointing=None, parallel=False):
+    def integrate(self, inputFilePath, regionRadius, tWindows=None, eWindows=None, pointing=None, parallel=False, normalize=True):
         
         integrationType = self.setIntegrationType(tWindows, eWindows)
 
@@ -101,13 +117,15 @@ class Photometry2:
         region = {
             'ra': self.pointing[0],
             'dec': self.pointing[1],
+            'rad' : regionRadius
         }        
 
         outputFilePath = self.getOutputFilePath(inputFilePath, integrationType)
         
-        return self.integrationStrat.integrate(photometrics, outputFilePath, region, regionRadius, tWindows, eWindows, parallel)
-        
-        
+        counts = self.integrationStrat.integrate(photometrics, outputFilePath, region, regionRadius, tWindows, eWindows, parallel)
+
+        if normalize:
+            return counts / self.region_eff_resp / self.livetime
     
     def integrateAll(self, regionRadius, tWindows=None, eWindows=None, pointing=None, limit=None):
         
