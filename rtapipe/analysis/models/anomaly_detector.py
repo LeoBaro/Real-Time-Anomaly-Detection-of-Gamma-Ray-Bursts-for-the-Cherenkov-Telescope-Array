@@ -1,5 +1,9 @@
+import random
+import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
+from tensorflow import reduce_sum
+from tensorflow.keras.losses import mae
 from tensorflow.train import latest_checkpoint
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.callbacks import ModelCheckpoint
@@ -18,6 +22,7 @@ class AnomalyDetector:
             self.fresh = True
 
         self.history = None
+        self.classificationThreshold = None
     
     def isFresh(self):
         return self.fresh
@@ -29,7 +34,7 @@ class AnomalyDetector:
     def summary(self):
         self.model.summary()
 
-    def fit(self, X_train, y_train, epochs=50, batch_size=32, verbose=1, validation_data=None, validation_split=0.1):
+    def fit(self, X_train, y_train, epochs=50, batchSize=32, verbose=1, validation_data=None, validation_split=0.1, plotLosses=True):
 
         # batch_size: number of samples per gradient update. 
         # epoch: an epoch is an iteration over the entire x and y data provided
@@ -42,7 +47,10 @@ class AnomalyDetector:
         #                  the fact that the validation loss of data provided using validation_split 
         #                  or validation_data is not affected by regularization layers like noise and dropout.
         
-        self.history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size, validation_data=validation_data, validation_split=validation_split, verbose=verbose, callbacks=[])
+        self.history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batchSize, validation_data=validation_data, validation_split=validation_split, verbose=verbose, callbacks=[])
+
+        if plotLosses:
+            self.lossPlot(self.history)
 
     def predict(self, samples):
         return self.model.predict(samples, verbose=1)
@@ -50,28 +58,123 @@ class AnomalyDetector:
     def save(self, dir):
         self.model.save(dir)
 
-    def plotLosses(self):
+    def computeThreshold(self, trainSamples, plotError=True):
+        # The threshold is calculated as the mean absolute error for normal examples from the training set, 
+        # then classify future examples as anomalous if the reconstruction error is higher than one standard 
+        # deviation from the training set.    
+        trainPred = self.predict(trainSamples)
+
+        # Computes the mean absolute error between labels and predictions.
+        trainMAElosses = np.mean(np.abs(trainPred - trainSamples), axis=1)
+        self.classificationThreshold = np.max(trainMAElosses)
+
+        # Compute the threshold as the max of those errors
+        print("Threshold: ",self.classificationThreshold)
+
+        # Plotting the errors distributions
+        if plotError:
+            self.recoErrorDistributionPlot(trainMAElosses, threshold=self.classificationThreshold, saveFig=True,)
+
+    def classify(self, samples, plotError=True):
+
+        if self.classificationThreshold is None:
+            print("The classification threshold is None. Call computeThreshold() to calculate it.")
+            return None
+
+        # encoding and decoding    
+        recostructions = self.predict(samples)
+        print("Recostructions:",recostructions)
+        # computing the recostruction errors
+        maeLosses = np.mean(np.abs(recostructions - samples), axis=1)
+
+        if plotError:
+            self.recoErrorDistributionPlot(maeLosses, threshold=self.classificationThreshold, saveFig=False)
+
+        mask = (self.classificationThreshold > maeLosses).flatten()
+
+        print("Anomalies: ",mask)
+        
+        return recostructions, maeLosses, mask
+
+        
+    def computeScore(self):
+        pass
+
+
+    def lossPlot(self, history):
         plt.figure(figsize = (10, 5))
-        plt.plot(self.history.history["loss"], label="Training Loss")
-        plt.plot(self.history.history["val_loss"], label="Validation Loss")
+        plt.plot(history.history["loss"], label="Training Loss")
+        plt.plot(history.history["val_loss"], label="Validation Loss")
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
         plt.grid()
         plt.legend()
         plt.show()
 
-    def plotPredictions(self, realSamples, predictedSamples):
-        fig,axes = plt.subplots(5,4)
-        c = 0
-        for row in range(5):
-            for col in range(4):
-                axes[row, col].plot(realSamples[c*row+col],color='red', label='Prediction')
-                axes[row, col].plot(predictedSamples[c*row+col],color='blue', label='Real Data')
-            c += 1
+    def recoErrorDistributionPlot(self, losses, threshold=None, saveFig=False, show=True):
+        fig, ax = plt.subplots(1,1)
+        ax.hist(losses, bins=25)
+        ax.axvline(x=self.classificationThreshold, color="red")
+        plt.xlabel('Train MAE loss')
+        plt.ylabel('Number of Samples')
+        if show:
+            plt.show()
+        if saveFig:    
+            fig.savefig("./plots/mae_distribution.png")        
 
-        plt.legend(loc='upper left')
-        plt.grid()
-        plt.legend()
+
+
+    def plotPredictions2(self, samples, samplesLabels, recostructions, mask, howMany):
+        
+        """
+        classifiedAsAnomalies = samples[mask,:,:]
+        classifiedAsNotAnomalies = samples[np.invert(mask),:,:]
+    
+        recoClassifiedAsAnomalies = recostructions[mask,:,:]
+        recoClassifiedAsNotAnomalies = recostructions[np.invert(mask),:,:]
+        """
+
+        classifiedAsAnomalieslabels = samplesLabels[mask]
+        classifiedAsNotAnomaliesLabels = samplesLabels[np.invert(mask)]
+        print("shape:",classifiedAsAnomalieslabels.shape)
+
+
+        #selectionArrayForAnomalies = random.sample(range(0, classifiedAsAnomalies.shape[0]), howMany)
+        #selectionArrayForNotAnomalies = random.sample(range(0, classifiedAsNotAnomalies.shape[0]), howMany)
+        #print("selectionArrayForAnomalies: ",selectionArrayForAnomalies)
+        
+        # Compute the number of subplots based on the number of samples to be drawn        
+        rows = 1
+        cols = 1
+        while rows*cols < howMany:
+            if (rows + cols) % 2 == 0:
+                rows += 1  
+            else: 
+                cols += 1
+        print(f"rows: {rows}, cols: {cols}")
+
+        fig, ax = plt.subplots(rows,cols)
+        fig.suptitle("Classifi")
+        count = 0
+        for row in range(rows):
+            for col in range(cols):                
+                if count >= len(samples):
+                    break
+
+                recoSample = recostructions[count].squeeze()
+                sample = samples[count].squeeze()
+                ax[row, col].plot(recoSample, color='red') #, label='Reconstructed')
+                ax[row, col].plot(sample, color='blue') #, label=f'Real sample. grb={classifiedAsAnomalieslabels[selectionArrayForAnomalies[count]]}')
+                ax[row, col].set_ylim(0, 1.5)
+                if mask[count]:
+                    label = "bkg"  
+                else: 
+                    label = "grb" 
+                ax[row, col].set_title(f"LABEL={label}")
+
+                # ax[row, col].legend(loc='upper left')
+                ax[row, col].grid()
+                count += 1
+
         plt.show()
 
- 

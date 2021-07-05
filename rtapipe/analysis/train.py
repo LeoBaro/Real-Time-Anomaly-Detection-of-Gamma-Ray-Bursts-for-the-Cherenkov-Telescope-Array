@@ -12,60 +12,41 @@ if __name__=='__main__':
     grbdata = Path("dataset/ap_data_for_training_and_testing/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_grb_window_size_25_region_radius_0.5")
     ds = APDataset()
     ds.loadData(bkg=bkgdata, grb=grbdata)
-    train, test, val = ds.getData() 
+    train, trainLabels, test, testLabels, val, valLabels = ds.getData()
+    print(train.shape)
+    print(trainLabels.shape)
+    print(test.shape)
+    print(testLabels.shape)
+    # Params
+    units = 32
+    dropoutrate = 0.3
+    epochs = 20
+    batchSize = 30
 
     # Building the model
-    lstm = AnomalyDetector(train[0].shape, units=64, dropoutRate=0.2, loadModelFrom="./single_feature_model")
+    # loadModelFrom="./single_feature_model"
+    loadModelFrom = None
+    lstm = AnomalyDetector(train[0].shape, units=units, dropoutRate=dropoutrate, loadModelFrom=loadModelFrom)
 
     # Compiling the model
     lstm.compile()
 
+    lstm.summary()
+
     if lstm.isFresh():
 
         # Fitting the model
-        lstm.fit(train, train, epochs=50, batch_size=32, verbose=1, validation_data=(val, val))    
-
-        lstm.plotLosses()
+        lstm.fit(train, train, epochs=epochs, batchSize=batchSize, verbose=1, validation_data=(val, val),
+                     plotLosses=True)    
 
         # Saving the model
         lstm.save("single_feature_model")
 
-    """
-    predictions = lstm.predict(test[0:int(test.shape[0]/2)])
-    print(predictions)
-    # lstm.plotPrediction(test[0, :, :], predictions[0, :, :])
-    lstm.plotPredictions(test, predictions)
 
-    predictions = lstm.predict(test[int(test.shape[0]/2):])
-    print(predictions)
-    # lstm.plotPrediction(test[0, :, :], predictions[0, :, :])
-    lstm.plotPredictions(test, predictions)    
-    """
+    lstm.computeThreshold(train, plotError=True)
 
-    trainPred = lstm.predict(train)
-    train_mae_loss = np.mean(np.abs(trainPred - train), axis=1)
-    #plt.hist(train_mae_loss, bins=50)
-    #plt.xlabel('Train MAE loss')
-    #plt.ylabel('Number of Samples')
-    #plt.show()
+    recostructions, _, mask = lstm.classify(test, plotError=True)
 
-    threshold = np.max(train_mae_loss)
-    print(f'Reconstruction error threshold: {threshold}')
+    lstm.plotPredictions2(test, testLabels, recostructions, mask, howMany=40)
 
-
-    print("Test set shape: ",test.shape)
-    predictions = lstm.predict(test)
-    test_mae_loss = np.mean(np.abs(predictions-test), axis=1)
-    plt.hist(test_mae_loss, bins=50)
-    plt.xlabel('Test MAE loss')
-    plt.ylabel('Number of samples')
-    plt.show()
-
-    anomalies = []
-    preds = []
-    for ii,loss in enumerate(test_mae_loss):
-        if loss >= threshold:
-            anomalies.append(test[ii])
-            preds.append(predictions[ii])
-    print("anomalies: ",len(anomalies))
-    lstm.plotPredictions(anomalies, preds)
+  
