@@ -73,7 +73,9 @@ else
         blind: yes                    # requires blind-search (bool)
         tool: ctools                  # which science tool (str) 
         type: 3d                      # 1d on/off or 3d full-fov (str)
-
+        cumulative: no
+        lightcurve: no
+        index: -2.1
 
     options:
         set_ebl: True                     # uses the EBL absorbed template

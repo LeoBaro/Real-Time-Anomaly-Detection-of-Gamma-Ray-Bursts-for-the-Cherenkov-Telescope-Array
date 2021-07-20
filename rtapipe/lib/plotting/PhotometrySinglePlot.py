@@ -7,14 +7,13 @@ class PhotometrySinglePlot(PhotometryPlot):
     
     def __init__(self, title = None):
         super().__init__(title)
-        self.fig, self.axes  = plt.subplots(2,1)
-        self.fig.suptitle(title, fontsize=15)
-        self.fig.set_size_inches(PhotometryPlot.inch_x, PhotometryPlot.inch_y)
+        self.fig = None
         self.title = title
         self.outputfile = None
         self.data = []
         self.labels = []
-
+        self.markers = []
+        self.colors = []
 
     def getWindowSizes(self, dataframe):
         t_window_size = None
@@ -36,7 +35,7 @@ class PhotometrySinglePlot(PhotometryPlot):
 
 
 
-    def addData(self, photometryCsvFile, labelPrefix=""):
+    def addData(self, photometryCsvFile, labelPrefix="", marker=".", color="blue"):
         
         dataframe = super().getData(photometryCsvFile)
                 
@@ -44,76 +43,117 @@ class PhotometrySinglePlot(PhotometryPlot):
         
         self.data.append(dataframe)
         self.labels.append(labelPrefix)
+        self.markers.append(marker)
+        self.colors.append(color)
 
 
-    def plotScatter(self, axesID, integration, verticalLine=False, verticalLineX=None):
+    def plotScatter(self, axesID, integration, verticalLine=False, verticalLineX=None, plotError=True):
         
-        assert axesID >= 0 and axesID <= 1 
-        self.axes[axesID].clear()
+        #assert axesID >= 0 and axesID <= 1 
+        #self.axes[axesID].clear()
 
+        self.fig, axes  = plt.subplots(4,1, constrained_layout=True, figsize=(10,10))
+        self.fig.suptitle(self.title, fontsize=15)
+        self.fig.set_size_inches(PhotometryPlot.inch_x, PhotometryPlot.inch_y)
+        axesID = 0
+
+        if verticalLine:
+            for ax in axes:
+                _ = ax.axvline(x=verticalLineX, color="red", linestyle="--")
+
+        
         for ii in range(len(self.data)): 
         
             dataframe = self.data[ii]
             label = self.labels[ii]
+            marker = self.markers[ii]
+            color = self.colors[ii]
+            markerSize = 5
 
             t_window_size, e_window_size = self.getWindowSizes(dataframe)
 
             if integration == "T":
 
                 label = f"{label}"
-                self.axes[axesID].title.set_text('TIME integration')
-                _ = self.axes[axesID].scatter(dataframe["TCENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
-                _ = self.axes[axesID].errorbar(dataframe["TCENTER"], dataframe["COUNTS"], xerr=t_window_size/2, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
-            
+                axes[axesID].title.set_text('TIME integration')
+                _ = axes[axesID].scatter(dataframe["TCENTER"], dataframe["COUNTS"], s=markerSize, color=color, label=label, marker=marker)
+                if plotError:
+                    _ = axes[axesID].errorbar(dataframe["TCENTER"], dataframe["COUNTS"], xerr=t_window_size/2, yerr=dataframe["ERROR"], fmt="o", color=color) 
+                else:
+                    _ = axes[axesID].errorbar(dataframe["TCENTER"], dataframe["COUNTS"], xerr=t_window_size/2, fmt="o", color=color)
+
+
+                axes[0].set_ylabel('Gamma Photons Counts')
+                axes[0].set_xlabel(f'Window center')
+                axes[0].legend(loc="best")
+
             elif integration == "E":
 
                 label = f"{label}"
-                self.axes[axesID].title.set_text('ENERGY integration')
+                axes[axesID].title.set_text('ENERGY integration')
                 binSize = (dataframe["EMAX"] - dataframe["EMIN"]) / 2
-                _ = self.axes[axesID].scatter(dataframe["ECENTER"], dataframe["COUNTS"], s=0.1, color=PhotometryPlot.colors[self.ccount], label=label)
-                _ = self.axes[axesID].errorbar(dataframe["ECENTER"], dataframe["COUNTS"], xerr=binSize, yerr=dataframe["ERROR"], fmt="o", color=PhotometryPlot.colors[self.ccount]) 
-            
+                _ = axes[axesID].scatter(dataframe["ECENTER"], dataframe["COUNTS"], s=markerSize, color=color, label=label, marker=marker)
+                if plotError:
+                    _ = axes[axesID].errorbar(dataframe["ECENTER"], dataframe["COUNTS"], xerr=binSize, yerr=dataframe["ERROR"], fmt="o", color=color) 
+
+                axes[0].set_ylabel('Gamma Photons Counts')
+                axes[0].set_xlabel(f'Window center')
+                axes[0].legend(loc="best")
+
             elif integration == "TE":
-
-
-                self.axes[axesID].title.set_text('TIME-ENERGY integration')
 
                 dataColNames = [col for col in dataframe.columns if "COUNTS" in col]
                 errorDataColNames = [col for col in dataframe.columns if "ERROR" in col]
 
-                for xx, _ in enumerate(dataColNames):
+                for xx, dataColName in enumerate(dataColNames):
                     
-                    dataColName = dataColNames[xx]
+                    axes[xx].title.set_text(f'ENERGY {dataColName}')
+                    axes[xx].set_ylabel('Gamma Photons Counts')
+                    axes[xx].set_xlabel(f'Window center')
+                                        
                     errorColName = errorDataColNames[xx]
                     label = f"{dataColName} TeV"
                     
-                    _ = self.axes[axesID].scatter(dataframe["TCENTER"], dataframe[dataColName], s=0.1, label=label) #,color=PhotometryPlot.colors[self.ccount])
-                    _ = self.axes[axesID].errorbar(dataframe["TCENTER"], dataframe[dataColName], xerr=t_window_size/2, yerr=dataframe[errorColName], fmt="o") #, color=PhotometryPlot.colors[self.ccount]) 
-                    self.ccount += 1
+                    _ = axes[xx].scatter(dataframe["TCENTER"], dataframe[dataColName], s=markerSize, label=label, marker=marker, color=color)
 
-                """
-                for eminDf in dataframe.groupby(["EMIN", "EMAX"]):
-                    energyBin = eminDf[0]
-                    data = eminDf[1]
-                    label = f"{energyBin} TeV"
-                    _ = self.axes[axesID].scatter(data["TCENTER"], data["COUNTS"], s=0.1, label=label) #,color=PhotometryPlot.colors[self.ccount])
-                    _ = self.axes[axesID].errorbar(data["TCENTER"], data["COUNTS"], xerr=t_window_size/2, yerr=data["ERROR"], fmt="o") #, color=PhotometryPlot.colors[self.ccount]) 
-                    self.ccount += 1
-                """
+                    if plotError:
+                        _ = axes[xx].errorbar(dataframe["TCENTER"], dataframe[dataColName], xerr=t_window_size/2, yerr=dataframe[errorColName], fmt="o", color=color) 
+                    else:
+                        _ = axes[xx].errorbar(dataframe["TCENTER"], dataframe[dataColName], xerr=t_window_size/2, fmt="o", color=color)
+
+                    axes[xx].legend(loc="best")
+
+            
             else:
                 raise ValueError(f"integration value {integration} is not supported!")
 
-            if verticalLine:
-                _ = self.axes[axesID].axvline(x=verticalLineX, color="red", linestyle="--")
 
-            self.ccount += 1
 
-            self.axes[axesID].set_ylabel('Gamma Photons Counts')
-            self.axes[axesID].set_xlabel(f'Window center')
-            self.axes[axesID].legend(loc="best")
         
         return None
 
+
+    def show(self):
+        plt.show()
+
+    def save(self, outputDir, outputFilename):
+        outputDir = Path(outputDir)
+        outputDir.mkdir(parents=True, exist_ok=True)
+        outputFilePath = outputDir.joinpath(outputFilename).with_suffix(".png")
+        self.fig.savefig(str(outputFilePath), dpi=600)
+        print(f"Produced: {outputFilePath}")
+        return str(outputFilePath)
+
+
+
+
+
+
+
+
+
+
+    # DEPRECATED
     def plotHist(self, axesID, integration, bins=None, verticalLine=False, verticalLineX=None):
         
         assert axesID >= 0 and axesID <= 1 
@@ -165,8 +205,6 @@ class PhotometrySinglePlot(PhotometryPlot):
             else:
                 raise ValueError(f"integration value {integration} is not supported!")
 
-            if verticalLine:
-                _ = self.axes[axesID].axvline(x=verticalLineX, color="red", linestyle="--")
 
             self.ccount += 1
 
@@ -175,13 +213,8 @@ class PhotometrySinglePlot(PhotometryPlot):
             self.axes[axesID].set_xlabel(f'Counts')
             self.axes[axesID].legend(loc="best")
 
-    def show(self):
-        plt.show()
 
-    def save(self, outputDir, outputFilename):
-        outputDir = Path(outputDir)
-        outputDir.mkdir(parents=True, exist_ok=True)
-        outputFilePath = outputDir.joinpath(outputFilename).with_suffix(".png")
-        self.fig.savefig(str(outputFilePath))
-        print(f"Produced: {outputFilePath}")
-        return str(outputFilePath)
+
+
+
+

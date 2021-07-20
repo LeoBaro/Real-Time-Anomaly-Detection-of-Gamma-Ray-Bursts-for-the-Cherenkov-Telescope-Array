@@ -71,7 +71,7 @@ class TestPhotometryPlot:
         assert e_window_size == None
 
 
-    def test_singlePlot_time_integration(self):
+    def test_singlePlot_time_integration_not_normalized(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "csv_v2")
         outputDir = Path(__file__).parent.joinpath("photometry_single_plot_test_output", "test_plot")
@@ -81,17 +81,33 @@ class TestPhotometryPlot:
 
         singleplot = PhotometrySinglePlot(title="Time integration")
                 
-        _ = singleplot.addData(inputFileBkg, labelPrefix="Background")
-        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)")
+        _ = singleplot.addData(inputFileBkg, labelPrefix="Background", marker="x", color="blue")
+        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)", marker="D", color="red")
 
-        _ = singleplot.plotScatter(0, "T")
-        _ = singleplot.plotHist(1, "T")
+        _ = singleplot.plotScatter(0, "T", verticalLine=True, verticalLineX=900)
         
         singleplot.save(outputDir, "test_singlePlot_time_integration_scatter_and_histo")  
 
 
+    def test_singlePlot_time_integration_normalized(self):
 
-    def test_singlePlot_energy_integration(self):
+        dataDir = Path(__file__).parent.joinpath("test_data", "csv_normalized")
+        outputDir = Path(__file__).parent.joinpath("photometry_single_plot_test_output", "test_plot")
+
+        inputFileBkg = dataDir.joinpath("bkg000002_t_simtype_bkg_onset_0_normalized_True.csv")
+        inputFileGrb = dataDir.joinpath("grb000002_t_simtype_grb_onset_900_normalized_True.csv")
+
+        singleplot = PhotometrySinglePlot(title="Time integration")
+                
+        _ = singleplot.addData(inputFileBkg, labelPrefix="Background", marker="x", color="blue")
+        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)", marker="D", color="red")
+
+        _ = singleplot.plotScatter(0, "T", plotError=False, verticalLine=True, verticalLineX=900)
+        
+        singleplot.save(outputDir, "test_singlePlot_time_integration_scatter_and_histo_normalized")  
+
+
+    def test_singlePlot_energy_integration_not_normalized(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "csv_v2")
         outputDir = Path(__file__).parent.joinpath("photometry_single_plot_test_output", "test_plot")
@@ -101,16 +117,33 @@ class TestPhotometryPlot:
 
         singleplot = PhotometrySinglePlot(title="Integration on ENERGY")
                 
-        _ = singleplot.addData(inputFileBkg, labelPrefix="Background")
-        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)")
+        _ = singleplot.addData(inputFileBkg, labelPrefix="Background", marker="x", color="blue")
+        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)", marker="D", color="red")
 
         _ = singleplot.plotScatter(0, "E")
-        _ = singleplot.plotHist(1, "E")
 
         singleplot.save(outputDir, "test_singlePlot_energy_integration_scatter_and_histo")  
         
 
-    def test_singlePlot_time_energy_integration(self):
+    def test_singlePlot_energy_integration_normalized(self):
+
+        dataDir = Path(__file__).parent.joinpath("test_data", "csv_normalized")
+        outputDir = Path(__file__).parent.joinpath("photometry_single_plot_test_output", "test_plot")
+
+        inputFileBkg = dataDir.joinpath("bkg000002_e_simtype_bkg_onset_0_normalized_True.csv")
+        inputFileGrb = dataDir.joinpath("grb000002_e_simtype_grb_onset_900_normalized_True.csv")
+
+        singleplot = PhotometrySinglePlot(title="Integration on ENERGY")
+                
+        _ = singleplot.addData(inputFileBkg, labelPrefix="Background", marker="x", color="blue")
+        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)", marker="D", color="red")
+
+        _ = singleplot.plotScatter(0, "E")
+
+        singleplot.save(outputDir, "test_singlePlot_energy_integration_scatter_and_histo_normalized")  
+
+
+    def test_singlePlot_time_energy_integration_not_normalized(self):
 
         dataDir = Path(__file__).parent.joinpath("test_data", "csv_v2")
         outputDir = Path(__file__).parent.joinpath("photometry_single_plot_test_output", "test_plot")
@@ -122,12 +155,30 @@ class TestPhotometryPlot:
         
         #  (self, photometryCsvFile, integration, labelOn, vertical_line=False, vertical_line_x=None, as_baseline=False, baseline_color="black"):
         
-        _ = singleplot.addData(inputFileBkg, labelPrefix="Background")
-        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)")
+        _ = singleplot.addData(inputFileBkg, labelPrefix="Background", marker="x", color="blue")
+        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)", marker="D", color="red")
 
-        _ = singleplot.plotScatter(0, "TE")
-        _ = singleplot.plotHist(1, "TE")
+        _ = singleplot.plotScatter(0, "TE", verticalLine=True, verticalLineX=900)
 
         singleplot.save(outputDir, "test_singlePlot_time_energy_integration_scatter_and_histo")  
         
-                
+
+
+    def test_singlePlot_time_energy_integration_normalized(self):
+
+        dataDir = Path(__file__).parent.joinpath("test_data", "csv_normalized")
+        outputDir = Path(__file__).parent.joinpath("photometry_single_plot_test_output", "test_plot")
+
+        inputFileBkg = dataDir.joinpath("bkg000002_te_simtype_bkg_onset_0_normalized_True.csv")
+        inputFileGrb = dataDir.joinpath("grb000002_te_simtype_grb_onset_900_normalized_True.csv")
+
+        singleplot = PhotometrySinglePlot(title="Single trial")
+        
+        #  (self, photometryCsvFile, integration, labelOn, vertical_line=False, vertical_line_x=None, as_baseline=False, baseline_color="black"):
+        
+        _ = singleplot.addData(inputFileBkg, labelPrefix="Background", marker="x", color="blue")
+        _ = singleplot.addData(inputFileGrb, labelPrefix="GRB (onset 900s)", marker="D", color="red")
+
+        _ = singleplot.plotScatter(0, "TE", plotError=False, verticalLine=True, verticalLineX=900)
+
+        singleplot.save(outputDir, "test_singlePlot_time_energy_integration_scatter_and_histo_normalized")  
