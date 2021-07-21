@@ -74,7 +74,7 @@ if __name__=='__main__':
 
         for rr in args.regionradius:
 
-            print(f"AP data generation --> window size: {ws} region radius: {rr} (T integration)")
+            print(f"AP data generation --> window size: {ws} region radius: {rr} (T integration) Normalization: {args.normalize}")
 
             paramsString = f"integration_t_type_{args.type}_window_size_{ws}_region_radius_{rr}"
 
@@ -107,7 +107,7 @@ if __name__=='__main__':
 
         for rr in args.regionradius:
             
-            print(f"AP data generation --> window size: {ws} region radius: {rr} (TE integration)")
+            print(f"AP data generation --> window size: {ws} region radius: {rr} (TE integration) Normalization: {args.normalize}")
 
             paramsString = f"integration_te_type_{args.type}_window_size_{ws}_region_radius_{rr}"
 
