@@ -53,7 +53,6 @@ if __name__=='__main__':
     parser.add_argument("-emin", "--energymin", type=float, required=False, default=0.03, help="")
     parser.add_argument("-emax", "--energymax", type=float, required=False, default=0.15, help="")
     parser.add_argument("-ebins", "--energybins", type=int, required=False, default=4, help="")
-
     args = parser.parse_args()
 
 
