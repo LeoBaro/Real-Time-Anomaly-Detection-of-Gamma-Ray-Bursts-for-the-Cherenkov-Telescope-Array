@@ -8,3 +8,4 @@ rtapipe/testing/output/**
 **/dataset/data
 *test_output
 *egg-info
+**.png

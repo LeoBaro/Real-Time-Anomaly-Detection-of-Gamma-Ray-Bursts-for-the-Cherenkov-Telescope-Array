@@ -15,6 +15,7 @@ function getConfiguration {
     EMIN="$8"
     EMAX="$9"
     ROI="${10}"
+    SCALE="${11}"
 
     mkdir -p "$LOG_DIR"
 
@@ -26,6 +27,7 @@ function getConfiguration {
     sed "s/emin: XXX/emin: $EMIN/g" -i $LOG_DIR/config.yaml
     sed "s/emax: XXX/emax: $EMAX/g" -i $LOG_DIR/config.yaml
     sed "s/roi: XXX/roi: $ROI/g" -i $LOG_DIR/config.yaml
+    sed "s/scalefluxfactor: XXX/scalefluxfactor: $SCALE/g" -i $LOG_DIR/config.yaml
 
     configFile="$LOG_DIR/config.yaml"
 
@@ -46,7 +48,7 @@ else
         runid: run0406_ID000126           # can be all or any template (list or str) in catalog
         trials: XXX                       # realisations per runid
         start_count: XXX                  # starting count for seed (int)
-        scalefluxfactor: 1                # scale src nominal flux by factor (float)
+        scalefluxfactor: XXX                # scale src nominal flux by factor (float)
 
     simulation:
         caldb: prod3b                     # calibration database
@@ -99,18 +101,18 @@ else
 
     # onset - tobs - trials - start count
 
-    cfgfile=$(getConfiguration $DIR $log_id bkg 0 1800 100 1 0.03 0.15 0.5)
-    echo "Generated: $cfgfile"
-    echo "Calling simBkg for bkg simulations..please wait!"
+    #cfgfile=$(getConfiguration $DIR $log_id bkg 0 1800 100 1 0.03 0.15 0.5 1)
+    #echo "Generated: $cfgfile"
+    #echo "Calling simBkg for bkg simulations..please wait!"
     # call me with nohup <> & 
-    nohup python ~/phd/repos/cta-sag-sci/RTAscience/simBkg.py -f $cfgfile --mp-enabled "false" --mp-threads 35 2>&1 > "$DIR/logs/simGRBcatalog_bkg.log" &
-    log_id=$((log_id+1))
+    #nohup python ~/Workspace/inaf/phd/cta-sag-sci/RTAscience/simBkg.py -f $cfgfile --mp-enabled "false" --mp-threads 35 2>&1 > "$DIR/logs/simGRBcatalog_bkg.log" &
+    #log_id=$((log_id+1))
 
-    cfgfile=$(getConfiguration $DIR $log_id grb 900 1800 100 100 0.03 0.15 0.5)
+    cfgfile=$(getConfiguration $DIR $log_id grb 900 1800 100 100 0.03 0.15 0.5 2)
     echo "Generated: $cfgfile"
     echo "Calling simGRBcatalog for grb simulations..please wait!"
     # call me with nohup <> & 
-    nohup python ~/phd/repos/cta-sag-sci/RTAscience/simGRBcatalog.py -f $cfgfile --mp-enabled "true" --mp-threads 30 2>&1 > "$DIR/logs/simGRBcatalog_grb.log" &
+    nohup python ~/Workspace/inaf/phd/cta-sag-sci/RTAscience/simGRBcatalog.py -f $cfgfile --mp-enabled "true" --mp-threads 30 2>&1 > "$DIR/logs/simGRBcatalog_grb.log" &
     log_id=$((log_id+1))
 
     rm $DIR/config.yaml
