@@ -2,7 +2,6 @@
 
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-
 today=`date +%Y-%m-%d.%H:%M:%S`
 
 echo "Output dir: $dir/ap_data_for_training_and_testing_$today" 
@@ -13,7 +12,7 @@ echo "Output dir: $dir/ap_data_for_training_and_testing_$today"
 #        -t bkg \
 #        -mp no \
 #        -lim 100 \
-#        -ws 10 \
+#        -ws 1 \
 #        -rr 0.2 \
 #        -norm no \
 #        -out $dir/ap_data_for_training_and_testing_$today
@@ -25,7 +24,7 @@ python generate_ap_data.py \
         -t grb \
         -mp no \
         -lim 100 \
-        -ws 10 \
+        -ws 1 \
         -rr 0.2 \
-        -norm yes \
+        -norm no \
         -out $dir/ap_data_for_training_and_testing_$today

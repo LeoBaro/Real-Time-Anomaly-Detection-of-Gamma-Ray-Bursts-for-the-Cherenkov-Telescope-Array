@@ -9,3 +9,6 @@ rtapipe/testing/output/**
 *test_output
 *egg-info
 **.png
+rtapipe_training_plots_*
+ap_data_for_inspection_*
+ap_data_for_training_and_testing_*
