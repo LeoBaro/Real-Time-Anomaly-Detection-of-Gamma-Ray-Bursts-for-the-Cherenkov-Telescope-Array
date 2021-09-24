@@ -2,23 +2,23 @@
 """ T = 10 
 Training with NOT-NORMALIZED samples (T integration)
 python train.py \
-    --bkg /data/datasets/ap_data/t_25/ap_data_for_training_and_testing_2021-07-21.10:22:32_NOT_NORMALIZED/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_bkg_window_size_10_region_radius_0.2 \
-    --grb /data/datasets/ap_data/t_25/ap_data_for_training_and_testing_2021-07-21.10:22:32_NOT_NORMALIZED/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_grb_window_size_10_region_radius_0.2
+    --bkg /data/datasets/ap_data/t_10/ap_data_for_training_and_testing_2021-07-21.10:22:32_NOT_NORMALIZED/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_bkg_window_size_10_region_radius_0.2 \
+    --grb /data/datasets/ap_data/t_10/ap_data_for_training_and_testing_2021-07-21.10:22:32_NOT_NORMALIZED/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_grb_window_size_10_region_radius_0.2
 
 Training with NORMALIZED samples (T integration)
 python train.py \
-    --bkg /data/datasets/ap_data/t_25/ap_data_for_training_and_testing_2021-07-20.21:47:42_NORMALIZED/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_bkg_window_size_10_region_radius_0.2 \
-    --grb /data/datasets/ap_data/t_25/ap_data_for_training_and_testing_2021-07-20.21:47:42_NORMALIZED/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_grb_window_size_10_region_radius_0.2
+    --bkg /data/datasets/ap_data/t_10/ap_data_for_training_and_testing_2021-07-20.21:47:42_NORMALIZED/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_bkg_window_size_10_region_radius_0.2 \
+    --grb /data/datasets/ap_data/t_10/ap_data_for_training_and_testing_2021-07-20.21:47:42_NORMALIZED/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_grb_window_size_10_region_radius_0.2
 
 Training with NOT-NORMALIZED samples (TE integration)
 python train.py \
-    --bkg /data/datasets/ap_data/t_25/ap_data_for_training_and_testing_2021-07-21.10:22:32_NOT_NORMALIZED/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_bkg_window_size_10_region_radius_0.2 \
-    --grb /data/datasets/ap_data/t_25/ap_data_for_training_and_testing_2021-07-21.10:22:32_NOT_NORMALIZED/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_grb_window_size_10_region_radius_0.2
+    --bkg /data/datasets/ap_data/t_10/ap_data_for_training_and_testing_2021-07-21.10:22:32_NOT_NORMALIZED/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_bkg_window_size_10_region_radius_0.2 \
+    --grb /data/datasets/ap_data/t_10/ap_data_for_training_and_testing_2021-07-21.10:22:32_NOT_NORMALIZED/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_grb_window_size_10_region_radius_0.2
 
 Training with NORMALIZED samples (TE integration)
 python train.py \
-    --bkg /data/datasets/ap_data/t_25/ap_data_for_training_and_testing_2021-07-20.21:47:42_NORMALIZED/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_bkg_window_size_10_region_radius_0.2  \
-    --grb /data/datasets/ap_data/t_25/ap_data_for_training_and_testing_2021-07-20.21:47:42_NORMALIZED/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_grb_window_size_10_region_radius_0.2
+    --bkg /data/datasets/ap_data/t_10/ap_data_for_training_and_testing_2021-07-20.21:47:42_NORMALIZED/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_bkg_window_size_10_region_radius_0.2  \
+    --grb /data/datasets/ap_data/t_10/ap_data_for_training_and_testing_2021-07-20.21:47:42_NORMALIZED/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_grb_window_size_10_region_radius_0.2
 
 """
 
