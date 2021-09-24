@@ -25,16 +25,20 @@ if __name__=='__main__':
     # Params  # 
     ###########
 
+    
     # Dataset params
+    integration_time = "1"
+
     dataset_params = {
         "10" : {"tobs" : 180, "onset" : 90},
         "1" : {"tobs" : 1800, "onset" : 900}
     }
-    dataset_params = dataset_params["10"]
+    dataset_params = dataset_params[integration_time]
 
     # Training set - Test set params
     ws = 25
-    stride=1
+    stride = 1
+    scaler = None # mm, std
 
     # LSTM params
     units = 32 #1
@@ -43,8 +47,8 @@ if __name__=='__main__':
     batchSize = 64 #30
 
     with open(outDirRoot.joinpath("parameters.csv"), "w") as statFile:
-        statFile.write("tobs,onset,ws,stride,units,dropoutrate,epochs,batchSize\n")
-        statFile.write(f"{dataset_params['tobs']},{dataset_params['onset']},{ws},{stride},{units},{dropoutrate},{epochs},{batchSize}")
+        statFile.write("integrationtime,tobs,onset,ws,stride,units,dropoutrate,epochs,batchSize\n")
+        statFile.write(f"{integration_time},{dataset_params['tobs']},{dataset_params['onset']},{ws},{stride},{units},{dropoutrate},{epochs},{batchSize}")
 
     ds = APDataset(dataset_params["tobs"], dataset_params["onset"], 1, ["COUNT"], ['TMIN', 'TMAX', 'LABEL', 'ERROR'], outDirRoot)
     ds.loadData("bkg", args.bkg)
@@ -53,8 +57,8 @@ if __name__=='__main__':
     ds.plotRandomSamples()
 
     #train, trainLabels, test, testLabels, val, valLabels = ds.getData()
-    train, trainLabels, val, valLabels = ds.getTrainingAndValidationSet(ws, stride, scaler="mm")
-    beforeOnsetWindows, beforeOnsetLabels, afterOnsetWindows, afterOnsetLabels = ds.getTestSet(ws, stride, dataset_params["onset"], scaler="mm")
+    train, trainLabels, val, valLabels = ds.getTrainingAndValidationSet(ws, stride, scaler=scaler)
+    beforeOnsetWindows, beforeOnsetLabels, afterOnsetWindows, afterOnsetLabels = ds.getTestSet(ws, stride, dataset_params["onset"], scaler=scaler)
     
     beforeOnsetWindows = beforeOnsetWindows[-11:]  
     beforeOnsetLabels = beforeOnsetLabels[-11:]
@@ -118,7 +122,7 @@ if __name__=='__main__':
         #print("maeLosses:", maeLosses)
         #print("testLabels:", testLabels)
         if (ep+1) % 10 == 0:
-            outDir = outDirRoot.joinpath(f"epoch_{ep+1}")
+            outDir = outDirRoot.joinpath("epochs",f"epoch_{ep+1}")
             outDir.mkdir(exist_ok=True, parents=True)
             # Plotting
             adLSTM.setOutputDir(outDir)
