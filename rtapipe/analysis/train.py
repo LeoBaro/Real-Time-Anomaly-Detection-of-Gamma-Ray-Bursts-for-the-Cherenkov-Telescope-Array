@@ -47,8 +47,8 @@ if __name__=='__main__':
     batchSize = 64 #30
 
     with open(outDirRoot.joinpath("parameters.csv"), "w") as statFile:
-        statFile.write("integrationtime,tobs,onset,ws,stride,units,dropoutrate,epochs,batchSize\n")
-        statFile.write(f"{integration_time},{dataset_params['tobs']},{dataset_params['onset']},{ws},{stride},{units},{dropoutrate},{epochs},{batchSize}")
+        statFile.write("integrationtime,tobs,onset,ws,stride,scaler,units,dropoutrate,epochs,batchSize\n")
+        statFile.write(f"{integration_time},{dataset_params['tobs']},{dataset_params['onset']},{ws},{stride},{scaler},{units},{dropoutrate},{epochs},{batchSize}")
 
     ds = APDataset(dataset_params["tobs"], dataset_params["onset"], 1, ["COUNT"], ['TMIN', 'TMAX', 'LABEL', 'ERROR'], outDirRoot)
     ds.loadData("bkg", args.bkg)
