@@ -10,11 +10,12 @@ class ModelBuilder:
     print(f"Building 2 layers - LSTM model. Input shape: {inputShape}")
     
     model = keras.Sequential()
-    
+
     model.add(keras.layers.LSTM(
         units=units,
         input_shape=(inputShape[0], inputShape[1])
     ))
+
     model.add(keras.layers.Dropout(rate=dropoutRate))
     model.add(keras.layers.RepeatVector(n=inputShape[0])) # repeats the input n times
     

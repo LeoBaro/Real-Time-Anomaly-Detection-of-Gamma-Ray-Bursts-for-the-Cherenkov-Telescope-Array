@@ -1,132 +1,237 @@
+from operator import index
 import numpy as np
+from random import randrange
+from numpy.core.fromnumeric import shape
 import pandas as pd
+from time import sleep
 from pathlib import Path
 import matplotlib.pyplot as plt
 from abc import ABC, abstractmethod
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-class APDataset(ABC):
+from rtapipe.lib.rtapipeutils.WindowsExtractor import WindowsExtractor
 
-    def __init__(self):
-        self.data = None
+class APDataset(ABC):
+    """
+    This class can handle the .csv files of the AP dataset (generated witht the ?? API).
+    """
+    def __init__(self, tobs, onset, integrationTime, featureColsNamesPattern, uselessColsNamesPattern, outDir):
+        
+        # The data container
+        self.data = {}
+        
+        # Original shape informations
+        self.filesLoaded = {}
+        self.singleFileDataShapes = {}
+
+        # Dataset informations
+        self.tobs = tobs
+        self.onset = onset
+        self.integrationTime = integrationTime
+        self.featureCols = None
+        self.featureColsNamesPattern = featureColsNamesPattern
+        self.uselessColsNamesPattern = uselessColsNamesPattern
+
+        # Scalers
         self.mmscaler = MinMaxScaler(feature_range=(0,1))
         self.stdscaler = StandardScaler()
-        self.singleSampleShape = None
-        self.uselessCols = []
-        self.featureCols = []
-    
-    def loadData(self, **kwargs):
-        count = 0
-        for label in kwargs:
-            dataDir = kwargs[label]
-            dfs = [pd.read_csv(file, sep=",") for file in Path(dataDir).iterdir()]
-            count += len(dfs)
-            self.singleSampleShape = dfs[0].shape
-            concat = pd.concat(dfs)
-            concat["LABEL"] = label
-            if self.data is None:
-                self.data = concat
-            else:
-                self.data = pd.concat([self.data, concat], axis=0)
+        
+        self.outDir = outDir
 
-        self.uselessCols = ['TMIN', 'TMAX', 'LABEL'] + [col for col in self.data if "ERROR" in col]
-        self.featureCols = [col for col in self.data if "COUNTS" in col]
 
-        print(f"Loaded {count} dataframes. Single sample shape={self.singleSampleShape}. Total shape={self.data.shape}")
-        print(f"Feature columns={self.featureCols}")
-        print(f"Useless columns={self.uselessCols}")
+    def _loadDataInDirectory(self, label, dataDir):
+        """
+        This method will read the csv files within a direcotry, loading the contents into the 'data' dictionary.
+        """
+        dfs = [pd.read_csv(file, sep=",") for file in Path(dataDir).iterdir()]
+        self.filesLoaded[label] = len(dfs)
+        self.singleFileDataShapes[label] = dfs[0].shape
+        concat = pd.concat(dfs)
+
+        if label not in self.data:
+            self.data[label] = concat
+        else:
+            self.data[label] = pd.concat([self.data[label], concat], axis=0)
+
+        print(f"\tLoaded {len(dfs)} csv files into data[{label}]") 
+        print(f"\tSingle csv file shape: {self.singleFileDataShapes[label]}")
+        print(f"\tDataframe shape: {self.data[label].shape}. Columns: {self.data[label].columns.values}")
+
+    def _findColumns(self, patterns):
+        """
+        This method will search for columns names from the columns patterns passed as input.
+        """
+        cols = set()
+        for df in self.data.values():
+            for col in df.columns.values:
+                for pattern in patterns:
+                    if pattern in col:
+                        cols.add(col)
+        return cols
+
+    def loadData(self, label, dataDir):
+        """
+        This method will load the data from multiple directories into a dictionary of label : dataframe        
+        """
+        print(f"Loading dataset with label '{label}'")
+        self._loadDataInDirectory(label, dataDir)
+
+        uselessCols = self._findColumns(self.uselessColsNamesPattern)
+        
+        # dropping useless column
+        self.data[label].drop(uselessCols, axis='columns', inplace=True)
+        print(f"\tDropped columns={uselessCols} from {label} dataset")
+        
+        self.featureCols = self._findColumns(self.featureColsNamesPattern)
+
+
 
     def getSampleFraction(self, total, percentage):
         return int(total*(percentage/100))
+    
 
-    def transformationPipeline(self, df, scaler):
+    def _splitArrayWithPercentage(self, arr, percentage):
+        splitPoint1 = self.getSampleFraction(len(arr), percentage)
+        return np.split(arr, [splitPoint1])
 
-        if scaler=="mm":
-            df = self.mmscaler.transform(df)
-            print("MinMax scaling applied.")
-        elif scaler=="std":
-            df = self.stdscaler.transform(df)
-            print("Standard scaling applied.")
-        else:
-            df = df.values
-            print("No scaling applied.")
+    def getTrainingAndValidationSet(self, windowSize, stride, scaler=None):
+        """
+        Exctract time series from the "bkg" data 
+        """
+        print("Exctracting training set..")
 
-        samples = int(df.shape[0]/self.singleSampleShape[0])
-        timesteps = self.singleSampleShape[0]
-        features = len(self.featureCols)
-        df = df.reshape((samples, timesteps, features))
-        print(f"Timeseries created. Shape={df.shape}")
-        return df 
+        print("\tFitting scalers..")
+        self.mmscaler.fit(self.data["bkg"])
+        self.stdscaler.fit(self.data["bkg"])
 
-    def getData(self, trainP=(60,0), testP=(20,20), valP=(20,0), scaler="mm"):
+        data = self.data["bkg"].values
+
+        if scaler and scaler == "mm":
+            data = self.mmscaler.transform(data)
+
+        if scaler and scaler == "std":
+            data = self.stdscaler.transform(data)
+
+        windows = WindowsExtractor.test_extract_sub_windows(data, 0, data.shape[0], windowSize, stride)
+
+        labels = np.array([False for i in range(len(windows))])
         
-        # total percentage of bkg samples
-        assert trainP[0] + testP[0] + valP[0] <= 100
+        windows = self._splitArrayWithPercentage(windows, 70)
+        labels = self._splitArrayWithPercentage(labels, 70)
 
-        # total percentage of grb samples
-        assert trainP[1] + testP[1] + valP[1] <= 100
+        print(f"\tTraining set: {windows[0].shape} Labels: {labels[0].shape}")
+        print(f"\tValidation set: {windows[1].shape} Labels: {labels[1].shape}")
 
-        # separating samples
-        bkgData = self.data[self.data['LABEL']=="bkg"]
-        grbData = self.data[self.data['LABEL']=="grb"]
-        print(f"Total number of bkg samples={len(bkgData)}")
-        print(f"Total number of grb samples={len(grbData)}")
+        return windows[0], labels[0], windows[1], labels[1]
 
-        # dropping useless column
-        bkgData = bkgData.drop(self.uselessCols, axis='columns')
-        grbData = grbData.drop(self.uselessCols, axis='columns')
-        print(f"Dropped columns={self.uselessCols}")
+    def getTestSet(self, windowSize, stride, onset, scaler=None):
 
-        # Splitting samples. Assumptions: train and val contains only bkg samples
-        p1 = self.getSampleFraction(len(bkgData), trainP[0])
-        p2 = self.getSampleFraction(len(bkgData), trainP[0] + testP[0])
-        p3 = self.getSampleFraction(len(bkgData), trainP[0] + testP[0] + valP[0])
-        p4 = self.getSampleFraction(len(grbData), testP[1])
-        train = bkgData[:p1]
-        test  = pd.concat([bkgData[p1:p2], grbData[:p4]])
-        val   = bkgData[p2:p3]
-        print(f"Training set: got {trainP[0]}% of bkg samples ({p1}). New shape={train.shape}.")
-        print(f"Test set: got {testP[0]}% of bkg samples and {testP[1]}% of grb samples ({p2-p1 + p4}). New shape={test.shape}.")
-        print(f"Validation set: got {valP[0]}% of bkg samples ({p3-p2}). New shape={val.shape}.")
+        print("Exctracting test set..")
 
-        # scaling: before applying any scaling transformations it is very important to split your 
-        # data into a train set and a test set. If you start scaling before, your training (and 
-        # test) data might end up scaled around a mean value that is not actually the mean of the 
-        # train or test data, and go past the whole reason why you’re scaling in the first place.
-        # https://towardsdatascience.com/preprocessing-with-sklearn-a-complete-and-comprehensive-guide-670cb98fcfb9
-        self.mmscaler.fit(train)
-        self.stdscaler.fit(train)
+        numberOfFiles = self.filesLoaded["grb"]
+
+        data = self.data["grb"].values
+
+        if scaler and scaler == "mm":
+            data = self.mmscaler.transform(data)
+
+        if scaler and scaler == "std":
+            data = self.stdscaler.transform(data)
+
+        data = data.reshape((numberOfFiles, self.tobs, 1)) # e.g. (<number of files>, <tobs>)
         
-        train = self.transformationPipeline(train, scaler)
-        test = self.transformationPipeline(test, scaler)
-        val = self.transformationPipeline(val, scaler)
+        print("dataset shape:",data.shape)
 
-        trainLabels = np.array([False for l in range(train.shape[0])])
-        testLabels = np.array([False for l in range(int(test.shape[0]/2))] + [True for l in range(int(test.shape[0]/2))])
-        valLabels = np.array([False for l in range(train.shape[0])])
+        firstSample = data[0,:]
 
-        return train, trainLabels, test, testLabels, val, valLabels
+        beforeOnsetWindows, afterOnsetWindows = WindowsExtractor.test_extract_sub_windows_pivot(firstSample,windowSize, stride, onset)
+        beforeOnsetLabels = np.array([False for i in range(beforeOnsetWindows.shape[0])])
+        afterOnsetLabels = np.array([True for i in range(afterOnsetWindows.shape[0])])
 
-    def plotRandomSample(self, label, scaler=None, seed=None):
-        fig, axes = plt.subplots(nrows=2, ncols=1)
-        train, test, val = ds.getData(trainP=(60,0), testP=(0,20), valP=(20,0), scaler=scaler)
-        if label == "bkg":
-            print(train.shape)
-            if seed is not None:
-                randomSample = train[seed,:,:]
-            else:
-                randomSample = train[np.random.randint(train.shape[0]),:,:]
-            axes[0].plot(randomSample)
-            axes[1].hist(randomSample, bins=30, alpha=0.5)
-        elif label == "grb":
-            print(test.shape)
-            if seed is not None:
-                randomSample = test[seed,:,:]
-            else:
-                randomSample = test[np.random.randint(test.shape[0]),:,:]
-            axes[0].plot(randomSample)
-            axes[1].hist(randomSample, bins=30, alpha=0.5)
+        return beforeOnsetWindows, beforeOnsetLabels, afterOnsetWindows, afterOnsetLabels   
+
+
+    def plotSamples(self, samples, labels, filename=None, change_color_from_index=None):
+
+        fig, axes = plt.subplots(nrows=2, ncols=samples.shape[0], figsize=(15,10))
+        ylim = samples.max(axis=1).flatten().max()
+        color="blue"
+        for idx, sample in enumerate(samples):
+            if change_color_from_index and idx >= change_color_from_index:
+                color = "red"
+            axes[0][idx].scatter(range(sample.shape[0]),sample,label=labels[idx],color=color, s=5)
+            axes[1][idx].hist(sample, bins=15, alpha=0.5,color=color)
+            axes[0][idx].set_ylim(0,ylim)
+
+        fig.legend()
+        if filename:
+            fig.savefig(self.outDir.joinpath(f"{filename}.png"), dpi=300)
         plt.show()
+        
+    def plotSample(self, sample, label, filename=None):
+        fig, axes = plt.subplots(nrows=2, ncols=1)
+        axes[0].scatter( range(sample.shape[0]), sample , label=label, s=5)
+        axes[1].hist(sample, bins=30, alpha=0.5)
+        fig.legend()
+        if filename:
+            fig.savefig(self.outDir.joinpath(f"{filename}.png"), dpi=300)
+        plt.show()
+ 
+
+
+    def plotRandomSamples(self, filename=None):
+
+        print(self.data["bkg"].shape)
+        print(self.data["grb"].shape)
+
+        print(len(self.data["bkg"]),(self.tobs * self.filesLoaded["bkg"]) / self.integrationTime)
+        assert len(self.data["bkg"]) == (self.tobs * self.filesLoaded["bkg"]) / self.integrationTime
+        assert len(self.data["grb"]) == (self.tobs * self.filesLoaded["grb"]) / self.integrationTime
+
+        bkgReshaped = self.data["bkg"].values.reshape((self.filesLoaded["bkg"], self.tobs))        
+        grbReshaped = self.data["grb"].values.reshape((self.filesLoaded["grb"], self.tobs))
+
+        random_bkg_sample_idx = randrange(0, bkgReshaped.shape[0])
+        random_grb_sample_idx = randrange(0, grbReshaped.shape[0])
+
+        randomBkgSample = bkgReshaped[random_bkg_sample_idx]
+        randomGrbSample = grbReshaped[random_grb_sample_idx]
+
+        fig, ax = plt.subplots(2,1, figsize=(15,10))
+
+        ax = ax.flatten()
+
+        ax[0].scatter( range(1, randomBkgSample.shape[0]+1), randomBkgSample, label="bkg", color="blue", s=5)
+        ax[0].scatter( range(1, randomGrbSample.shape[0]+1), randomGrbSample, label="grb", color="red", s=5)
+        ax[0].axvline(x=self.onset, color="red", label=f"Onset: {self.onset}")
+
+        ax[1].hist(randomBkgSample, bins=30, alpha=0.5, label="bkg", color="blue")
+        ax[1].hist(randomGrbSample, bins=30, alpha=0.5, label="grb", color="red")
+        
+
+        #ax[0].set_ylim(100)
+        #ax[0].set_ylim(100)
+        
+        if filename:
+            fig.savefig(self.outDir.joinpath(f"{filename}.png"), dpi=300)
+
+        ax[0].legend()
+        plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -155,7 +260,7 @@ if __name__=='__main__':
     grbdata = Path("ap_data_for_training_and_testing/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_grb_window_size_25_region_radius_0.5")
     ds = APDataset()
     ds.loadData(bkg=bkgdata, grb=grbdata)
-    train, test, val = ds.getData()
+    # train, test, val = ds.getData()
     # print(train, test, val)
     ds.plotRandomSample(label="bkg", scaler=None, seed=1)
     ds.plotRandomSample(label="grb", scaler=None, seed=1)
