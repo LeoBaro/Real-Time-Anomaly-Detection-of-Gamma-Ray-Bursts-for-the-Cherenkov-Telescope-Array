@@ -38,7 +38,7 @@ if __name__=='__main__':
     # Training set - Test set params
     ws = 25
     stride = 1
-    scaler = None # mm, std
+    scaler = "mm" # mm, std
 
     # LSTM params
     units = 32 #1

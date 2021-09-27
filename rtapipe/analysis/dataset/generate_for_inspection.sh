@@ -12,9 +12,9 @@ python generate_ap_data.py \
         -t bkg \
         -mp yes \
         -lim 5 \
-        -ws 1 \
+        -ws 5 \
         -rr 0.2 \
-        -norm no \
+        -norm yes \
         -out $dir/ap_data_for_inspection_$today
         
         
@@ -24,7 +24,7 @@ python generate_ap_data.py \
         -t grb \
         -mp yes \
         -lim 5 \
-        -ws 1 \
+        -ws 5 \
         -rr 0.2 \
-        -norm no \
+        -norm yes \
         -out $dir/ap_data_for_inspection_$today
