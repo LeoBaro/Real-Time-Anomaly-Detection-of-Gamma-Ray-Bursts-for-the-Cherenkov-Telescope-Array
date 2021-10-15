@@ -17,25 +17,19 @@ class IntegrationType:
 class IntegrationStrategy(ABC):
     @abstractmethod
     def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None):
-        pass
-    
-    def normalize(self, counts, obj: ObjectConfig, tmin, tmax, emin, emax, region, pointing):
-        obj.begin_time = tmin
-        obj.begin_time = tmax
-        obj.energy_min = emin
-        obj.energy_max = emax
+        pass    
 
-        start = time()
-        region_eff_resp = aeff_eval(obj, region, {'ra': pointing[0], 'dec': pointing[1]})
-        #print("Took: ", time() - start)
+    def computeAeffArea(self, normConfTemplate, emin, emax, region, pointing):
+        normConfTemplate.energy_min = emin
+        normConfTemplate.energy_max = emax
+        region_eff_resp = aeff_eval(normConfTemplate, region, {'ra': pointing[0], 'dec': pointing[1]})
+        return region_eff_resp
 
-        livetime = tmax - tmin
+    def normalize(self, counts, region_eff_resp, livetime):
 
         normCounts = counts / region_eff_resp / livetime        
-        #print(f"Normalized counts: {normCounts}")
 
         return normCounts
-
 
 
 class TimeIntegration(IntegrationStrategy):
@@ -49,7 +43,13 @@ class TimeIntegration(IntegrationStrategy):
 
         emin = eWindows[0][0]
         emax = eWindows[0][1]
-        
+
+        # Normalization
+        livetime = tWindows[0][1] - tWindows[0][0]
+        region_eff_resp = self.computeAeffArea(normConfTemplate, emin, emax, region, pointing)
+        print(f"[DEBUG] livetime: {livetime} region_eff_resp: {region_eff_resp}")
+
+
         totalCounts = 0
 
         with open(f"{outputFilePath}", "w") as of:
@@ -62,7 +62,7 @@ class TimeIntegration(IntegrationStrategy):
 
                 if normalize:
 
-                    counts = self.normalize(counts, normConfTemplate, twin[0], twin[1], emin, emax, region, pointing)
+                    counts = self.normalize(counts, region_eff_resp, livetime)
 
                 of.write(f"{twin[0]},{twin[1]},{counts},{round(sqrt(counts), 4)}\n")           
                 totalCounts += counts
@@ -83,6 +83,10 @@ class EnergyIntegration(IntegrationStrategy):
         tmin = tWindows[0][0]
         tmax = tWindows[0][1]
 
+        # Normalization
+        livetime = tmax - tmin
+
+
         totalCounts = 0
         with open(f"{outputFilePath}", "w") as of:
             of.write("EMIN,EMAX,COUNTS,ERROR\n")    
@@ -93,7 +97,10 @@ class EnergyIntegration(IntegrationStrategy):
 
                 if normalize:
 
-                    counts = self.normalize(counts, normConfTemplate, tmin, tmax, ewin[0], ewin[1], region, pointing)
+                    region_eff_resp = self.computeAeffArea(normConfTemplate, ewin[0], ewin[1], region, pointing)
+                    print(f"[DEBUG] livetime: {livetime} region_eff_resp: {region_eff_resp}")
+
+                    counts = self.normalize(counts, region_eff_resp, livetime)
 
                 of.write(f"{ewin[0]},{ewin[1]},{counts},{round(sqrt(counts), 4)}\n")
                 totalCounts += counts
@@ -118,16 +125,25 @@ class TimeEnergyIntegration(IntegrationStrategy):
         totalCounts = 0
         with open(f"{outputFilePath}", "w") as of:
             of.write(header)    
-            
-            for twin in tqdm(tWindows, disable=parallel):
-                of.write(f"{twin[0]},{twin[1]}")                
 
-                for ewin in eWindows:
+
+
+            for ewin in eWindows:
+
+                # Normalization
+                livetime = tWindows[0][1] - tWindows[0][0]
+                region_eff_resp = self.computeAeffArea(normConfTemplate, ewin[0], ewin[1], region, pointing)
+                print(f"[DEBUG] livetime: {livetime} region_eff_resp: {region_eff_resp}")            
+
+                for twin in tqdm(tWindows, disable=parallel):
+    
+                    of.write(f"{twin[0]},{twin[1]}")                
+
                     counts = photometrics.region_counter(region, float(region["rad"]), tmin=twin[0], tmax=twin[1], emin=ewin[0], emax=ewin[1])
 
                     if normalize:
 
-                        counts = self.normalize(counts, normConfTemplate, twin[0], twin[1], ewin[0], ewin[1], region, pointing)
+                        counts = self.normalize(counts, region_eff_resp, livetime)
 
             
                     of.write(f",{counts},{round(sqrt(counts), 4)}")
@@ -162,6 +178,11 @@ class FullIntegration(IntegrationStrategy):
         emin = eWindows[0][0]
         emax = eWindows[0][1]        
 
+        # Normalization
+        livetime = tmax - tmin
+        region_eff_resp = self.computeAeffArea(normConfTemplate, emin, emax, region, pointing)
+        print(f"[DEBUG] livetime: {livetime} region_eff_resp: {region_eff_resp}")       
+        
         totalCounts = 0
         with open(f"{outputFilePath}", "w") as of:
             of.write("COUNTS,ERROR\n")    
@@ -170,7 +191,7 @@ class FullIntegration(IntegrationStrategy):
 
             if normalize:
 
-                counts = self.normalize(counts, normConfTemplate, tmin, tmax, emin, emax, region, pointing)
+                counts = self.normalize(counts, region_eff_resp, livetime)
 
             of.write(f"{counts},{round(sqrt(counts), 4)}\n")
             totalCounts += counts

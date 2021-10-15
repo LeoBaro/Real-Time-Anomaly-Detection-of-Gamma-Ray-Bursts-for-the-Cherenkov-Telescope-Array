@@ -5,7 +5,7 @@ from tensorflow.keras import layers
 class ModelBuilder:
 
   @staticmethod
-  def buildLSTM_2layers(inputShape, units=64, dropoutRate=0.2):
+  def buildLSTM_2layers(inputShape, units, dropoutRate):
 
     print(f"Building 2 layers - LSTM model. Input shape: {inputShape}")
     

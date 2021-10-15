@@ -2,6 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 from rtapipe.lib.datasource.Photometry2 import Photometry2
+from rtapipe.lib.datasource.integrationstrat.IntegrationStrategies import IntegrationType
 
 class TestPhotometry2:
 
@@ -39,7 +40,7 @@ class TestPhotometry2:
         ph = Photometry2(dataDir, outputDir)
 
         assert len(ph.dataFiles) == 2
-        assert ph.runId == "run0406_ID000126"
+
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
 
@@ -48,7 +49,7 @@ class TestPhotometry2:
         ph = Photometry2(dataDir, outputDir)
 
         assert len(ph.dataFiles) == 1
-        assert ph.runId == "run0406_ID000126"
+
 
     def test_getOutputFilePath(self):
 
@@ -57,21 +58,19 @@ class TestPhotometry2:
         inputFilename = dataDir.joinpath("bkg000002.fits")
 
         ph = Photometry2(dataDir, outputDir)
-        integrationType = ph.setIntegrationType(None, None)
-        outputFilePath = ph.getOutputFilePath(inputFilename, integrationType)
-        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_full_simtype_bkg_onset_0.csv"
+        
+        outputFilePath = ph.getOutputFilePath(inputFilename, IntegrationType.TIME, True)
+        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_t_simtype_bkg_onset_0_normalized_True.csv"
 
-        integrationType = ph.setIntegrationType(ph.getLinearWindows(0,10,2,1), None)
-        outputFilePath = ph.getOutputFilePath(inputFilename, integrationType)
-        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_t_simtype_bkg_onset_0.csv"
+        outputFilePath = ph.getOutputFilePath(inputFilename, IntegrationType.ENERGY, True)
+        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_e_simtype_bkg_onset_0_normalized_True.csv"
 
-        integrationType = ph.setIntegrationType(None, Photometry2.getLogWindows(0.03, 0.15, 4))
-        outputFilePath = ph.getOutputFilePath(inputFilename, integrationType)
-        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_e_simtype_bkg_onset_0.csv"
+        outputFilePath = ph.getOutputFilePath(inputFilename, IntegrationType.TIME_ENERGY, True)
+        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_te_simtype_bkg_onset_0_normalized_True.csv"
 
-        integrationType = ph.setIntegrationType(ph.getLinearWindows(0,10,2,1), Photometry2.getLogWindows(0.03, 0.15, 4))
-        outputFilePath = ph.getOutputFilePath(inputFilename, integrationType)
-        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_te_simtype_bkg_onset_0.csv"
+        outputFilePath = ph.getOutputFilePath(inputFilename, IntegrationType.FULL, True)
+        assert f"{outputFilePath}" == f"{outputDir}/bkg000002_full_simtype_bkg_onset_0_normalized_True.csv"
+
 
 
     def test_integrate_full_not_normalized(self):
@@ -272,7 +271,7 @@ class TestPhotometry2:
         regionRadius = 0.2
         outputFilePath, totalCounts = ph.integrateTE(inputFilePath, customRegion, regionRadius, tWindows, eWindows, parallel=False, normalize=True)
         assert Path(outputFilePath).is_file() == True
-        assert totalCounts == 4.458778229943693e-08
+        assert totalCounts == 4.458778229943692e-08
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
         inputFilePath = dataDir.joinpath("grb000002.fits")
@@ -281,7 +280,7 @@ class TestPhotometry2:
         regionRadius = 0.2
         outputFilePath, totalCounts = ph.integrateTE(inputFilePath, customRegion, regionRadius, tWindows, eWindows, parallel=False, normalize=True)
         assert Path(outputFilePath).is_file() == True
-        assert totalCounts == 6.780394590918059e-08
+        assert totalCounts == 6.780394590918058e-08
         assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
 
 
@@ -360,7 +359,7 @@ class TestPhotometry2:
         self.checkOutput(outputFiles, 2, 5.117216049208847e-09, totalCounts)
 
         outputFiles, totalCounts = ph.integrateAll("TE", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
-        self.checkOutput(outputFiles, 2, 9.210988888575929e-08, totalCounts)
+        self.checkOutput(outputFiles, 2, 9.210988888575927e-08, totalCounts)
 
         outputFiles, totalCounts = ph.integrateAll("F", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
         self.checkOutput(outputFiles, 2, 3.746412730521299e-09, totalCounts)
@@ -375,7 +374,7 @@ class TestPhotometry2:
         self.checkOutput(outputFiles, 1, 3.766885883843366e-09, totalCounts)
 
         outputFiles, totalCounts = ph.integrateAll("TE", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
-        self.checkOutput(outputFiles, 1, 6.780394590918059e-08, totalCounts)
+        self.checkOutput(outputFiles, 1, 6.780394590918058e-08, totalCounts)
 
         outputFiles, totalCounts = ph.integrateAll("F", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
         self.checkOutput(outputFiles, 1, 3.114340590225277e-09, totalCounts)

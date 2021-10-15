@@ -1,46 +1,68 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
+from math import floor
+from numpy.lib.function_base import append
+from scipy.stats import norm, chisquare
 from tensorflow import reduce_sum
 from tensorflow.keras.losses import mae
+from tensorflow.python.types.core import Value
 from tensorflow.train import latest_checkpoint
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.losses import mean_absolute_error
 from rtapipe.analysis.models.builder import ModelBuilder
-from sklearn.metrics import roc_curve, roc_auc_score, RocCurveDisplay, precision_recall_curve, f1_score
+from sklearn.metrics import roc_curve, roc_auc_score, RocCurveDisplay, precision_score, recall_score, precision_recall_curve, f1_score, confusion_matrix, ConfusionMatrixDisplay, PrecisionRecallDisplay
+import matplotlib.colors as mcolors
+
 from sklearn import metrics
+from tqdm import tqdm
 
-
-plt.rcParams.update({'font.size': 14, 'lines.markersize': 0.5,'legend.markerscale': 3, 'lines.linewidth':1, 'lines.linestyle':'-'})
+COLORS = list(mcolors.BASE_COLORS)
+plt.rcParams.update({'font.size': 18, 'lines.markersize': 0.5,'legend.markerscale': 3, 'lines.linewidth':1, 'lines.linestyle':'-'}) 
+FIG_SIZE = (15,7)
+DPI=300
 
 class AnomalyDetector:
 
-    def __init__(self, shape, units, dropoutRate, outDir, loadModelFrom=None):
+    def loadModel(modelDir):
+        try:
+            print(f"Loading model from {modelDir}")
+            ad = AnomalyDetector(0, 0, 0, Path(modelDir).parent, True)
+            ad.model = load_model(modelDir)
+            return ad
+        except Exception:
+            print(f"Unable to load model from {modelDir}.")
 
-        if loadModelFrom is None:
+
+    def __init__(self, shape, units, dropoutRate, outDir, loadModel = False):
+        
+        self.model = None
+
+        if not loadModel:
             self.model = ModelBuilder.buildLSTM_2layers(shape, units, dropoutRate)
-            self.fresh = True
-
-        if loadModelFrom is not None:
-            try:
-                print(f"Loading model from {loadModelFrom}")
-                self.model = load_model(loadModelFrom)
-                self.fresh = False
-            except Exception:
-                print(f"Unable to load model from {loadModelFrom}. A new model will be created.")
-
 
         self.history = []
-        self.classificationThreshold = None
+        self.classificationThreshold = {
+            "MAE":None,
+            "AS": None
+        }
 
         self.outDir = outDir
         self.outDir.mkdir(parents=True, exist_ok=True)
+
+        self.featuresColsNames = []
+
+    def setFeaturesColsNames(self, featuresColsNames):
+        self.featuresColsNames = featuresColsNames
 
     def setOutputDir(self, outDir):
         self.outDir = outDir
         self.outDir.mkdir(parents=True, exist_ok=True)
 
-    def isFresh(self):
-        return self.fresh
+    def setClassificationThreshold(self, maeThreshold, asThreshold):
+        self.classificationThreshold["MAE"] = maeThreshold
+        self.classificationThreshold["AS"] = asThreshold
 
     def compile(self):
         # mean absolute error: computes the mean absolute error between labels and predictions.
@@ -83,18 +105,81 @@ class AnomalyDetector:
     def save(self, dir):
         self.model.save(dir)
 
-    def computeThreshold(self, trainSamples):
-        # The threshold is calculated as the 98% quantile of the mean absolute errors distribution for the normal examples of the training set, 
-        # then classify future examples as anomalous if the reconstruction error is higher than one standard 
-        # deviation from the training set.    
-        trainPred = self.predict(trainSamples)
+    def computeSimpleThreshold(self, valSamples, showFig=False):
+        """
+        The threshold is calculated as the 98% quantile of the mean absolute errors distribution for the normal examples of the training set, 
+        then classify future examples as anomalous if the reconstruction error is higher than one standard 
+        deviation from the training set.    
+        """
+
+        reco = self.predict(valSamples)
 
         # Computes the mean absolute error between labels and predictions.
-        trainMAElosses = np.mean(np.abs(trainPred - trainSamples), axis=1)
-        self.classificationThreshold = np.percentile(trainMAElosses, 98)
+        maeLosses = np.mean(np.abs(reco - valSamples), axis=1)
+
+        # Fits the reconstruction error distribution on the validation set
+        mu, std = self.fitMAEonValidationSet(maeLosses)
+
+        # Plotting the pdf and cdf of the recostruction errors on the validation set
+        self.pdfPlot(maeLosses, mu, std, filenamePostfix=f"val_set", showFig=showFig)
+        self.cdfPlot(maeLosses, mu, std, filenamePostfix=f"val_set", showFig=showFig)
+
+        # Calcolarla attraverso il fitting della distrubuzione dell'errore in modo analitico
+        self.classificationThreshold = np.percentile(maeLosses, 98)
 
         # Compute the threshold as the max of those errors
-        return self.classificationThreshold, trainMAElosses
+        return self.classificationThreshold, maeLosses
+
+
+    def fitMAEonValidationSet(self, maeLosses):
+
+        #mu, std = norm.fit(maeLosses)
+
+        maeLosses = maeLosses.squeeze()
+
+        binsNum = 50
+        mu, std = norm.fit(maeLosses)
+
+        hist, bins, patches = plt.hist(maeLosses, bins=binsNum, density=True, facecolor='none', edgecolor=COLORS[0])
+        print("hist",hist)
+
+        binCenters = []
+        for idx in range(len(bins)-1):
+            binCenters.append((bins[idx+1]+bins[idx])/2)       
+        pdf2 = norm.pdf(binCenters, mu, std)
+
+        xmin, xmax = plt.xlim()
+        x = np.linspace(xmin, xmax, binsNum)
+        pdf1 = norm.pdf(x, mu, std)
+
+        print(hist)
+        print(pdf1)
+        print(pdf2)
+    
+        plt.plot(x, pdf1, linestyle="--", linewidth=2, label=f"mu = {round(mu,2)},  std = {round(std,2)}")
+        plt.plot(binCenters, pdf2, linestyle="-.", linewidth=2, label=f"Expected")
+        plt.legend()
+        plt.show()
+        chi2 = chisquare(hist, pdf1)
+        print(chi2)
+        chi2 = chisquare(hist, pdf2)
+        print(chi2)
+
+        return mu, std
+
+    # TODO
+    def computeAnomalyScoreThreshold(self, valSamples):
+
+        reco = self.predict(valSamples)
+
+        # Computes the mean absolute error between labels and predictions.
+        maeLosses = np.mean(mae(valSamples, reco), axis=1) # mae = np.abs(reco - valSamples)
+        
+        mu, std = norm.fit(maeLosses)
+
+
+        return -666, maeLosses
+
 
     def reconstruct(self, samples):
         # encoding and decoding    
@@ -103,33 +188,173 @@ class AnomalyDetector:
         # computing the recostruction errors
         maeLosses = np.mean(np.abs(recostructions - samples), axis=1).flatten()
 
+
         return recostructions, maeLosses
 
 
-
-    def classify(self, samples):
-
-        if self.classificationThreshold is None:
-            print("The classification threshold is None. Call computeThreshold() to calculate it.")
-            return None
-
-        # encoding and decoding    
-        recostructions = self.predict(samples)
-
-        # computing the recostruction errors
-        maeLosses = np.mean(np.abs(recostructions - samples), axis=1).flatten()
-
-        mask = (maeLosses > self.classificationThreshold).flatten()
-        
-        return recostructions, maeLosses, mask
-
-        
-    def computeScore(self):
+    def classify_with_distance_from_distribution(self, samples):
         pass
 
 
+    def classify_with_mae(self, samples):
+
+        if self.classificationThreshold is None:
+            raise ValueError("The classification threshold is None. Call computeThreshold() to calculate it or sei it with setClassificationThreshold()")
+
+    
+        # The reconstructions:
+        # [
+        #   [
+        #       [1],[2],[3],[4],[5]
+        #   ], 
+        #   [
+        #       [1],[2],[3],[4],[5]
+        #   ],
+        #   ... up to X samples
+        # ]
+        #
+        # In the case of multiple features..
+        # [
+        #   [
+        #       [1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4]
+        #   ], 
+        #   [
+        #       [1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4],[1,2,3,4]
+        #   ],
+        #   ... up to X samples
+        # ]
+        recostructions = self.predict(samples)
+
+
+        # The recostruction errors:
+        # For each sample, it computes X arrays of distances between the points, where X is the number of energy bins.
+        distances = np.abs(recostructions - samples)
+
+        # The mae loss is defined as the mean of those distances, for each sample, for each energy bin.
+        # [
+        #   [0.11891678 0.11762658 0.11594792 0.08139625]
+        #   [0.11626169 0.11343022 0.12967022 0.08330123]  
+        #   ... up to X samples
+        # ]
+        #
+        maeLossesPerEnergyBin = np.mean(distances, axis=1)
+
+        # How do I "merge" the mae of each energy bin? Maybe with a weighted mean. For now I'll use a simple mean.
+        # [
+        #   0.10847188,
+        #   0.11066584
+        #   ... up to X samples
+        # ]
+        #
+        maeLosses = np.mean(maeLossesPerEnergyBin, axis=1)
+
+
+
+        mask = (maeLosses > self.classificationThreshold)
+
+
+        
+        return recostructions, maeLosses, maeLossesPerEnergyBin, mask
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    """
+    Plotting
+    """
+
+    def pdfPlot(self, values, mu, std, filenamePostfix="", showFig=False, saveFig=True):
+        
+        trials = len(values)
+        fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
+
+        n, bins, patches = ax.hist(values, bins=50, density=True, facecolor='none', edgecolor=COLORS[0])       
+        xmin, xmax = plt.xlim()
+        x = np.linspace(xmin, xmax, 100)
+        pdf = norm.pdf(x, mu, std)
+        ax.plot(x, pdf, linestyle="--", linewidth=2, label=f"mu = {round(mu,2)},  std = {round(std,2)}")
+
+        ax.set_title(f"Reconstruction errors PDF. Trials={trials}")
+        ax.set_xlabel('Reconstruction errors')
+        ax.set_ylabel('Counts (normalized)')
+        ax.legend()
+        if saveFig:
+            fig.savefig(self.outDir.joinpath(f"mae_pdf_{filenamePostfix}.png"), dpi=DPI)
+        if showFig:
+            plt.show()
+        plt.close()
+
+    def cdfPlot(self, values, mu, std, filenamePostfix="", showFig=False, saveFig=True):
+        # Test with 10e7 samples
+        #values = np.random.normal(loc=mu, scale=std, size=int(10e7))
+        n_bins = 100
+        trials = len(values)
+        fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
+
+        # Overlay a reversed cumulative histogram.
+        n, bins, patches = ax.hist(values, bins=n_bins, density=True, histtype='step', cumulative=-1, label='Reversed empirical')
+
+        ax.set_title(f'Cumulative step histograms. Trials={trials}')
+        ax.set_xlabel('Reconstruction errors')
+        ax.set_ylabel('Likelihood of occurrence')
+        ax.set_yscale('log')
+        ax.legend()
+        if saveFig:
+            fig.savefig(self.outDir.joinpath(f"mae_cdf_{filenamePostfix}.png"), dpi=DPI)
+        if showFig:
+            plt.show()
+        plt.close()
+
+ 
+    def confusionMatrixPlot(self, realLabels, predLabels, showFig=False, saveFig=True):
+        fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
+        fig.suptitle("Confusion matrix")
+        disp = ConfusionMatrixDisplay.from_predictions(realLabels, predLabels, display_labels=["bkg","grb"], ax=ax)
+        if showFig:
+            plt.show()
+        if saveFig:
+            fig.savefig(self.outDir.joinpath("confusion_matrix.png"), dpi=DPI)
+        plt.close()
+
+    def computeMetrics(self, realLabels, predLabels):   
+        prec = precision_score(realLabels, predLabels)
+        recall = recall_score(realLabels, predLabels)
+        f1 = f1_score(realLabels, predLabels)      
+        tn, fp, fn, tp = confusion_matrix(realLabels, predLabels).ravel()
+        print(tp, fp, tn, fn)
+        fpr = fp / (fp+tn)
+        fnr = fn / (fn+tp)
+
+        score_str = f"Precision={round(prec,3)}\nRecall={round(recall,3)}\nF1={round(f1, 3)}\nFalse Positive Rate={round(fpr, 3)}\nFalse Negative Rate={round(fnr,3 )}"
+        
+        print(score_str)
+        
+        with open(self.outDir.joinpath("performance_metrics.txt"), "w") as pf:
+            pf.write(score_str)
+
     def lossPlot(self, loss, val_loss, showFig=False, saveFig=True):
-        fig, ax = plt.subplots(1,1, figsize=(10,10))
+        fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
         fig.suptitle("Losses during training")
         ax.plot(loss, label="Training Loss")
         ax.plot(val_loss, label="Validation Loss")
@@ -140,28 +365,48 @@ class AnomalyDetector:
         if showFig:
             plt.show()
         if saveFig:
-            fig.savefig(self.outDir.joinpath("loss_plot.png"), dpi=300)
+            fig.savefig(self.outDir.joinpath("loss_plot.png"), dpi=DPI)
         plt.close()
 
-    def recoErrorDistributionPlot(self, losses, threshold, type=None, showFig=False, saveFig=False):
-        fig, ax = plt.subplots(1,1)
-        fig.suptitle(f"Reconstruction error distribution ({type}).")
-        ax.hist(losses, bins=30)
+    def recoErrorDistributionPlot(self, losses, threshold=None, filenamePostfix="", title="", showFig=False, saveFig=True):
+        fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
+        if title:
+            fig.suptitle(title)
+
+        print(losses.shape)
+
+        if len(losses.shape) == 1:
+            numFeatures = 1
+            losses = np.expand_dims(losses, axis=0)
+        else:
+            numFeatures = losses.shape[1]
+
+        print(losses.shape, numFeatures,losses[:, 0])
+
+        for f in range(numFeatures):
+            ax.hist(losses[:, f], bins=50, label=self.featuresColsNames[f], facecolor='none', edgecolor=COLORS[f])
+        # plt.yscale('log', nonposy='clip')
+        
         if threshold:
-            ax.axvline(x=threshold, color="red", label=f"Threshold: {round(threshold,2)}")
-        plt.xlabel(f'{type} MAE loss')
+            ax.axvline(x=threshold, color="red", linestyle="--", label=f"Threshold: {round(threshold,2)}")
+
+        plt.xlabel(f'Mean Absolute Error loss')  
         plt.ylabel('Number of Samples')
+
+        ax.legend()
         if showFig:
             plt.show()
         if saveFig:    
-            fig.savefig(self.outDir.joinpath(f"mea_distribution_{type}.png"), dpi=300)
+            fig.savefig(self.outDir.joinpath(f"mea_distribution_{filenamePostfix}.png"), dpi=DPI)
         plt.close()
 
-
-
-    def plotPredictions2(self, samples, samplesLabels, recostructions, maeLosses, mask, howMany, showFig=False, saveFig=True):
+    def plotPredictions(self, samples, samplesLabels, recostructions, maeLossePerEnergyBin, mask, showFig=False, saveFig=True):
         ylim = samples.max(axis=1).flatten().max()
-        print(f"ylim: {ylim}")
+        
+        print(f"Number of predictions: {len(samples)}. Sample shape: {samples.shape}")
+
+        featureNum = samples.shape[2]
+
         realLabels = []
         for lab in samplesLabels:
             if lab:
@@ -176,56 +421,70 @@ class AnomalyDetector:
             else:
                 predLabels.append("bkg")
         
-        # Compute the number of subplots based on the number of samples to be drawn        
-        rows = 1
-        cols = 1
-        while rows*cols < howMany:
-            if (rows + cols) % 2 == 0:
-                rows += 1  
-            else: 
-                cols += 1
-        print(f"rows: {rows}, cols: {cols}")
 
-        fig, ax = plt.subplots(rows,cols, constrained_layout=True, figsize=(20,20))
-        fig.suptitle(f"Anomaly detection. Threshold={round(self.classificationThreshold, 2)}")
-        count = 0
-        for row in range(rows):
-            for col in range(cols):                
-                if count >= len(samples):
-                    break
-                color="blue"
-                if realLabels[count] == "grb":
-                    color="red"
-                recoSample = recostructions[count].squeeze()
-                sample = samples[count].squeeze()
-                ax[row, col].plot(recoSample, color='red', linestyle='dashed' , label=f'mae={round(maeLosses[count],2)}')
-                ax[row, col].scatter(range(sample.shape[0]), sample, color=color, s=5)
-                ax[row, col].set_ylim(0, ylim)
-                ax[row, col].set_title(f"Real: {realLabels[count]} Pred: {predLabels[count]}")
-                ax[row, col].legend(loc='upper left')
-                ax[row, col].grid()
-                count += 1
+        predictionsPerFigure = 40
 
-        if showFig:
-            plt.show()
-    
-        if saveFig:
-            fig.savefig(self.outDir.joinpath(f"predictions.png"), dpi=300)
-    
-        plt.close()
+        cols = 5
+        rows = 10
 
-    def F1Score(self, labels, mask):      
-        labels = [int(boolLabel) for boolLabel in labels]
-        predictions = [int(boolLabel) for boolLabel in mask]
-        return f1_score(labels, predictions)        
-    
+        figsize_x = 20
+        figsize_y = rows*4
+
+        numberOfFigures = floor(len(samples) / predictionsPerFigure)
+        if len(samples) % predictionsPerFigure > 0:
+            numberOfFigures += 1
+
+        # For each feature..
+        for f in tqdm(range(featureNum)):
+
+            count = 0   
+            for i in tqdm(range(numberOfFigures), leave=False):
+
+                fig, ax = plt.subplots(rows, cols, constrained_layout=True, figsize=(figsize_x, figsize_y))
+                fig.suptitle(f"Reconstructions. Feature={f} Threshold={round(self.classificationThreshold, 2)}")
+                
+                for row in range(rows):
+                    for col in range(cols):                
+                        if count >= len(samples):
+                            break
+                        
+                        # Chaning color for grb class
+                        color="blue"
+                        if realLabels[count] == "grb":
+                            color="red"
+
+
+                        # Get a sample and its recostruction
+                        sample = samples[count][:,f]
+                        recoSample = recostructions[count][:,f]
+
+                        # And plot them
+                        ax[row, col].plot(recoSample, color='red', linestyle='dashed', label=f'mae={round(maeLossePerEnergyBin[count,f],2)}')
+                        ax[row, col].scatter(range(sample.shape[0]), sample, color=color, s=5)
+                        ax[row, col].set_ylim(0, ylim)
+                        ax[row, col].set_title(f"Real: {realLabels[count]} Pred: {predLabels[count]}")
+                        ax[row, col].legend(loc='upper left')
+                        ax[row, col].grid()
+                        if realLabels[count] != predLabels[count]:
+                            ax[row, col].set_facecolor('#e0e0eb')
+                        count += 1
+
+                if showFig:
+                    plt.show()
+            
+                if saveFig:
+                    fig.savefig(self.outDir.joinpath(f"predictions_{i}_feature_{f}.png"), dpi=DPI/8)
+            
+            plt.close()
+
+
+
+
+
+
+  
+    """
     def plotROC(self, testLabels, reconstructions, showFig=False, saveFig=True):
-        """
-        It is a plot of the false positive rate (x-axis) versus the true positive rate (y-axis) for a 
-        number of different candidate threshold values between 0.0 and 1.0. 
-        Put another way, it plots the false alarm rate versus the hit rate.
-        """
-        
         # TPR: how good the model is at predicting the positive class when the actual outcome is positive.
         testLabels = [int(boolLabel) for boolLabel in testLabels]
         fpr, tpr, thresholds = roc_curve(testLabels, reconstructions, drop_intermediate=False)
@@ -245,6 +504,20 @@ class AnomalyDetector:
         if saveFig:
             fig.savefig(self.outDir.joinpath(f"roc.png"), dpi=300)
         plt.close()
+
+
+    def precisionRecallCurvePlot(self, realLabels, predLabels, showFig=False, saveFig=True):
+        # https://scikit-learn.org/stable/auto_examples/model_selection/plot_precision_recall.html#sphx-glr-auto-examples-model-selection-plot-precision-recall-py
+        fig, ax = plt.subplots(1,1, figsize=(10,10))
+        fig.suptitle("Precision-Recall Curve\nPrecision: {} Recall: {}")
+        disp = PrecisionRecallDisplay.from_predictions(realLabels, predLabels, name="Autoencoder/LSTM classifier", ax=ax)
+        if showFig:
+            plt.show()
+        if saveFig:
+            fig.savefig(self.outDir.joinpath("precision_recall_curve.png"), dpi=300)
+        plt.close()
+
+
 
     def plotPrecisionRecall(self, labels, reconstructions, showFig=False, saveFig=True):
         # calculate precision-recall curve
@@ -266,3 +539,4 @@ class AnomalyDetector:
         if saveFig:
             fig.savefig(self.outDir.joinpath(f"precision_recall.png"), dpi=300)
         plt.close()
+    """

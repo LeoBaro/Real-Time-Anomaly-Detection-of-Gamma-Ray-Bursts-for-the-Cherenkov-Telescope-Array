@@ -1,101 +1,93 @@
+import pickle
 import argparse
-from re import A
-from rtapipe.lib.rtapipeutils.Chronometer import Chronometer
-from time import time
 import numpy as np
 from pathlib import Path
-import matplotlib.pyplot as plt
 from time import strftime
 
-from rtapipe.analysis.models.anomaly_detector import AnomalyDetector
 from rtapipe.analysis.dataset.dataset import APDataset
+from rtapipe.lib.rtapipeutils.Chronometer import Chronometer
+from rtapipe.analysis.models.anomaly_detector import AnomalyDetector
+from rtapipe.analysis.dataset.dataset_params import get_dataset_params
 
 
 if __name__=='__main__':
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bkg", type=str, required=True, help="The folder containing AP data (background only)")
-    parser.add_argument("--grb", type=str, required=True, help="The folder containing AP data (grb)")
+    parser.add_argument("-it", "--dataset_integration_time", type=str, required=True, help="", choices=["1", "5", "10"])
+    parser.add_argument("-ws", "--window_size", type=int, required=True, help="", choices=[5, 10])
+    parser.add_argument("-i", "--integration", type=str, required=False, default="t", help="", choices=["t", "te"])
+    parser.add_argument("-sa", "--save_after", type=int, required=False, default=1, help="Saving statistics and model after '-sa' epochs")
+    parser.add_argument("-v", "--verbose", type=int, required=False, default=0, choices = [0,1], help="If 1 plots will be shown")
+
+    #parser.add_argument("-N", "--normalized", type=int, required=False, default=1, help="", choices=[0, 1])
+    #parser.add_argument("--bkg", type=str, required=False, default=None, help="The folder containing AP data (background only)")
+    #parser.add_argument("--grb", type=str, required=False, default=None, help="The folder containing AP data (grb)")
     args = parser.parse_args()
 
+    showPlots = False
+    if args.verbose == 1:
+        showPlots = True
+
     # Output dir
-    outDirRoot = Path(__file__).parent.resolve().joinpath(f"rtapipe_training_plots_{strftime('%Y%m%d-%H%M%S')}")
+    outDirRoot = Path(__file__).parent.resolve().joinpath(f"lstm_models_{strftime('%Y%m%d-%H%M%S')}")
     outDirRoot.mkdir(parents=True, exist_ok=True)
-    ###########
-    # Params  # 
-    ###########
-
     
-    # Dataset params
-    integration_time = "1"
+    # get dataset params
+    dataset_params = get_dataset_params(args.dataset_integration_time, args.integration)
+    
+    dataset_params["ws"] = args.window_size
+    dataset_params["stride"] = 1
+    dataset_params["scaler"] = "mm"
+    print(dataset_params)
 
-    dataset_params = {
-        "10" : {"tobs" : 180, "onset" : 90},
-        "1" : {"tobs" : 1800, "onset" : 900}
-    }
-    dataset_params = dataset_params[integration_time]
-
-    # Training set - Test set params
-    ws = 25
-    stride = 1
-    scaler = "mm" # mm, std
+    with open(outDirRoot.joinpath('dataset_params.pickle'), 'wb') as handle:
+        pickle.dump(dataset_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # LSTM params
-    units = 32 #1
-    dropoutrate = 0.2 # 0
-    epochs = 500 # 2
-    batchSize = 64 #30
+    units = 32
+    dropoutrate = 0.2
+    epochs = 20 # 2
+    batchSize = 16 # 4
 
-    with open(outDirRoot.joinpath("parameters.csv"), "w") as statFile:
-        statFile.write("integrationtime,tobs,onset,ws,stride,scaler,units,dropoutrate,epochs,batchSize\n")
-        statFile.write(f"{integration_time},{dataset_params['tobs']},{dataset_params['onset']},{ws},{stride},{scaler},{units},{dropoutrate},{epochs},{batchSize}")
+    ds = APDataset(dataset_params["tobs"], dataset_params["onset"], args.dataset_integration_time, args.integration, ["COUNT"], ['TMIN', 'TMAX', 'LABEL', 'ERROR'], outDirRoot)
+    ds.loadData("bkg", dataset_params["bkg"])
+    ds.loadData("grb", dataset_params["grb"])
 
-    ds = APDataset(dataset_params["tobs"], dataset_params["onset"], 1, ["COUNT"], ['TMIN', 'TMAX', 'LABEL', 'ERROR'], outDirRoot)
-    ds.loadData("bkg", args.bkg)
-    ds.loadData("grb", args.grb)
-
-    ds.plotRandomSamples()
+    ds.plotRandomSample(showFig=showPlots)
 
     #train, trainLabels, test, testLabels, val, valLabels = ds.getData()
-    train, trainLabels, val, valLabels = ds.getTrainingAndValidationSet(ws, stride, scaler=scaler)
-    beforeOnsetWindows, beforeOnsetLabels, afterOnsetWindows, afterOnsetLabels = ds.getTestSet(ws, stride, dataset_params["onset"], scaler=scaler)
-    
-    beforeOnsetWindows = beforeOnsetWindows[-11:]  
-    beforeOnsetLabels = beforeOnsetLabels[-11:]
-    afterOnsetWindows = afterOnsetWindows[:11] 
-    afterOnsetLabels = afterOnsetLabels[:11] 
-
-
-    test = np.concatenate((beforeOnsetWindows,afterOnsetWindows), axis=0)
-    testLabels = np.concatenate((beforeOnsetLabels,afterOnsetLabels), axis=0)
+    train, trainLabels, val, valLabels = ds.getTrainingAndValidationSet(dataset_params["ws"], dataset_params["stride"], split=50, scaler=dataset_params["scaler"])
 
     print(f"Train shape: {train.shape}. Example: {train[0].flatten()}")
     print(f"Val shape: {val.shape}. Example: {val[0].flatten()}")
-    print(f"Test shape: {test.shape}. Example: {test[0].flatten()}")    
-    print(f"Test labels: {testLabels.shape}. Examples: {testLabels.flatten()}")    
-
-    ds.plotSamples(np.concatenate((beforeOnsetWindows[-3:], afterOnsetWindows[0:5]), axis=0), ["onset-3","onset-2","onset-1","onset+0","onset+1","onset+2","onset+3","onset+4"], "samples", change_color_from_index=3)
-
 
 
     # Building the model
-    # loadModelFrom="./single_feature_model"
-    loadModelFrom = None
-    adLSTM = AnomalyDetector(train[0].shape, units, dropoutrate, outDirRoot, loadModelFrom)
+    adLSTM = AnomalyDetector(train[0].shape, units, dropoutrate, outDirRoot)
+    adLSTM.setFeaturesColsNames(ds.getFeaturesColsNames())
 
     # Compiling the model
     adLSTM.compile()
-
     adLSTM.summary()
 
-    #if lstm.isFresh():
+
+    ######################################################################################################################################################################
+    #
+    #  Log file for parameters
+    #
+    with open(outDirRoot.joinpath("parameters.csv"), "w") as statFile:
+        statFile.write("integrationtype,integrationtime,tobs,onset,ws,stride,scaler,units,dropoutrate,epochs,batchSize\n")
+        statFile.write(f"{args.integration},{args.dataset_integration_time},{dataset_params['tobs']},{dataset_params['onset']},{dataset_params['ws']},{dataset_params['stride']},{dataset_params['scaler']},{units},{dropoutrate},{epochs},{batchSize}")
+    #
+    # Log file for statistics during training
+    #
+    with open(outDirRoot.joinpath("statistics.csv"), "w") as statFile:
+        statFile.write("epoch,training_time_mean,training_time_dev,total_time\n")
+    ######################################################################################################################################################################
+    
 
     fit_cron = Chronometer()
 
-    with open(outDirRoot.joinpath("statistics.csv"), "w") as statFile:
-        statFile.write("epoch,training_time_mean,training_time_dev,total_time,f1_score\n")
-
-    showPlots = False
     for ep in range(epochs):
 
         print(f"""
@@ -108,34 +100,36 @@ if __name__=='__main__':
         print(f"Fitting time: {fit_cron.get_statistics()[0]} +- {fit_cron.get_statistics()[1]}")
 
         # Saving the model
-        # lstm.save("single_feature_model")
 
+        if (ep+1) % 1 == 0:
 
-        threshold, trainMAE = adLSTM.computeThreshold(train)        
-        print(f"Threshold={round(threshold,2)}")
-
-
-        print(f"Testing...")
-        recostructions, testMAE, mask = adLSTM.classify(test)
-
-        #print("recostructions: ",recostructions) 
-        #print("maeLosses:", maeLosses)
-        #print("testLabels:", testLabels)
-        if (ep+1) % 10 == 0:
             outDir = outDirRoot.joinpath("epochs",f"epoch_{ep+1}")
             outDir.mkdir(exist_ok=True, parents=True)
-            # Plotting
             adLSTM.setOutputDir(outDir)
+
+            # Saving the model
+            adLSTM.save(outDir.joinpath("lstm_trained_model"))
+
+            # Computing the threshold using a validation set
+            maeThreshold, meaLossesVal = adLSTM.computeSimpleThreshold(val, showFig=showPlots)        
+            with open(outDir.joinpath("reconstruction_errors.csv"), "w") as recoFile:
+                for val in meaLossesVal.squeeze():
+                    recoFile.write(f"{val}\n")
+
+            # Plotting reconstruction error distribution on the validation set 
+            adLSTM.recoErrorDistributionPlot(meaLossesVal, threshold=None, filenamePostfix=f"val_set", title=f"Reconstruction error distribution on validation set (epoch={ep+1})", showFig=showPlots)
+
+            with open(outDir.joinpath("threshold.csv"), "w") as thresholdFile:
+                thresholdFile.write(f"threshold\n{maeThreshold}")
+
+            # Saving training loss plot
             adLSTM.plotTrainingLoss(showFig=showPlots)
-            adLSTM.plotPredictions2(test, testLabels, recostructions, testMAE, mask, howMany=30, showFig=showPlots, saveFig=True)
-            adLSTM.recoErrorDistributionPlot(trainMAE, threshold=threshold, showFig=showPlots, saveFig=True, type="train")
-            adLSTM.recoErrorDistributionPlot(testMAE, threshold=threshold, showFig=showPlots, saveFig=True, type="test")
-            adLSTM.plotROC(testLabels, testMAE, showFig=showPlots, saveFig=True)
-            f1 = adLSTM.F1Score(testLabels, mask)   
-            print("F1 score: ", f1)
 
+            # Saving time statistics
             with open(outDirRoot.joinpath("statistics.csv"), "a") as statFile:
-                statFile.write(f"{ep+1},{fit_cron.get_statistics()[0]},{fit_cron.get_statistics()[1]},{fit_cron.get_total_elapsed_time()},{f1}\n")
+                statFile.write(f"{ep+1},{fit_cron.get_statistics()[0]},{fit_cron.get_statistics()[1]},{fit_cron.get_total_elapsed_time()}\n")
 
-    # adLSTM.plotPrecisionRecall(testLabels, testMAE, showFig=True)  
+
+
+    # adLSTM.plotPrecisionRecall(testLabels, testMAE, showFig=showPlots)  
     print(f"Total time for training: {fit_cron.total_time} seconds")

@@ -1,0 +1,2 @@
+integrationtype,integrationtime,tobs,onset,ws,stride,scaler,units,dropoutrate,epochs,batchSize
+te,10,180,90,10,1,mm,32,0.2,2,4
