@@ -4,11 +4,9 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 today=`date +%Y-%m-%d.%H:%M:%S`
 
-
-
 echo "Generating AP data for bkg"
 python generate_ap_data.py \
-        -dd $DATA/obs/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5 \
+        -dd $DATA/obs/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_1.0_roi_2.5 \
         -t bkg \
         -mp yes \
         -lim 5 \

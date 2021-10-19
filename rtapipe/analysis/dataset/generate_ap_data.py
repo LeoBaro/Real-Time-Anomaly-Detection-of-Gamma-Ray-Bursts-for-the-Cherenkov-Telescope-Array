@@ -4,14 +4,14 @@ from pathlib import Path
 from time import time
 from rtapipe.lib.datasource.Photometry2 import Photometry2
 from rtapipe.lib.plotting.PhotometrySinglePlot import PhotometrySinglePlot
-
+import yaml
 # background ROI=2.5
 # python generate_ap_data.py -dd $DATA/obs/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5 -t bkg
 
 # grb with onset ROI=2.5
 # python generate_ap_data.py -dd $DATA/obs/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5 -t grb
 
-def makePlots(args, integrationType, outputFiles):
+def makePlots(args, integrationType, outputFiles, onset=None):
 
     for idx, outputFile in enumerate(outputFiles):   
 
@@ -22,9 +22,13 @@ def makePlots(args, integrationType, outputFiles):
         else:
             _ = plot.addData(outputFile, labelPrefix=f"{args.type}-{idx}", marker="D", color="red")
 
-        _ = plot.plotScatter(0, integrationType, plotError=False, verticalLine=True, verticalLineX=900)
+        verticalLine = False
+        if onset:
+            verticalLine = True
+            
+        _ = plot.plotScatter(0, integrationType, plotError=False, verticalLine=verticalLine, verticalLineX=onset)
 
-        plot.save(outputDir, f"{integrationType}_{paramsString}")
+        plot.save(outputDir, f"{idx}_{integrationType}_{paramsString}")
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -48,13 +52,20 @@ if __name__=='__main__':
     parser.add_argument("-norm", "--normalize", type=str2bool, required=False, help="If 'yes' the counts will be normalized")
     parser.add_argument("-out", "--outputdir", type=str, required=False, help="The path to the output directory. If not provided the script's directory will be used")
 
-    parser.add_argument("-wmin", "--windowmin", type=int, required=False, default=0, help="")
-    parser.add_argument("-wmax", "--windowmax", type=int, required=False, default=1800, help="")
-    parser.add_argument("-emin", "--energymin", type=float, required=False, default=0.03, help="")
-    parser.add_argument("-emax", "--energymax", type=float, required=False, default=0.15, help="")
+    #parser.add_argument("-wmin", "--windowmin", type=int, required=False, default=None, help="")
+    #parser.add_argument("-wmax", "--windowmax", type=int, required=False, default=None, help="")
+    #parser.add_argument("-emin", "--energymin", type=float, required=False, default=None, help="")
+    #parser.add_argument("-emax", "--energymax", type=float, required=False, default=None, help="")
     parser.add_argument("-ebins", "--energybins", type=int, required=False, default=4, help="")
     args = parser.parse_args()
 
+    with open(Path(args.dataDir).joinpath("config.yaml"), "r") as stream:
+        phListConfig = yaml.safe_load(stream)
+        print(phListConfig)
+        wmin = 0
+        wmax = phListConfig["simulation"]["tobs"]
+        emin = phListConfig["simulation"]["emin"]
+        emax = phListConfig["simulation"]["emax"]
 
     if args.outputdir is not None:
         outputRootDir = Path(__file__).parent.joinpath(args.outputdir, Path(args.dataDir).name)
@@ -68,7 +79,7 @@ if __name__=='__main__':
         cfg.write('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
     
     ## TIME INTEGRATION
-
+    
     for ws in args.windowsize:
 
         for rr in args.regionradius:
@@ -79,8 +90,8 @@ if __name__=='__main__':
 
             outputDir = outputRootDir.joinpath(paramsString)
 
-            tWindows = Photometry2.getLinearWindows(args.windowmin, args.windowmax, int(ws), int(ws))
-
+            tWindows = Photometry2.getLinearWindows(wmin, wmax, int(ws), int(ws))
+            print(tWindows)
             ph = Photometry2(args.dataDir, outputDir)
 
             start = time() 
@@ -96,7 +107,7 @@ if __name__=='__main__':
             if args.makeplots:
 
                 makePlots(args, "T", outputFiles)
-
+    
 
 
 
@@ -112,11 +123,13 @@ if __name__=='__main__':
 
             outputDir = outputRootDir.joinpath(paramsString)
 
-            tWindows = Photometry2.getLinearWindows(args.windowmin, args.windowmax, int(ws), int(ws))
+            tWindows = Photometry2.getLinearWindows(wmin, wmax, int(ws), int(ws))
 
-            eWindows = Photometry2.getLogWindows(args.energymin, args.energymax, args.energybins)
+            eWindows = Photometry2.getLogWindows(emin, emax, args.energybins)
             
             ph = Photometry2(args.dataDir, outputDir)
+
+            start = time() 
 
             outputFiles, counts = ph.integrateAll("TE", None, rr, tWindows, eWindows, limit=args.limit, parallel=True, normalize=args.normalize)
 

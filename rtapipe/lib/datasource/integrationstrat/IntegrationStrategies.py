@@ -126,24 +126,27 @@ class TimeEnergyIntegration(IntegrationStrategy):
         with open(f"{outputFilePath}", "w") as of:
             of.write(header)    
 
+        
+            livetime = tWindows[0][1] - tWindows[0][0]
+            
+            # Compute aeff area for the energy bins
+            region_eff_resp_for_eb = {}
+            for ewin in tqdm(eWindows, disable=parallel):
+                region_eff_resp_for_eb[str(ewin)] = self.computeAeffArea(normConfTemplate, ewin[0], ewin[1], region, pointing)
 
+            for twin in tqdm(tWindows, disable=parallel, leave=False):
 
-            for ewin in eWindows:
+                of.write(f"{twin[0]},{twin[1]}")                
 
-                # Normalization
-                livetime = tWindows[0][1] - tWindows[0][0]
-                region_eff_resp = self.computeAeffArea(normConfTemplate, ewin[0], ewin[1], region, pointing)
-                print(f"[DEBUG] livetime: {livetime} region_eff_resp: {region_eff_resp}")            
-
-                for twin in tqdm(tWindows, disable=parallel):
-    
-                    of.write(f"{twin[0]},{twin[1]}")                
+                for ewin in eWindows:
+                    
+                    # print(f"[DEBUG] win: {twin[0]},{twin[1]},  livetime: {livetime} region_eff_resp: {region_eff_resp}")            
 
                     counts = photometrics.region_counter(region, float(region["rad"]), tmin=twin[0], tmax=twin[1], emin=ewin[0], emax=ewin[1])
 
                     if normalize:
 
-                        counts = self.normalize(counts, region_eff_resp, livetime)
+                        counts = self.normalize(counts, region_eff_resp_for_eb[str(ewin)], livetime)
 
             
                     of.write(f",{counts},{round(sqrt(counts), 4)}")

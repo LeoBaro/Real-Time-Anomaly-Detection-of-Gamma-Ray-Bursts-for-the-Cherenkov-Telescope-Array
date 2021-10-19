@@ -248,6 +248,5 @@ class Photometry2:
         # altrimenti si può prendere anche dall'header del FITS  --> TODO <--
         pointing = self.sourcePosition
 
-
         return self.integrationStrat.integrate(photometrics, outputFilePath, reg, tWindows, eWindows, parallel=parallel, normalize=normalize, normConfTemplate=normConfTemplate, pointing=pointing)
 

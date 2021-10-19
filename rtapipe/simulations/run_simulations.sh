@@ -44,17 +44,15 @@ else
     printf "Configuration file template=$configFileTemplate\n"
 
     message "BKG simulations"
-    log_id=0
-
-
+    #log_id=0
     # onset, tobs, trials, startcount, emin, emax, roi, scale
-    configFile=$(source lib/getConfiguration.sh "$configFileTemplate" "$log_id" "bkg" 0   100 10000000 0   0.03 1 2.5 1)
-    printf "Configuration file=$configFile\n"
-    startSimulation "simBkg.py" $configFile
+    #configFile=$(source lib/getConfiguration.sh "$configFileTemplate" "$log_id" "bkg" 0   100 10000000 0   0.03 1 2.5 1)
+    #printf "Configuration file=$configFile\n"
+    #startSimulation "simBkg.py" $configFile
 
-    #message "GRB simulations"
+    message "GRB simulations"
     #log_id=$((log_id+1))
-    #configFile=$(source lib/getConfiguration.sh "$configFileTemplate" "$log_id" "grb" 900 1800 100 100 0.03 1 2.5 1)
+    #configFile=$(source lib/getConfiguration.sh "$configFileTemplate" "$log_id" "grb" 900 1800 50     0    0.03 1 2.5 1)
     #printf "Configuration file=$configFile\n"
     #startSimulation "simGRBcatalog.py" $configFile
 

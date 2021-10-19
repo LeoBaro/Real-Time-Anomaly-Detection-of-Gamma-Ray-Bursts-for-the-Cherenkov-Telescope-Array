@@ -113,7 +113,7 @@ class PhotometrySinglePlot(PhotometryPlot):
                                         
                     errorColName = errorDataColNames[xx]
                     label = f"{dataColName} TeV"
-                    
+
                     _ = axes[xx].scatter(dataframe["TCENTER"], dataframe[dataColName], s=markerSize, label=label, marker=marker, color=color)
 
                     if plotError:
