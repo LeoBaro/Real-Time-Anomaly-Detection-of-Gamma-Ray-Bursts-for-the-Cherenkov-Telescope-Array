@@ -93,7 +93,7 @@ if __name__=='__main__':
 
             print(f"AP data generation --> integration time: {it} region radius: {rr} (T integration) Normalization: {args.normalize}")
 
-            paramsString = f"integration_t_type_{args.type}_integration_time_{it}_region_radius_{rr}_timeseries_lenght_{args.timeserieslenght}"
+            paramsString = f"integration_t_integration_time_{it}_region_radius_{rr}_timeseries_lenght_{args.timeserieslenght}"
 
             outputDir = outputRootDir.joinpath(paramsString)
 
@@ -134,7 +134,7 @@ if __name__=='__main__':
 
             print(f"AP data generation --> integration time: {it} region radius: {rr} (TE integration) Normalization: {args.normalize}")
 
-            paramsString = f"integration_te_type_{args.type}_integration_time_{it}_region_radius_{rr}_timeseries_lenght_{args.timeserieslenght}"
+            paramsString = f"integration_te_integration_time_{it}_region_radius_{rr}_timeseries_lenght_{args.timeserieslenght}"
 
             outputDir = outputRootDir.joinpath(paramsString)
 

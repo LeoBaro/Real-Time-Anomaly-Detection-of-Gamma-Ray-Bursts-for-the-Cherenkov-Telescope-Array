@@ -1,5 +1,7 @@
+import pickle
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from pathlib import Path
 from random import randrange
 import matplotlib.pyplot as plt
@@ -8,32 +10,80 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from rtapipe.lib.rtapipeutils.WindowsExtractor import WindowsExtractor
 
 class APDataset:
-    """
-    This class can handle the .csv files of the AP dataset (generated witht the ?? API).
-    """
-    def __init__(self, tobs, onset, integrationTime, integrationType, featureColsNamesPattern, uselessColsNamesPattern, outDir="./"):
+
+    def get_dataset(datasetID, scaler, outDir):
+        
+        dataset_params = {
+            1 : {
+                "path": "/data/datasets/ap_data/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_1.0_roi_2.5/integration_t_integration_time_1_region_radius_0.2_timeseries_lenght_5",
+                "simtype" : "bkg",
+                "onset": 0,
+                "integration_type": "t",
+                "integration_time": 1,
+                "region_radius": 0.2,
+                "timeseries_lenght": 5,
+                "scaler" : scaler,
+                "simulation_params_id" : 1,
+            },
+            2 : {
+                "path": "/data/datasets/ap_data/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_1.0_roi_2.5/integration_te_integration_time_1_region_radius_0.2_timeseries_lenght_5",
+                "simtype" : "bkg",
+                "onset": 0,
+                "integration_type": "te",
+                "integration_time": 1,
+                "region_radius": 0.2,
+                "timeseries_lenght": 5,
+                "scaler" : scaler,
+                "simulation_params_id" : 1,                
+            }
+        }
+
+        dataset_params = APDataset._addSimulationParams(dataset_params[datasetID])
+
+        return APDataset(dataset_params, outDir)
+
+    def _addSimulationParams(dataset_params):
+        simulation_params = {
+            1 : {
+                "irf": "irf_South_z40_average_LST_30m",
+                "emin": 0.03,
+                "emax": 1,
+                "roi": 2.5,
+            }
+        }
+        for key,val in simulation_params[dataset_params["simulation_params_id"]].items():
+            dataset_params[key] = val
+        
+        return dataset_params
+
+
+    def __init__(self, dataset_params, outDir):
         
         # The data container
-        self.data = {}
+        self.data = None
         
         # Original shape informations
-        self.filesLoaded = {}
-        self.singleFileDataShapes = {}
+        self.filesLoaded = 0
+        self.singleFileDataShapes = ()
 
         # Dataset informations
-        self.tobs = tobs
-        self.onset = onset
-        self.integrationTime = int(integrationTime)
-        self.integrationType = integrationType
+        self.dataset_params = dataset_params
         self.featureCols = None
-        self.featureColsNamesPattern = featureColsNamesPattern
-        self.uselessColsNamesPattern = uselessColsNamesPattern
+        self.featureColsNamesPattern = ["COUNT"]
+        self.uselessColsNamesPattern = ['TMIN', 'TMAX', 'LABEL', 'ERROR']
 
         # Scalers
-        self.mmscaler = MinMaxScaler(feature_range=(0,1))
-        self.stdscaler = StandardScaler()
-        
-        self.outDir = Path(outDir)
+        if self.dataset_params["scaler"] == "mm":
+            self.scaler = MinMaxScaler(feature_range=(0,1))
+        elif self.dataset_params["scaler"] == "ss":
+            self.scaler = StandardScaler()
+        else:
+            raise ValueError("Supported scaler: mm, ss")
+
+        self.outDir = outDir
+
+        self.loadData()
+
 
     def setOutDir(self, outDir):
         self.outDir = Path(outDir)
@@ -41,91 +91,70 @@ class APDataset:
     def getFeaturesColsNames(self):
         return self.featureCols
 
-    def _loadDataInDirectory(self, label, dataDir):
-        """
-        This method will read the csv files within a direcotry, loading the contents into the 'data' dictionary.
-        """
-        dfs = [pd.read_csv(file, sep=",") for file in Path(dataDir).iterdir()]
-        self.filesLoaded[label] = len(dfs)
-        self.singleFileDataShapes[label] = dfs[0].shape
-        concat = pd.concat(dfs)
+    def dumpDatasetParams(self, type):
+        if self.outDir is None:
+            raise ValueError("self.outDir is None. Call setOutDir()")
+        if type == "pickle":
+            with open(self.outDir.joinpath('dataset_params.pickle'), 'wb') as handle:
+                pickle.dump(self.dataset_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        elif type == "ini":
+            with open(self.outDir.joinpath('dataset_params.ini'), 'w') as handle:
+                for key, val in self.dataset_params.items():
+                    handle.write(f"{key}={val}\n")
 
-        if label not in self.data:
-            self.data[label] = concat
-        else:
-            self.data[label] = pd.concat([self.data[label], concat], axis=0)
 
-        print(f"\tLoaded {len(dfs)} csv files into data[{label}]") 
-        print(f"\tSingle csv file shape: {self.singleFileDataShapes[label]}")
-        print(f"\tDataframe shape: {self.data[label].shape}. Columns: {self.data[label].columns.values}")
+    def loadData(self):
+        
+        print(f"Loading dataset..")
 
-    def _findColumns(self, patterns):
-        """
-        This method will search for columns names from the columns patterns passed as input.
-        """
-        cols = set()
-        for df in self.data.values():
-            for col in df.columns.values:
-                for pattern in patterns:
-                    if pattern in col:
-                        cols.add(col)
-        return list(cols)
+        dfs = []
+        for file in tqdm( Path(self.dataset_params["path"]).iterdir() ):
+            dfs.append(pd.read_csv(file, sep=","))
+        self.filesLoaded = len(dfs)
+        self.singleFileDataShapes = dfs[0].shape
+        self.data = pd.concat(dfs)
 
-    def loadData(self, label, dataDir):
-        """
-        This method will load the data from multiple directories into a dictionary of label : dataframe        
-        """
-        print(f"Loading dataset with label '{label}'")
-        self._loadDataInDirectory(label, dataDir)
+        print(f"Loaded {len(dfs)} csv files.") 
+        print(f"Single csv file shape: {self.singleFileDataShapes}")
+        print(f"Dataframe shape: {self.data.shape}. Columns: {self.data.columns.values}")
 
         uselessCols = self._findColumns(self.uselessColsNamesPattern)
         
         # dropping useless column
-        self.data[label].drop(uselessCols, axis='columns', inplace=True)
-        print(f"\tDropped columns={uselessCols} from {label} dataset")
-        
+        self.data.drop(uselessCols, axis='columns', inplace=True)
+        print(f"Dropped columns={uselessCols} from dataset")
+        print(f"Dataframe shape: {self.data.shape}. Columns: {self.data.columns.values}")
+
         self.featureCols = self._findColumns(self.featureColsNamesPattern)
 
 
 
-    def getSampleFraction(self, total, percentage):
-        return int(total*(percentage/100))
-    
+    def getTrainingAndValidationSet(self, split=50, scale=True):
 
-    def _splitArrayWithPercentage(self, arr, percentage):
-        splitPoint1 = self.getSampleFraction(len(arr), percentage)
-        return np.split(arr, [splitPoint1])
+        numFeatures = self.data.shape[1]
 
-    def getTrainingAndValidationSet(self, windowSize, stride, split=50, scaler=None):
-        """
-        Exctract time series from the "bkg" data 
-        """
-        print("Exctracting training set..")
+        data = self.data.values 
 
-        print("\tFitting scalers..")
-        self.mmscaler.fit(self.data["bkg"])
-        self.stdscaler.fit(self.data["bkg"])
+        if scale:
+            print("\tFitting scalers..")
+            self.scaler.fit(data)
+            data = self.scaler.transform(data)
 
-        data = self.data["bkg"].values
+        data = data.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures)) 
 
-        if scaler and scaler == "mm":
-            data = self.mmscaler.transform(data)
+        # windows = WindowsExtractor.test_extract_sub_windows(data, 0, data.shape[0], windowSize, stride)
 
-        if scaler and scaler == "std":
-            data = self.stdscaler.transform(data)
-
-        windows = WindowsExtractor.test_extract_sub_windows(data, 0, data.shape[0], windowSize, stride)
-
-        labels = np.array([False for i in range(len(windows))])
+        labels = np.array([False for i in range(len(data))])
         
-        windows = self._splitArrayWithPercentage(windows, split)
+        windows = self._splitArrayWithPercentage(data, split)
         labels = self._splitArrayWithPercentage(labels, split)
 
-        print(f"\tTraining set: {windows[0].shape} Labels: {labels[0].shape}")
+        print(f"Training set: {windows[0].shape} Labels: {labels[0].shape}")
         print(f"\tValidation set: {windows[1].shape} Labels: {labels[1].shape}")
 
         return windows[0], labels[0], windows[1], labels[1]
 
+    
     def getTestSet(self, windowSize, stride, onset, scaler=None):
         """
         At the moment it extracts subwindows from 1 GRB sample only
@@ -162,6 +191,79 @@ class APDataset:
         return beforeOnsetWindows, beforeOnsetLabels, afterOnsetWindows, afterOnsetLabels   
 
 
+
+
+
+    def plotRandomSample(self, howMany=1, showFig=False, saveFig=True):
+        numFeatures = self.data.shape[1]
+
+        print(len(self.data),(self.dataset_params["timeseries_lenght"] * self.filesLoaded) / self.dataset_params["integration_time"])
+        #assert len(self.data["bkg"]) == (self.tobs * self.filesLoaded["bkg"]) / self.integrationTime
+
+        fig, ax = plt.subplots(numFeatures, 1, figsize=(15,10))
+
+        if numFeatures > 1:
+            ax = ax.flatten()
+        if numFeatures == 1:
+            ax = [ax]
+        
+        x = range(1, self._getRandomSample().shape[0]+1) # or range(1, randomGrbSample.shape[0]+1)
+
+        for f in range(numFeatures):
+            
+            for i in range(howMany):
+                ax[f].scatter(x, self._getRandomSample()[:,f], label=f"{self.dataset_params['simtype']} {self.featureCols[f]}", s=5)
+
+            if self.dataset_params["onset"] > 0:
+                ax[f].axvline(x=self.onset, color="red", label=f"Onset: {self.dataset_params['onset']}")
+
+            ax[f].set_title(self.featureCols[f])
+
+        plt.tight_layout()
+
+        if showFig:
+            plt.show()
+
+        if saveFig:
+            fig.savefig(self.outDir.joinpath(f"random_sample.png"), dpi=400)
+
+        plt.close()        
+ 
+
+
+
+    def _findColumns(self, patterns):
+        """
+        This method will search for columns names from the columns patterns passed as input.
+        """
+        cols = set()
+        for col in self.data.columns.values:
+            for pattern in patterns:
+                if pattern in col:
+                    cols.add(col)
+        return list(cols)
+
+
+    def _getSampleFraction(self, total, percentage):
+        return int(total*(percentage/100))
+    
+
+    def _splitArrayWithPercentage(self, arr, percentage):
+        splitPoint1 = self._getSampleFraction(len(arr), percentage)
+        return np.split(arr, [splitPoint1])
+
+
+    def _getRandomSample(self):
+        numFeatures = self.data.shape[1]
+        dataReshaped = self.data.values.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures)) 
+        randomSampleID = randrange(0, dataReshaped.shape[0])
+        return dataReshaped[randomSampleID]
+
+
+
+
+
+    """
     def plotSamples(self, samples, labels, showFig=False, saveFig=True):
 
         
@@ -197,115 +299,9 @@ class APDataset:
             print(self.outDir.joinpath(f"samples.png"))
 
         plt.close()        
- 
-
-
-    def plotRandomSample(self, showFig=False, saveFig=True):
-
-        print(self.data["bkg"].shape)
-        print(self.data["grb"].shape)
-
-        numFeatures = self.data["bkg"].shape[1]
-
-        print(len(self.data["bkg"]),(self.tobs * self.filesLoaded["bkg"]) / self.integrationTime)
-        #assert len(self.data["bkg"]) == (self.tobs * self.filesLoaded["bkg"]) / self.integrationTime
-        #assert len(self.data["grb"]) == (self.tobs * self.filesLoaded["grb"]) / self.integrationTime
-
-        bkgReshaped = self.data["bkg"].values.reshape((self.filesLoaded["bkg"], self.tobs, numFeatures))        
-        grbReshaped = self.data["grb"].values.reshape((self.filesLoaded["grb"], self.tobs, numFeatures))
-
-        random_bkg_sample_idx = randrange(0, bkgReshaped.shape[0])
-        random_grb_sample_idx = randrange(0, grbReshaped.shape[0])
-
-        randomBkgSample = bkgReshaped[random_bkg_sample_idx]
-        randomGrbSample = grbReshaped[random_grb_sample_idx]
-
-        fig, ax = plt.subplots(numFeatures, 1, figsize=(15,10))
-
-        if numFeatures > 1:
-            ax = ax.flatten()
-        if numFeatures == 1:
-            ax = [ax]
-        
-        x = range(1, randomBkgSample.shape[0]+1) # or range(1, randomGrbSample.shape[0]+1)
-
-        for f in range(numFeatures):
-            ax[f].scatter(x, randomBkgSample[:,f], label=f"bkg {self.featureCols[f]}", color="blue", s=5)
-            ax[f].scatter(x, randomGrbSample[:,f], label=f"grb {self.featureCols[f]}", color="red", s=5)
-            ax[f].axvline(x=self.onset, color="red", label=f"Onset: {self.onset}")
-            ax[f].set_title(self.featureCols[f])
-            ax[f].legend()
-
-        if showFig:
-            plt.show()
-
-        if saveFig:
-            fig.savefig(self.outDir.joinpath(f"random_sample.png"), dpi=400)
-
-        plt.close()        
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__=='__main__':
 
     """
-    # Single feature 
-    bkgdata = Path("ap_data_for_training_and_testing/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_bkg_window_size_25_region_radius_0.5")
-    grbdata = Path("ap_data_for_training_and_testing/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_grb_window_size_25_region_radius_0.5")
-    ds = APDataset()
-    ds.loadData(bkg=bkgdata, grb=grbdata)
-    train, test, val = ds.getData()
-    # print(train, test, val)
-    ds.plotRandomSample(label="bkg", scaler=None, seed=1)
-    ds.plotRandomSample(label="grb", scaler=None, seed=1)
-
-    ds.plotRandomSample(label="bkg", scaler="mm", seed=1)
-    ds.plotRandomSample(label="grb", scaler="mm", seed=1)
-
-    ds.plotRandomSample(label="bkg", scaler="std", seed=1)
-    ds.plotRandomSample(label="grb", scaler="std", seed=1)
-    """
-
-    from rtapipe.analysis.dataset.dataset_params import get_dataset_params
-
-    # Multiple features 
-    dataset_integration_time = "10"
-    integration_type = "te"
-    dataset_params = get_dataset_params(dataset_integration_time, integration_type)
-    ds = APDataset(dataset_params["tobs"], dataset_params["onset"], dataset_integration_time, integration_type, ["COUNT"], ['TMIN', 'TMAX', 'LABEL', 'ERROR'], "./tmp")
-
-    bkgdata = Path("/data/datasets/ap_data/t_1/ap_data_for_training_and_testing_NORMALIZED/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_bkg_window_size_10_region_radius_0.2")
-    grbdata = Path("/data/datasets/ap_data/t_1/ap_data_for_training_and_testing_NORMALIZED/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_te_type_grb_window_size_10_region_radius_0.2")
-
-    ds.loadData("bkg", dataset_params["bkg"])
-    ds.loadData("grb", dataset_params["grb"])
-    ds.plotRandomSample(saveFig=False)
 
 
-    # Single features 
-    dataset_integration_time = "10"
-    integration_type = "t"
-    dataset_params = get_dataset_params(dataset_integration_time, integration_type)
-    ds = APDataset(dataset_params["tobs"], dataset_params["onset"], dataset_integration_time, integration_type, ["COUNT"], ['TMIN', 'TMAX', 'LABEL', 'ERROR'], "./tmp")
-
-    bkgdata = Path("/data/datasets/ap_data/t_1/ap_data_for_training_and_testing_NORMALIZED/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_bkg_window_size_10_region_radius_0.2")
-    grbdata = Path("/data/datasets/ap_data/t_1/ap_data_for_training_and_testing_NORMALIZED/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5/integration_t_type_grb_window_size_10_region_radius_0.2")
-
-    ds.loadData("bkg", dataset_params["bkg"])
-    ds.loadData("grb", dataset_params["grb"])
-    ds.plotRandomSample(saveFig=False)
 
 

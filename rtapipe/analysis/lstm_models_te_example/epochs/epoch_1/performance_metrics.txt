@@ -1,5 +1,0 @@
-Precision=1.0
-Recall=0.722
-F1=0.839
-False Positive Rate=0.0
-False Negative Rate=0.278

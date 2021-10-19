@@ -1,2 +1,0 @@
-integrationtime,tobs,onset,ws,stride,scaler,units,dropoutrate,epochs,batchSize
-5,360,180,5,1,mm,32,0.2,500,64

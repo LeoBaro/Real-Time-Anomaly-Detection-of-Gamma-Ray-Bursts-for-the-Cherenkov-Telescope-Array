@@ -12,3 +12,4 @@ rtapipe/testing/output/**
 rtapipe_training_plots_*
 ap_data_for_inspection_*
 ap_data_for_training_and_testing_*
+training_output

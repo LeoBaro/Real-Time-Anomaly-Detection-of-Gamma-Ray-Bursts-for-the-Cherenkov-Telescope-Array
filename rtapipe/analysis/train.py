@@ -1,4 +1,3 @@
-import pickle
 import argparse
 import numpy as np
 from pathlib import Path
@@ -13,10 +12,12 @@ from rtapipe.analysis.dataset.dataset_params import get_dataset_params
 if __name__=='__main__':
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("-it", "--dataset_integration_time", type=str, required=True, help="", choices=["1", "5", "10"])
-    parser.add_argument("-ws", "--window_size", type=int, required=True, help="", choices=[5, 10])
-    parser.add_argument("-i", "--integration", type=str, required=False, default="t", help="", choices=["t", "te"])
-    parser.add_argument("-sa", "--save_after", type=int, required=False, default=1, help="Saving statistics and model after '-sa' epochs")
+    parser.add_argument("-di", "--dataset_id", type=int, required=True, help="", choices=[1])
+    #parser.add_argument("-it", "--dataset_integration_time", type=str, required=True, help="", choices=["1", "5", "10"])
+    #parser.add_argument("-ws", "--window_size", type=int, required=True, help="", choices=[5, 10])
+    #parser.add_argument("-i", "--integration", type=str, required=False, default="t", help="", choices=["t", "te"])
+    parser.add_argument('--save-after', dest='save_after', action='store_true', help="Store trained model after each training epoch")
+    parser.set_defaults(save_after=False)  
     parser.add_argument("-v", "--verbose", type=int, required=False, default=0, choices = [0,1], help="If 1 plots will be shown")
 
     #parser.add_argument("-N", "--normalized", type=int, required=False, default=1, help="", choices=[0, 1])
@@ -29,41 +30,40 @@ if __name__=='__main__':
         showPlots = True
 
     # Output dir
-    outDirRoot = Path(__file__).parent.resolve().joinpath(f"lstm_models_{strftime('%Y%m%d-%H%M%S')}")
+    outDirRoot = Path(__file__).parent.resolve().joinpath("training_output",f"lstm_models_{strftime('%Y%m%d-%H%M%S')}")
     outDirRoot.mkdir(parents=True, exist_ok=True)
     
-    # get dataset params
-    dataset_params = get_dataset_params(args.dataset_integration_time, args.integration)
-    
-    dataset_params["ws"] = args.window_size
-    dataset_params["stride"] = 1
-    dataset_params["scaler"] = "mm"
-    print(dataset_params)
+    # Dataset
+    ds = APDataset.get_dataset(1, "mm", outDirRoot)
+    # ds.plotRandomSample(howMany=4, showFig=showPlots)
 
-    with open(outDirRoot.joinpath('dataset_params.pickle'), 'wb') as handle:
-        pickle.dump(dataset_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    #ds = APDataset.get_dataset(2, "mm", outDirRoot)
+    #ds.plotRandomSample(howMany=4, showFig=showPlots)
+
+    ds.dumpDatasetParams(type="pickle")
+    ds.dumpDatasetParams(type="ini")
+
 
     # LSTM params
-    units = 32
-    dropoutrate = 0.2
-    epochs = 20 # 2
-    batchSize = 16 # 4
+    model_params = {
+        "units" : 32,
+        "dropoutrate" : 0.2,
+        "epochs" : 20,
+        "batchSize" : 16 
+    }
+    with open(outDirRoot.joinpath("model_params.ini"), "w") as handle:
+        for key, val in model_params.items():
+            handle.write(f"{key}={val}\n")
 
-    ds = APDataset(dataset_params["tobs"], dataset_params["onset"], args.dataset_integration_time, args.integration, ["COUNT"], ['TMIN', 'TMAX', 'LABEL', 'ERROR'], outDirRoot)
-    ds.loadData("bkg", dataset_params["bkg"])
-    ds.loadData("grb", dataset_params["grb"])
-
-    ds.plotRandomSample(showFig=showPlots)
 
     #train, trainLabels, test, testLabels, val, valLabels = ds.getData()
-    train, trainLabels, val, valLabels = ds.getTrainingAndValidationSet(dataset_params["ws"], dataset_params["stride"], split=50, scaler=dataset_params["scaler"])
-
+    train, trainLabels, val, valLabels = ds.getTrainingAndValidationSet(split=20, scale=True)
     print(f"Train shape: {train.shape}. Example: {train[0].flatten()}")
     print(f"Val shape: {val.shape}. Example: {val[0].flatten()}")
 
 
     # Building the model
-    adLSTM = AnomalyDetector(train[0].shape, units, dropoutrate, outDirRoot)
+    adLSTM = AnomalyDetector(train[0].shape, model_params["units"], model_params["dropoutrate"], outDirRoot)
     adLSTM.setFeaturesColsNames(ds.getFeaturesColsNames())
 
     # Compiling the model
@@ -71,14 +71,6 @@ if __name__=='__main__':
     adLSTM.summary()
 
 
-    ######################################################################################################################################################################
-    #
-    #  Log file for parameters
-    #
-    with open(outDirRoot.joinpath("parameters.csv"), "w") as statFile:
-        statFile.write("integrationtype,integrationtime,tobs,onset,ws,stride,scaler,units,dropoutrate,epochs,batchSize\n")
-        statFile.write(f"{args.integration},{args.dataset_integration_time},{dataset_params['tobs']},{dataset_params['onset']},{dataset_params['ws']},{dataset_params['stride']},{dataset_params['scaler']},{units},{dropoutrate},{epochs},{batchSize}")
-    #
     # Log file for statistics during training
     #
     with open(outDirRoot.joinpath("statistics.csv"), "w") as statFile:
@@ -88,14 +80,13 @@ if __name__=='__main__':
 
     fit_cron = Chronometer()
 
-    for ep in range(epochs):
+    for ep in range(model_params["epochs"]):
 
-        print(f"""
-\nEpoch={ep}        
-        """)
+        print(f"\nEpoch={ep}")
+
         # Fitting the model
         fit_cron.start()
-        adLSTM.fit(train, train, epochs=1, batchSize=batchSize, verbose=1, validation_data=(val, val), plotTrainingLoss=False)    
+        adLSTM.fit(train, train, epochs=1, batchSize=model_params["batchSize"], verbose=1, validation_data=(val, val), plotTrainingLoss=False)    
         fit_cron.stop()
         print(f"Fitting time: {fit_cron.get_statistics()[0]} +- {fit_cron.get_statistics()[1]}")
 
@@ -108,13 +99,14 @@ if __name__=='__main__':
             adLSTM.setOutputDir(outDir)
 
             # Saving the model
-            adLSTM.save(outDir.joinpath("lstm_trained_model"))
+            if args.save_after:
+                adLSTM.save(outDir.joinpath("lstm_trained_model"))
 
             # Computing the threshold using a validation set
             maeThreshold, meaLossesVal = adLSTM.computeSimpleThreshold(val, showFig=showPlots)        
             with open(outDir.joinpath("reconstruction_errors.csv"), "w") as recoFile:
-                for val in meaLossesVal.squeeze():
-                    recoFile.write(f"{val}\n")
+                for vv in meaLossesVal.squeeze():
+                    recoFile.write(f"{vv}\n")
 
             # Plotting reconstruction error distribution on the validation set 
             adLSTM.recoErrorDistributionPlot(meaLossesVal, threshold=None, filenamePostfix=f"val_set", title=f"Reconstruction error distribution on validation set (epoch={ep+1})", showFig=showPlots)
@@ -131,5 +123,4 @@ if __name__=='__main__':
 
 
 
-    # adLSTM.plotPrecisionRecall(testLabels, testMAE, showFig=showPlots)  
     print(f"Total time for training: {fit_cron.total_time} seconds")

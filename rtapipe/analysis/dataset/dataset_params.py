@@ -1,7 +1,26 @@
+def get_simulation_params_dict(simtype, onset, tobs, irf, emin, emax, roi):
+    return {
+        simtype: simtype,
+        onset: onset,
+        tobs: tobs,
+        irf: irf,
+        emin: emin,
+        emax: emax,
+        roi: roi
+    }
+    
+def get_ap_params_dict(integration_type, integration_time, region_radius, timeseries_lenght):
+    return {
+        integration_type: integration_type,
+        integration_time: integration_time,
+        region_radius: region_radius,
+        timeseries_lenght: timeseries_lenght
+    }
 
-def get_dataset_params(integration_time, integration_type):
 
-    if integration_type not in ["t","te"]:
+def get_dataset_params(simulation_params_dict, ap_params_dict):
+
+    if simulation_params_dict["integration_type"] not in ["t","te"]:
         raise ValueError("The integration value must be 't' or 'te'")
 
     dataset_params = {

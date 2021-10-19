@@ -111,7 +111,6 @@ class AnomalyDetector:
         then classify future examples as anomalous if the reconstruction error is higher than one standard 
         deviation from the training set.    
         """
-
         reco = self.predict(valSamples)
 
         # Computes the mean absolute error between labels and predictions.
@@ -133,10 +132,11 @@ class AnomalyDetector:
 
     def fitMAEonValidationSet(self, maeLosses):
 
-        #mu, std = norm.fit(maeLosses)
+        mu, std = norm.fit(maeLosses)
+
+        return mu, std
 
         maeLosses = maeLosses.squeeze()
-
         binsNum = 50
         mu, std = norm.fit(maeLosses)
 
@@ -152,18 +152,18 @@ class AnomalyDetector:
         x = np.linspace(xmin, xmax, binsNum)
         pdf1 = norm.pdf(x, mu, std)
 
-        print(hist)
-        print(pdf1)
-        print(pdf2)
+        #print(hist)
+        #print(pdf1)
+        #print(pdf2)
     
         plt.plot(x, pdf1, linestyle="--", linewidth=2, label=f"mu = {round(mu,2)},  std = {round(std,2)}")
         plt.plot(binCenters, pdf2, linestyle="-.", linewidth=2, label=f"Expected")
         plt.legend()
         plt.show()
-        chi2 = chisquare(hist, pdf1)
-        print(chi2)
-        chi2 = chisquare(hist, pdf2)
-        print(chi2)
+        #chi2 = chisquare(hist, pdf1)
+        #print(chi2)
+        #chi2 = chisquare(hist, pdf2)
+        #print(chi2)
 
         return mu, std
 
@@ -373,7 +373,7 @@ class AnomalyDetector:
         if title:
             fig.suptitle(title)
 
-        print(losses.shape)
+        # print(losses.shape)
 
         if len(losses.shape) == 1:
             numFeatures = 1
@@ -381,7 +381,7 @@ class AnomalyDetector:
         else:
             numFeatures = losses.shape[1]
 
-        print(losses.shape, numFeatures,losses[:, 0])
+        # print(losses.shape, numFeatures,losses[:, 0])
 
         for f in range(numFeatures):
             ax.hist(losses[:, f], bins=50, label=self.featuresColsNames[f], facecolor='none', edgecolor=COLORS[f])
