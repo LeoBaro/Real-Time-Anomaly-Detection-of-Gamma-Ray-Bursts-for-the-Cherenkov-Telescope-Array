@@ -14,7 +14,7 @@ python generate_ap_data.py \
         -lim 100 \
         -ws 1 \
         -rr 0.2 \
-        -norm no \
+        -norm yes \
         -out $dir/ap_data_for_training_and_testing_$today
 
       
@@ -26,5 +26,5 @@ python generate_ap_data.py \
         -lim 100 \
         -ws 1 \
         -rr 0.2 \
-        -norm no \
+        -norm yes \
         -out $dir/ap_data_for_training_and_testing_$today

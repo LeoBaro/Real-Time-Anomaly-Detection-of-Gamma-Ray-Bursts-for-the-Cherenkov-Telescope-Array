@@ -47,8 +47,6 @@ class TimeIntegration(IntegrationStrategy):
         # Normalization
         livetime = tWindows[0][1] - tWindows[0][0]
         region_eff_resp = self.computeAeffArea(normConfTemplate, emin, emax, region, pointing)
-        print(f"[DEBUG] livetime: {livetime} region_eff_resp: {region_eff_resp}")
-
 
         totalCounts = 0
 
@@ -98,7 +96,6 @@ class EnergyIntegration(IntegrationStrategy):
                 if normalize:
 
                     region_eff_resp = self.computeAeffArea(normConfTemplate, ewin[0], ewin[1], region, pointing)
-                    print(f"[DEBUG] livetime: {livetime} region_eff_resp: {region_eff_resp}")
 
                     counts = self.normalize(counts, region_eff_resp, livetime)
 
@@ -116,7 +113,6 @@ class TimeEnergyIntegration(IntegrationStrategy):
         if normalize and (normConfTemplate is None or pointing is None):
             raise ValueError(f"normalize is {normalize} and normConfTemplate is {normConfTemplate} and pointing is {pointing}")
 
-                
         header="TMIN,TMAX"
         for energyBin in eWindows:
             header += f",COUNTS_{energyBin[0]}-{energyBin[1]},ERROR_{energyBin[0]}-{energyBin[1]}"
@@ -125,7 +121,6 @@ class TimeEnergyIntegration(IntegrationStrategy):
         totalCounts = 0
         with open(f"{outputFilePath}", "w") as of:
             of.write(header)    
-
         
             livetime = tWindows[0][1] - tWindows[0][0]
             
@@ -140,8 +135,6 @@ class TimeEnergyIntegration(IntegrationStrategy):
 
                 for ewin in eWindows:
                     
-                    # print(f"[DEBUG] win: {twin[0]},{twin[1]},  livetime: {livetime} region_eff_resp: {region_eff_resp}")            
-
                     counts = photometrics.region_counter(region, float(region["rad"]), tmin=twin[0], tmax=twin[1], emin=ewin[0], emax=ewin[1])
 
                     if normalize:
@@ -184,7 +177,6 @@ class FullIntegration(IntegrationStrategy):
         # Normalization
         livetime = tmax - tmin
         region_eff_resp = self.computeAeffArea(normConfTemplate, emin, emax, region, pointing)
-        print(f"[DEBUG] livetime: {livetime} region_eff_resp: {region_eff_resp}")       
         
         totalCounts = 0
         with open(f"{outputFilePath}", "w") as of:

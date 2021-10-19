@@ -11,7 +11,7 @@ import yaml
 # grb with onset ROI=2.5
 # python generate_ap_data.py -dd $DATA/obs/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_0.15_roi_2.5 -t grb
 
-def makePlots(args, integrationType, outputFiles, onset=None):
+def makePlots(args, integrationType, outputFiles, onset):
 
     for idx, outputFile in enumerate(outputFiles):   
 
@@ -23,9 +23,9 @@ def makePlots(args, integrationType, outputFiles, onset=None):
             _ = plot.addData(outputFile, labelPrefix=f"{args.type}-{idx}", marker="D", color="red")
 
         verticalLine = False
-        if onset:
+        if onset > 0:
             verticalLine = True
-            
+        
         _ = plot.plotScatter(0, integrationType, plotError=False, verticalLine=verticalLine, verticalLineX=onset)
 
         plot.save(outputDir, f"{idx}_{integrationType}_{paramsString}")
@@ -46,16 +46,12 @@ if __name__=='__main__':
     parser.add_argument("-dd", "--dataDir", type=str, required=True, help="The path to the folder containing the input files")
     parser.add_argument("-t", "--type", type=str, choices=["bkg", "grb"], required=True, help="The type of the input files")
     parser.add_argument("-mp", "--makeplots", type=str2bool, required=True, help="If 'yes' plots will be produced")
-    parser.add_argument("-lim", "--limit", type=int, required=True, help="The number of input files to use")
+    parser.add_argument("-lim", "--limit", type=int, required=None, default=None, help="The number of input files to use")
     parser.add_argument("-ws", "--windowsize", nargs="+", default=[5], required=False, help="A list of window size values: a different output file will be created for each of those values")
     parser.add_argument("-rr", "--regionradius", nargs="+", default=[0.5], required=False, help="A list of region radius values: a different output file will be created for each of those values")
     parser.add_argument("-norm", "--normalize", type=str2bool, required=False, help="If 'yes' the counts will be normalized")
     parser.add_argument("-out", "--outputdir", type=str, required=False, help="The path to the output directory. If not provided the script's directory will be used")
-
-    #parser.add_argument("-wmin", "--windowmin", type=int, required=False, default=None, help="")
-    #parser.add_argument("-wmax", "--windowmax", type=int, required=False, default=None, help="")
-    #parser.add_argument("-emin", "--energymin", type=float, required=False, default=None, help="")
-    #parser.add_argument("-emax", "--energymax", type=float, required=False, default=None, help="")
+    # TODO verify ebins argument
     parser.add_argument("-ebins", "--energybins", type=int, required=False, default=4, help="")
     args = parser.parse_args()
 
@@ -66,6 +62,7 @@ if __name__=='__main__':
         wmax = phListConfig["simulation"]["tobs"]
         emin = phListConfig["simulation"]["emin"]
         emax = phListConfig["simulation"]["emax"]
+        onset = phListConfig["simulation"]["onset"]
 
     if args.outputdir is not None:
         outputRootDir = Path(__file__).parent.joinpath(args.outputdir, Path(args.dataDir).name)
@@ -91,7 +88,7 @@ if __name__=='__main__':
             outputDir = outputRootDir.joinpath(paramsString)
 
             tWindows = Photometry2.getLinearWindows(wmin, wmax, int(ws), int(ws))
-            print(tWindows)
+
             ph = Photometry2(args.dataDir, outputDir)
 
             start = time() 
@@ -106,7 +103,7 @@ if __name__=='__main__':
 
             if args.makeplots:
 
-                makePlots(args, "T", outputFiles)
+                makePlots(args, "T", outputFiles, onset)
     
 
 
@@ -141,6 +138,6 @@ if __name__=='__main__':
 
             if args.makeplots:
 
-                makePlots(args, "TE", outputFiles)
+                makePlots(args, "TE", outputFiles, onset)
 
 
