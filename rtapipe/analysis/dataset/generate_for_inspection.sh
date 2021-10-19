@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# DEPRECATED!!!!!!!!!!!
+
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 today=`date +%Y-%m-%d.%H:%M:%S`
@@ -12,7 +14,7 @@ python generate_ap_data.py \
         -t bkg \
         -mp yes \
         -lim 5 \
-        -ws 1 \
+        -it 1 \
         -rr 0.2 \
         -norm yes \
         -out $dir/ap_data_for_inspection_$today
@@ -24,7 +26,7 @@ python generate_ap_data.py \
         -t grb \
         -mp yes \
         -lim 5 \
-        -ws 1 \
+        -it 1 \
         -rr 0.2 \
         -norm yes \
         -out $dir/ap_data_for_inspection_$today
