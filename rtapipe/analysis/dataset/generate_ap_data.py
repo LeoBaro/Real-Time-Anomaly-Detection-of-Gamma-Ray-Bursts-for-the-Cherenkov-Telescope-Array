@@ -47,9 +47,12 @@ if __name__=='__main__':
     parser.add_argument("-t", "--type", type=str, choices=["bkg", "grb"], required=True, help="The type of the input files")
     parser.add_argument("-mp", "--makeplots", type=str2bool, required=True, help="If 'yes' plots will be produced")
     parser.add_argument("-lim", "--limit", type=int, required=None, default=None, help="The number of input files to use")
-    parser.add_argument("-ws", "--windowsize", nargs="+", default=[5], required=False, help="A list of window size values: a different output file will be created for each of those values")
+    # TODO test multiple integration times
+    parser.add_argument("-it", "--integrationtimes", nargs="+", default=[5], required=False, help="A list of integration times: a different output file will be created for each of those values")
+    # TODO test multiple integration region radius
     parser.add_argument("-rr", "--regionradius", nargs="+", default=[0.5], required=False, help="A list of region radius values: a different output file will be created for each of those values")
     parser.add_argument("-norm", "--normalize", type=str2bool, required=False, help="If 'yes' the counts will be normalized")
+    parser.add_argument("-tsl", "--timeserieslenght", type=int, required=False, default=None, help="The number of the csv files rows (time series lenght)")
     parser.add_argument("-out", "--outputdir", type=str, required=False, help="The path to the output directory. If not provided the script's directory will be used")
     # TODO verify ebins argument
     parser.add_argument("-ebins", "--energybins", type=int, required=False, default=4, help="")
@@ -57,7 +60,6 @@ if __name__=='__main__':
 
     with open(Path(args.dataDir).joinpath("config.yaml"), "r") as stream:
         phListConfig = yaml.safe_load(stream)
-        print(phListConfig)
         wmin = 0
         wmax = phListConfig["simulation"]["tobs"]
         emin = phListConfig["simulation"]["emin"]
@@ -76,19 +78,27 @@ if __name__=='__main__':
         cfg.write('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
     
     ## TIME INTEGRATION
-    
-    for ws in args.windowsize:
 
-        for rr in args.regionradius:
+    for rr in args.regionradius:
 
-            print(f"AP data generation --> window size: {ws} region radius: {rr} (T integration) Normalization: {args.normalize}")
+        for it in args.integrationtimes:
 
-            paramsString = f"integration_t_type_{args.type}_window_size_{ws}_region_radius_{rr}"
+            if args.timeserieslenght is not None:
+
+                wmax = int(it) * args.timeserieslenght
+
+            else:
+
+                args.timeserieslenght = int(wmax / int(it))
+
+            print(f"AP data generation --> integration time: {it} region radius: {rr} (T integration) Normalization: {args.normalize}")
+
+            paramsString = f"integration_t_type_{args.type}_integration_time_{it}_region_radius_{rr}_timeseries_lenght_{args.timeserieslenght}"
 
             outputDir = outputRootDir.joinpath(paramsString)
 
-            tWindows = Photometry2.getLinearWindows(wmin, wmax, int(ws), int(ws))
-
+            tWindows = Photometry2.getLinearWindows(wmin, wmax, int(it), int(it))
+            print(tWindows)
             ph = Photometry2(args.dataDir, outputDir)
 
             start = time() 
@@ -110,17 +120,25 @@ if __name__=='__main__':
 
     ## TIME + ENERGY INTEGRATION
 
-    for ws in args.windowsize:
+    for rr in args.regionradius:
 
-        for rr in args.regionradius:
+        for it in args.integrationtimes:
             
-            print(f"AP data generation --> window size: {ws} region radius: {rr} (TE integration) Normalization: {args.normalize}")
+            if args.timeserieslenght is not None:
 
-            paramsString = f"integration_te_type_{args.type}_window_size_{ws}_region_radius_{rr}"
+                wmax = int(it) * args.timeserieslenght
+
+            else:
+
+                args.timeserieslenght = int(wmax / int(it))
+
+            print(f"AP data generation --> integration time: {it} region radius: {rr} (TE integration) Normalization: {args.normalize}")
+
+            paramsString = f"integration_te_type_{args.type}_integration_time_{it}_region_radius_{rr}_timeseries_lenght_{args.timeserieslenght}"
 
             outputDir = outputRootDir.joinpath(paramsString)
 
-            tWindows = Photometry2.getLinearWindows(wmin, wmax, int(ws), int(ws))
+            tWindows = Photometry2.getLinearWindows(wmin, wmax, int(it), int(it))
 
             eWindows = Photometry2.getLogWindows(emin, emax, args.energybins)
             
