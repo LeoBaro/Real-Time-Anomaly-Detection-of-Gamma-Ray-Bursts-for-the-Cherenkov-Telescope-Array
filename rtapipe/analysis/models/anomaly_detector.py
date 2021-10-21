@@ -60,9 +60,8 @@ class AnomalyDetector:
         self.outDir = outDir
         self.outDir.mkdir(parents=True, exist_ok=True)
 
-    def setClassificationThreshold(self, maeThreshold, asThreshold):
-        self.classificationThreshold["MAE"] = maeThreshold
-        self.classificationThreshold["AS"] = asThreshold
+    def setClassificationThreshold(self, threshold):
+        self.classificationThreshold = threshold
 
     def compile(self):
         # mean absolute error: computes the mean absolute error between labels and predictions.
@@ -300,7 +299,9 @@ class AnomalyDetector:
         ax.set_ylabel('Counts (normalized)')
         ax.legend()
         if saveFig:
-            fig.savefig(self.outDir.joinpath(f"mae_pdf_{filenamePostfix}.png"), dpi=DPI)
+            outputPath = self.outDir.joinpath(f"mae_pdf_{filenamePostfix}.png")
+            fig.savefig(outputPath, dpi=DPI)
+            print(f"Plot {outputPath} created.")
         if showFig:
             plt.show()
         plt.close()
@@ -321,7 +322,9 @@ class AnomalyDetector:
         ax.set_yscale('log')
         ax.legend()
         if saveFig:
-            fig.savefig(self.outDir.joinpath(f"mae_cdf_{filenamePostfix}.png"), dpi=DPI)
+            outputPath = self.outDir.joinpath(f"mae_cdf_{filenamePostfix}.png")
+            fig.savefig(outputPath, dpi=DPI)
+            print(f"Plot {outputPath} created.")
         if showFig:
             plt.show()
         plt.close()
@@ -334,7 +337,9 @@ class AnomalyDetector:
         if showFig:
             plt.show()
         if saveFig:
-            fig.savefig(self.outDir.joinpath("confusion_matrix.png"), dpi=DPI)
+            outputPath = self.outDir.joinpath("confusion_matrix.png")
+            fig.savefig(outputPath, dpi=DPI)
+            print(f"Plot {outputPath} created.")
         plt.close()
 
     def computeMetrics(self, realLabels, predLabels):   
@@ -349,9 +354,11 @@ class AnomalyDetector:
         score_str = f"Precision={round(prec,3)}\nRecall={round(recall,3)}\nF1={round(f1, 3)}\nFalse Positive Rate={round(fpr, 3)}\nFalse Negative Rate={round(fnr,3 )}"
         
         print(score_str)
-        
-        with open(self.outDir.joinpath("performance_metrics.txt"), "w") as pf:
+
+        outputPath = self.outDir.joinpath("performance_metrics.txt")
+        with open(outputPath, "w") as pf:
             pf.write(score_str)
+        print(f"File {outputPath} created.")
 
     def lossPlot(self, loss, val_loss, showFig=False, saveFig=True):
         fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
@@ -365,7 +372,9 @@ class AnomalyDetector:
         if showFig:
             plt.show()
         if saveFig:
-            fig.savefig(self.outDir.joinpath("loss_plot.png"), dpi=DPI)
+            outputPath = self.outDir.joinpath("loss_plot.png")
+            fig.savefig(outputPath, dpi=DPI)
+            print(f"Plot {outputPath} created.")
         plt.close()
 
     def recoErrorDistributionPlot(self, losses, threshold=None, filenamePostfix="", title="", showFig=False, saveFig=True):
@@ -397,7 +406,9 @@ class AnomalyDetector:
         if showFig:
             plt.show()
         if saveFig:    
-            fig.savefig(self.outDir.joinpath(f"mea_distribution_{filenamePostfix}.png"), dpi=DPI)
+            outputPath = self.outDir.joinpath(f"mae_distr_{filenamePostfix}.png")
+            fig.savefig(outputPath, dpi=DPI)
+            print(f"Plot {outputPath} created.")
         plt.close()
 
     def plotPredictions(self, samples, samplesLabels, recostructions, maeLossePerEnergyBin, mask, showFig=False, saveFig=True):
@@ -473,10 +484,12 @@ class AnomalyDetector:
                     plt.show()
             
                 if saveFig:
-                    fig.savefig(self.outDir.joinpath(f"predictions_{i}_feature_{f}.png"), dpi=DPI/8)
+                    outputPath = self.outDir.joinpath(f"predictions_{i}_feature_{f}.png")
+                    fig.savefig(outputPath, dpi=DPI/8)
             
-            plt.close()
+                plt.close()
 
+            print(f"Plot {outputPath} created.")
 
 
 

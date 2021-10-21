@@ -11,36 +11,65 @@ from rtapipe.lib.rtapipeutils.WindowsExtractor import WindowsExtractor
 
 class APDataset:
 
-    def get_dataset(datasetID, scaler, outDir):
+    def get_dataset(datasetID, outDir=None, scaler=None):
         
         dataset_params = {
+            # Dataset for training 
             1 : {
+                "id": 1,
+                "ap_command": "source generate_for_training.sh 1 5",
                 "path": "/data/datasets/ap_data/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_1.0_roi_2.5/integration_t_integration_time_1_region_radius_0.2_timeseries_lenght_5",
-                "simtype" : "bkg",
+                "simtype": "bkg",
                 "onset": 0,
                 "integration_type": "t",
                 "integration_time": 1,
                 "region_radius": 0.2,
                 "timeseries_lenght": 5,
-                "scaler" : scaler,
-                "simulation_params_id" : 1,
+                "simulation_params_id": 1
             },
+            # Dataset for training 
             2 : {
+                "id": 2,
+                "ap_command": "source generate_for_training.sh 1 5",
                 "path": "/data/datasets/ap_data/simtype_bkg_os_0_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_1.0_roi_2.5/integration_te_integration_time_1_region_radius_0.2_timeseries_lenght_5",
-                "simtype" : "bkg",
+                "simtype": "bkg",
                 "onset": 0,
                 "integration_type": "te",
                 "integration_time": 1,
                 "region_radius": 0.2,
                 "timeseries_lenght": 5,
-                "scaler" : scaler,
-                "simulation_params_id" : 1,                
+                "simulation_params_id": 1,                
+            },
+            # Dataset for testing
+            3 : {
+                "id": 3,
+                "ap_command": "source generate_for_testing.sh 1 1800",
+                "path": "/data/datasets/ap_data/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_1.0_roi_2.5/integration_t_integration_time_1_region_radius_0.2_timeseries_lenght_1800",
+                "simtype": "grb",
+                "onset": 900,
+                "integration_type": "t",
+                "integration_time": 1,
+                "region_radius": 0.2,
+                "timeseries_lenght": 1800,
+                "simulation_params_id": 1,
+            },
+            4 : {
+                "id": 3,
+                "ap_command": "source generate_for_testing.sh 1 1800",
+                "path": "/data/datasets/ap_data/simtype_grb_os_900_tobs_1800_irf_South_z40_average_LST_30m_emin_0.03_emax_1.0_roi_2.5/integration_te_integration_time_1_region_radius_0.2_timeseries_lenght_1800",
+                "simtype": "grb",
+                "onset": 900,
+                "integration_type": "te",
+                "integration_time": 1,
+                "region_radius": 0.2,
+                "timeseries_lenght": 1800,
+                "simulation_params_id": 1,
             }
         }
 
         dataset_params = APDataset._addSimulationParams(dataset_params[datasetID])
 
-        return APDataset(dataset_params, outDir)
+        return APDataset(dataset_params, outDir, scaler)
 
     def _addSimulationParams(dataset_params):
         simulation_params = {
@@ -57,7 +86,7 @@ class APDataset:
         return dataset_params
 
 
-    def __init__(self, dataset_params, outDir):
+    def __init__(self, dataset_params, outDir=None, scaler=None):
         
         # The data container
         self.data = None
@@ -73,20 +102,44 @@ class APDataset:
         self.uselessColsNamesPattern = ['TMIN', 'TMAX', 'LABEL', 'ERROR']
 
         # Scalers
-        if self.dataset_params["scaler"] == "mm":
+        if scaler is None:
+            self.scaler = scaler
+        elif scaler == "mm":
             self.scaler = MinMaxScaler(feature_range=(0,1))
-        elif self.dataset_params["scaler"] == "ss":
+        elif scaler == "ss":
             self.scaler = StandardScaler()
         else:
-            raise ValueError("Supported scaler: mm, ss")
+            raise ValueError("Supported scalers: mm, ss")
 
-        self.outDir = outDir
-
+        if outDir is not None:
+            self.outDir = Path(outDir)
+        else:
+            self.outDir = None
+            
         self.loadData()
 
+    def checkCompatibilityWith(self, otherDatasetParams):
+
+        if self.dataset_params["integration_type"] != otherDatasetParams["integration_type"]:
+            print("integration_type is not compatible!")
+            return False
+        if self.dataset_params["integration_time"] != otherDatasetParams["integration_time"]:
+            print("integration_time is not compatible!")
+            return False
+        if self.dataset_params["region_radius"] != otherDatasetParams["region_radius"]:
+            print("region_radius is not compatible!")
+            return False
+        if self.dataset_params["simulation_params_id"] != otherDatasetParams["simulation_params_id"]:
+            print("simulation_params_id is not compatible!")
+            return False
+        return True
 
     def setOutDir(self, outDir):
         self.outDir = Path(outDir)
+
+    def setScalerFromPickle(self, pickleFile):
+        with open(pickleFile, 'rb') as handle:
+            self.scaler = pickle.load(handle)
 
     def getFeaturesColsNames(self):
         return self.featureCols
@@ -127,8 +180,6 @@ class APDataset:
 
         self.featureCols = self._findColumns(self.featureColsNamesPattern)
 
-
-
     def getTrainingAndValidationSet(self, split=50, scale=True):
 
         numFeatures = self.data.shape[1]
@@ -139,6 +190,8 @@ class APDataset:
             print("\tFitting scalers..")
             self.scaler.fit(data)
             data = self.scaler.transform(data)
+            with open(self.outDir.joinpath('fitted_scaler.pickle'), 'wb') as handle:
+                pickle.dump(self.scaler, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         data = data.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures)) 
 
@@ -155,36 +208,32 @@ class APDataset:
         return windows[0], labels[0], windows[1], labels[1]
 
     
-    def getTestSet(self, windowSize, stride, onset, scaler=None):
+
+    # TODO different types of test sets
+    def getTestSet(self, windowSize, stride):
         """
         At the moment it extracts subwindows from 1 GRB sample only
-        
         """
         print("Exctracting test set..")
 
-        numberOfFiles = self.filesLoaded["grb"]
+        data = self.scaler.transform(self.data.values)
 
-        data = self.data["grb"].values
+        print(f"Dataset shape: {data.shape}")
 
-        if scaler and scaler == "mm":
-            data = self.mmscaler.transform(data)
+        numFeatures = self.data.shape[1]
 
-        if scaler and scaler == "std":
-            data = self.stdscaler.transform(data)
-
-        print("dataset shape:",data.shape)
-
-        data = data.reshape((numberOfFiles, self.tobs, data.shape[1])) # e.g. (<number of files>, <tobs>)
+        data = data.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures))
         
-        print("dataset shape after reshape:",data.shape)
+        print(f"Dataset shape after reshape: {data.shape}")
 
         # TODO 
         # More samples in the test set..
-        firstSample = data[0,:]
+        sample = data[0,:]
 
         # TODO
-        # Fix the pivot
-        beforeOnsetWindows, afterOnsetWindows = WindowsExtractor.test_extract_sub_windows_pivot(firstSample, windowSize, stride, onset)
+        # Check/Fix the pivot
+        onset_after_time_integration = int(self.dataset_params["onset"] / self.dataset_params["integration_time"])
+        beforeOnsetWindows, afterOnsetWindows = WindowsExtractor.test_extract_sub_windows_pivot(sample, windowSize, stride, onset_after_time_integration)
         beforeOnsetLabels = np.array([False for i in range(beforeOnsetWindows.shape[0])])
         afterOnsetLabels = np.array([True for i in range(afterOnsetWindows.shape[0])])
 
@@ -197,8 +246,8 @@ class APDataset:
     def plotRandomSample(self, howMany=1, showFig=False, saveFig=True):
         numFeatures = self.data.shape[1]
 
-        print(len(self.data),(self.dataset_params["timeseries_lenght"] * self.filesLoaded) / self.dataset_params["integration_time"])
-        #assert len(self.data["bkg"]) == (self.tobs * self.filesLoaded["bkg"]) / self.integrationTime
+        #print(len(self.data),(self.dataset_params["timeseries_lenght"] * self.filesLoaded) / self.dataset_params["integration_time"])
+        #assert len(self.data) == (self.dataset_params["timeseries_lenght"] * self.filesLoaded) / self.dataset_params["integrationTime"]
 
         fig, ax = plt.subplots(numFeatures, 1, figsize=(15,10))
 
@@ -260,10 +309,6 @@ class APDataset:
         return dataReshaped[randomSampleID]
 
 
-
-
-
-    """
     def plotSamples(self, samples, labels, showFig=False, saveFig=True):
 
         
@@ -271,7 +316,7 @@ class APDataset:
         numSamples = samples.shape[0]
 
         fig, axes = plt.subplots(nrows=numFeatures, ncols=numSamples, figsize=(15,10))
-        print(numFeatures, numSamples, axes)
+        # print(numFeatures, numSamples, axes)
 
         if numFeatures == 1:
             axes = np.expand_dims(axes, axis=0)
@@ -300,8 +345,7 @@ class APDataset:
 
         plt.close()        
 
-    """
-
+    
 
 
 

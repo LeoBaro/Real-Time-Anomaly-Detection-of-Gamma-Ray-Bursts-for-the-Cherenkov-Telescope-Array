@@ -12,17 +12,9 @@ from rtapipe.analysis.dataset.dataset_params import get_dataset_params
 if __name__=='__main__':
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("-di", "--dataset_id", type=int, required=True, help="", choices=[1])
-    #parser.add_argument("-it", "--dataset_integration_time", type=str, required=True, help="", choices=["1", "5", "10"])
-    #parser.add_argument("-ws", "--window_size", type=int, required=True, help="", choices=[5, 10])
-    #parser.add_argument("-i", "--integration", type=str, required=False, default="t", help="", choices=["t", "te"])
-    parser.add_argument('--save-after', dest='save_after', action='store_true', help="Store trained model after each training epoch")
-    parser.set_defaults(save_after=False)  
+    parser.add_argument("-di", "--dataset_id", type=int, required=True, help="", choices=[1,2,3,4])
+    parser.add_argument('-sa', '--save-after', type=int, required=False, default=1, help="Store trained model after sa training epochs")
     parser.add_argument("-v", "--verbose", type=int, required=False, default=0, choices = [0,1], help="If 1 plots will be shown")
-
-    #parser.add_argument("-N", "--normalized", type=int, required=False, default=1, help="", choices=[0, 1])
-    #parser.add_argument("--bkg", type=str, required=False, default=None, help="The folder containing AP data (background only)")
-    #parser.add_argument("--grb", type=str, required=False, default=None, help="The folder containing AP data (grb)")
     args = parser.parse_args()
 
     showPlots = False
@@ -34,15 +26,11 @@ if __name__=='__main__':
     outDirRoot.mkdir(parents=True, exist_ok=True)
     
     # Dataset
-    ds = APDataset.get_dataset(1, "mm", outDirRoot)
-    # ds.plotRandomSample(howMany=4, showFig=showPlots)
-
-    #ds = APDataset.get_dataset(2, "mm", outDirRoot)
-    #ds.plotRandomSample(howMany=4, showFig=showPlots)
+    ds = APDataset.get_dataset(args.dataset_id, scaler="mm", outDir=outDirRoot)
+    ds.plotRandomSample(howMany=4, showFig=showPlots)
 
     ds.dumpDatasetParams(type="pickle")
     ds.dumpDatasetParams(type="ini")
-
 
     # LSTM params
     model_params = {
@@ -55,12 +43,10 @@ if __name__=='__main__':
         for key, val in model_params.items():
             handle.write(f"{key}={val}\n")
 
-
     #train, trainLabels, test, testLabels, val, valLabels = ds.getData()
     train, trainLabels, val, valLabels = ds.getTrainingAndValidationSet(split=20, scale=True)
     print(f"Train shape: {train.shape}. Example: {train[0].flatten()}")
     print(f"Val shape: {val.shape}. Example: {val[0].flatten()}")
-
 
     # Building the model
     adLSTM = AnomalyDetector(train[0].shape, model_params["units"], model_params["dropoutrate"], outDirRoot)
@@ -92,8 +78,9 @@ if __name__=='__main__':
 
         # Saving the model
 
-        if (ep+1) % 1 == 0:
-
+        if (ep+1) % args.save_after == 0:
+            
+            print("\nSaving the model and plots..")
             outDir = outDirRoot.joinpath("epochs",f"epoch_{ep+1}")
             outDir.mkdir(exist_ok=True, parents=True)
             adLSTM.setOutputDir(outDir)
@@ -103,16 +90,16 @@ if __name__=='__main__':
                 adLSTM.save(outDir.joinpath("lstm_trained_model"))
 
             # Computing the threshold using a validation set
-            maeThreshold, meaLossesVal = adLSTM.computeSimpleThreshold(val, showFig=showPlots)        
+            maeThreshold, maeLossesVal = adLSTM.computeSimpleThreshold(val, showFig=showPlots)        
             with open(outDir.joinpath("reconstruction_errors.csv"), "w") as recoFile:
-                for vv in meaLossesVal.squeeze():
+                for vv in maeLossesVal.squeeze():
                     recoFile.write(f"{vv}\n")
 
             # Plotting reconstruction error distribution on the validation set 
-            adLSTM.recoErrorDistributionPlot(meaLossesVal, threshold=None, filenamePostfix=f"val_set", title=f"Reconstruction error distribution on validation set (epoch={ep+1})", showFig=showPlots)
+            adLSTM.recoErrorDistributionPlot(maeLossesVal, threshold=None, filenamePostfix=f"val_set", title=f"Reconstruction error distribution on validation set (epoch={ep+1})", showFig=showPlots)
 
-            with open(outDir.joinpath("threshold.csv"), "w") as thresholdFile:
-                thresholdFile.write(f"threshold\n{maeThreshold}")
+            with open(outDir.joinpath("threshold.txt"), "w") as thresholdFile:
+                thresholdFile.write(f"{maeThreshold}")
 
             # Saving training loss plot
             adLSTM.plotTrainingLoss(showFig=showPlots)

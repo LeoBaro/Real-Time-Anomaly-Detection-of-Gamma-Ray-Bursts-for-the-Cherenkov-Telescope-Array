@@ -9,7 +9,7 @@ if [ $# -lt 2 ];
         today=`date +%Y-%m-%d.%H:%M:%S`
         it=$1
         tsl=$2
-        outdir="${dir}/ap_data_for_training_date_${today}"
+        outdir="${dir}/ap_data_for_training_inspection_date_${today}"
 
         printf "Generating training set\n"
         printf "\tsimtype=bkg\n"
