@@ -2,20 +2,10 @@ channels:
   - conda-forge
   - cta-observatory
 dependencies:
-  - python=3.7
-  - ctools=1.7.3
-  - jupyter
-  - astropy
-  - healpy
   - pandas
-  - pyaml
-  - scipy
-  - pyregion
-  - pytest
-  - numpy
-  - tqdm
-  - matplotlib
-  - seaborn
   - scikit-learn
+  - jupyter
+  - tqdm
+  - pytest
   - regions
-
+  - tensorflow-gpu

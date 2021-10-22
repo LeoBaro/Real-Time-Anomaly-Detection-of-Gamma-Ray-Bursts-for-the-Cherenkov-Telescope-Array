@@ -1,8 +1,7 @@
-#tensorflow-gpu
-pytest
-numpy
-tqdm
-jupyter
 pandas
-matplotlib
 scikit-learn
+jupyter
+tqdm
+pytest
+regions
+tensorflow-gpu
