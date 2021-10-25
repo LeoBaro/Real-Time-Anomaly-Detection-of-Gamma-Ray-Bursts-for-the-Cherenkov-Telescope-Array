@@ -2,9 +2,9 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 CONFIG_FILE_TEMPLATE="$1"
-LOG_ID="$2"
+CURRENT_TIME="$2"
 SIMTYPE="$3"
-LOG_DIR="$DIR/../conf/temp_$LOG_ID"
+LOG_DIR="$DIR/../conf/conf_$CURRENT_TIME"
 ONSET="$4"
 TOBS="$5"
 TRIALS="$6"
@@ -15,6 +15,7 @@ ROI="${10}"
 SCALE="${11}"
 
 mkdir -p "$LOG_DIR"
+
 
 sed "s/simtype: XXX/simtype: $SIMTYPE/g"  $CONFIG_FILE_TEMPLATE > $LOG_DIR/config.yaml
 sed "s/onset: XXX/onset: $ONSET/g" -i $LOG_DIR/config.yaml

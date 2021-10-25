@@ -2,13 +2,13 @@
 
 if [[ -z "${1}" ]]; then
     printf "Error: no arguments have been passed to the function. Expected: directory to store the configuration file\n"
-    echo "" 
+    echo ""
 else
     configFilePath="$1/config.yaml"
 
-    echo " 
+    echo "
 setup:
-    simtype: XXX                      # grb -> src+bkg; bkg -> empty fields; skip -> skip sim; 
+    simtype: XXX                      # grb -> src+bkg; bkg -> empty fields; skip -> skip sim;
                                     # wobble -> LST-like runs (str)
     runid: run0406_ID000126           # can be all or any template (list or str) in catalog
     trials: XXX                       # realisations per runid
@@ -38,7 +38,7 @@ analysis:
     exposure:                     # exposure times for the analysis (s) (float)
     binned: no                    # perform binned or unbinned analysis (bool)
     blind: yes                    # requires blind-search (bool)
-    tool: ctools                  # which science tool (str) 
+    tool: ctools                  # which science tool (str)
     type: 3d                      # 1d on/off or 3d full-fov (str)
     cumulative: no
     lightcurve: no
@@ -46,10 +46,10 @@ analysis:
 
 options:
     set_ebl: True                     # uses the EBL absorbed template
-    extract_data: True                # if True extracts lightcurves and spectra 
+    extract_data: True                # if True extracts lightcurves and spectra
     plotsky: False                    # if True generates skymap plot (bool)
 
-path: 
+path:
     data: $DATA                       # all data should be under this folder
     ebl: $DATA/ebl_tables/gilmore_tau_fiducial.csv
     model: $DATA/models
