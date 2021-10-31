@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [ $# -lt 2 ]; 
+if [ $# -lt 2 ];
     then
-        printf "\nNot enought arguments supplied.\nArguments: \n\t- integration time\n\t- lenght of the training time series sample.\n\n"
+        printf "\nNot enought arguments supplied.\nArguments:\n\t- dataset folder \n\t- integration time\n\t- lenght of the training time series sample.\n\n"
     else
 
         dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -29,4 +29,3 @@ if [ $# -lt 2 ];
                 -lim 5 \
                 -out $outdir
 fi
-
