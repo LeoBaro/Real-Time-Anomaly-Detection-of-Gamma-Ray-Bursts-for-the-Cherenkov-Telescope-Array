@@ -1,16 +1,15 @@
 #!/bin/bash
 
-if [ $# -lt 2 ]; 
+if [ $# -lt 2 ];
     then
-        printf "\nNot enought arguments supplied.\nArguments: \n\t- simulation dataset \n\t- integration time\n\t- lenght of the training time series sample.\n\n"
+        printf "\nNot enought arguments supplied.\nArguments:\n\t- dataset folder \n\t- simulation dataset \n\t- integration time\n\t- lenght of the training time series sample\n\tthe output directory\n\n"
     else
 
-        dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
         today=`date +%Y-%m-%d.%H:%M:%S`
         simdata=$1
         it=$2
         tsl=$3
-        outdir="${dir}/ap_data_for_training_date_${today}"
+        outdir="$4/ap_data_bkg_T_${it}_TSL_${tsl}"
 
         printf "Generating training set\n"
         printf "\tsimtype=bkg\n"
@@ -28,4 +27,3 @@ if [ $# -lt 2 ];
                 -tsl $tsl \
                 -out $outdir
 fi
-
