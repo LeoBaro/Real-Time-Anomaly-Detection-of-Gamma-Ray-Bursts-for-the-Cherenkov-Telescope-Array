@@ -16,10 +16,10 @@ def testModel(modelDir):
     print(f"\n*************************************")
     print(f"Testing model {modelDir}")
 
-    # Loading the threshold 
+    # Loading the threshold
     with open(modelDir.parent.joinpath("threshold.txt"), "r") as tf:
         threshold = float(tf.read().rstrip().strip())
-    
+
     adLSTM.setClassificationThreshold(threshold)
 
     print(f"Threshold: {threshold}")
@@ -41,13 +41,13 @@ def testModel(modelDir):
     adLSTM.confusionMatrixPlot(testLabels, mask)
     adLSTM.computeMetrics(testLabels, mask)
     adLSTM.plotPredictions(test, testLabels, recostructions, testMAEPerEnergyBin, mask, showFig=showPlots, saveFig=True)
-    
+
     #adLSTM.precisionRecallCurvePlot(testLabels, mask)
     #adLSTM.plotROC(testLabels, testMAE, showFig=showPlots, saveFig=True)
 
 
 if __name__=='__main__':
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-tmd", "--trained-model-dir", type=str, required=True, help="")
     parser.add_argument("-di", "--dataset_id", type=int, required=True, help="The dataset to be used as test set", choices=[1,2,3,4])
@@ -70,25 +70,25 @@ if __name__=='__main__':
     ds = APDataset.get_dataset(args.dataset_id)
     if not ds.checkCompatibilityWith(training_dataset_params):
         print("The test set is not compatible with the dataset used for training..")
-        exit(1)  
-       
+        exit(1)
+
     ds.setScalerFromPickle(Path(args.trained_model_dir).joinpath('fitted_scaler.pickle'))
     ds.setOutDir(args.trained_model_dir)
 
-    wmin = 0
-    wmax = ds.dataset_params["timeseries_lenght"]
+    #wmin = 0
+    #wmax = ds.dataset_params["timeseries_lenght"]
     new_timeseries_lenght = training_dataset_params["timeseries_lenght"]
     stride = 1
     beforeOnsetWindows, beforeOnsetLabels, afterOnsetWindows, afterOnsetLabels = ds.getTestSet(new_timeseries_lenght, stride=new_timeseries_lenght)
-    
+
     test = np.concatenate((beforeOnsetWindows,afterOnsetWindows), axis=0)
     testLabels = np.concatenate((beforeOnsetLabels,afterOnsetLabels), axis=0)
-    print(f"Test shape: {test.shape}. Example: {test[0].flatten()}")    
-    print(f"Test labels: {testLabels.shape}. Examples: {testLabels.flatten()}")   
+    print(f"Test shape: {test.shape}. Example: {test[0].flatten()}")
+    print(f"Test labels: {testLabels.shape}. Examples: {testLabels.flatten()}")
 
     ds.plotSamples(np.concatenate((beforeOnsetWindows[-3:], afterOnsetWindows[0:5]), axis=0), ["onset-3","onset-2","onset-1","onset+0","onset+1","onset+2","onset+3","onset+4"], showFig=showPlots)
 
-  
+
 
     # Locating the trained LSTM models
     modelsDirs = []
@@ -102,11 +102,10 @@ if __name__=='__main__':
             modelsDirs.append(modelDir)
         else:
             raise FileNotFoundError(f"The directory {modelDir} does not exist!")
-    
+
     if args.multiprocessing == 1:
         with Pool() as p:
             p.map(testModel, modelsDirs)
     else:
         for modelDir in modelsDirs:
             testModel(modelDir)
-

@@ -1,0 +1,47 @@
+1:
+  ap_command: source generate_for_training.sh 1 10
+  id: 1
+  path: /data01/homes/baroncelli/AP_DATA_10000/ap_data_T_1_TSL_10/dataset_trials_10000_type_bkg_tobs_100/integration_t_integration_time_1_region_radius_0.2_timeseries_lenght_10
+  size: 10000
+  simtype: bkg
+  onset: 0
+  integration_type: t
+  integration_time: 1
+  region_radius: 0.2
+  timeseries_lenght: 10
+  irf: irf_South_z40_average_LST_30m
+  emin: 0.03
+  emax: 1
+  roi: 2.5
+
+2:
+  ap_command: source generate_for_training.sh 5 10
+  id: 2
+  path: /data01/homes/baroncelli/AP_DATA_10000/ap_data_bkg_T_5_TSL_10/dataset_trials_10000_type_bkg_tobs_100/integration_t_integration_time_5_region_radius_0.2_timeseries_lenght_10
+  size: 10000
+  simtype: bkg
+  onset: 0
+  integration_type: t
+  integration_time: 5
+  region_radius: 0.2
+  timeseries_lenght: 10
+  irf: irf_South_z40_average_LST_30m
+  emin: 0.03
+  emax: 1
+  roi: 2.5
+
+3:
+  ap_command: source generate_for_training.sh 5 10
+  id: 3
+  path: /data01/homes/baroncelli/AP_DATA_800k_v2/ap_data_bkg_T_5_TSL_10/dataset_trials_861217_type_bkg_tobs_100/integration_t_integration_time_5_region_radius_0.2_timeseries_lenght_10
+  size: 861199
+  simtype: bkg
+  onset: 0
+  integration_type: t
+  integration_time: 5
+  region_radius: 0.2
+  timeseries_lenght: 10
+  irf: irf_South_z40_average_LST_30m
+  emin: 0.03
+  emax: 1
+  roi: 2.5

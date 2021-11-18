@@ -13,7 +13,7 @@ import yaml
 
 def makePlots(args, integrationType, outputFiles, onset):
 
-    for idx, outputFile in enumerate(outputFiles):   
+    for idx, outputFile in enumerate(outputFiles):
 
         plot = PhotometrySinglePlot(title=paramsString)
 
@@ -25,7 +25,7 @@ def makePlots(args, integrationType, outputFiles, onset):
         verticalLine = False
         if onset > 0:
             verticalLine = True
-        
+
         _ = plot.plotScatter(0, integrationType, plotError=False, verticalLine=verticalLine, verticalLineX=onset)
 
         plot.save(outputDir, f"{idx}_{integrationType}_{paramsString}")
@@ -47,15 +47,17 @@ if __name__=='__main__':
     parser.add_argument("-t", "--type", type=str, choices=["bkg", "grb"], required=True, help="The type of the input files")
     parser.add_argument("-mp", "--makeplots", type=str2bool, required=True, help="If 'yes' plots will be produced")
     parser.add_argument("-lim", "--limit", type=int, required=None, default=None, help="The number of input files to use")
-    # TODO test multiple integration times
-    parser.add_argument("-it", "--integrationtimes", nargs="+", default=[5], required=False, help="A list of integration times: a different output file will be created for each of those values")
+    parser.add_argument("-itype", "--integrationtype", type=str, required=True, choices=["t", "te"], help="")
+    parser.add_argument("-itime", "--integrationtime", type=int, required=True, help="")
+
     # TODO test multiple integration region radius
-    parser.add_argument("-rr", "--regionradius", nargs="+", default=[0.5], required=False, help="A list of region radius values: a different output file will be created for each of those values")
-    parser.add_argument("-norm", "--normalize", type=str2bool, required=False, help="If 'yes' the counts will be normalized")
-    parser.add_argument("-tsl", "--timeserieslenght", type=int, required=False, default=None, help="The number of the csv files rows (time series lenght)")
-    parser.add_argument("-out", "--outputdir", type=str, required=False, help="The path to the output directory. If not provided the script's directory will be used")
+    parser.add_argument("-rr", "--regionradius", type=float, required=True, help="A list of region radius values: a different output file will be created for each of those values")
+    parser.add_argument("-norm", "--normalize", type=str2bool, required=True, help="If 'yes' the counts will be normalized")
+    parser.add_argument("-tsl", "--timeserieslenght", type=int, required=True, default=None, help="The number of the csv files rows (time series lenght)")
+    parser.add_argument("-out", "--outputdir", type=str, required=True, help="The path to the output directory. If not provided the script's directory will be used")
     # TODO verify ebins argument
     parser.add_argument("-ebins", "--energybins", type=int, required=False, default=4, help="")
+    parser.add_argument("-proc", "--procnumber", type=int, required=False, default=10, help="")
     args = parser.parse_args()
 
     with open(Path(args.dataDir).joinpath("config.yaml"), "r") as stream:
@@ -70,92 +72,89 @@ if __name__=='__main__':
         outputRootDir = Path(__file__).parent.joinpath(args.outputdir, Path(args.dataDir).name)
     else:
         outputRootDir = Path(args.outputdir).parent.joinpath(Path(args.dataDir).name)
-    
+
     Path(args.outputdir).mkdir(parents=True, exist_ok=True)
 
-    configFile = Path(args.outputdir).joinpath(f"config_{args.type}.txt")
+    configFile = Path(args.outputdir).joinpath(f"config_{args.integrationtype}.txt")
     with open(configFile, "w") as cfg:
         cfg.write('\n'.join(f'{k}={v}' for k, v in vars(args).items()))
-    
+
+
     ## TIME INTEGRATION
+    if args.integrationtype == "t":
 
-    for rr in args.regionradius:
+        it = args.integrationtime
+        rr = args.regionradius
 
-        for it in args.integrationtimes:
+        if args.timeserieslenght is not None:
 
-            if args.timeserieslenght is not None:
+            wmax = int(it) * args.timeserieslenght
 
-                wmax = int(it) * args.timeserieslenght
+        else:
 
-            else:
+            args.timeserieslenght = int(wmax / int(it))
 
-                args.timeserieslenght = int(wmax / int(it))
+        print(f"AP data generation --> integration time: {it} region radius: {rr} (T integration) Normalization: {args.normalize}")
 
-            print(f"AP data generation --> integration time: {it} region radius: {rr} (T integration) Normalization: {args.normalize}")
+        paramsString = f"integration_t_integration_time_{it}_region_radius_{rr}_timeseries_lenght_{args.timeserieslenght}"
 
-            paramsString = f"integration_t_integration_time_{it}_region_radius_{rr}_timeseries_lenght_{args.timeserieslenght}"
+        outputDir = outputRootDir.joinpath(paramsString)
 
-            outputDir = outputRootDir.joinpath(paramsString)
+        tWindows = Photometry2.getLinearWindows(wmin, wmax, int(it), int(it))
+        print(tWindows)
+        ph = Photometry2(args.dataDir, outputDir)
 
-            tWindows = Photometry2.getLinearWindows(wmin, wmax, int(it), int(it))
-            print(tWindows)
-            ph = Photometry2(args.dataDir, outputDir)
+        start = time()
 
-            start = time() 
+        outputFiles, counts = ph.integrateAll("T", None, rr, tWindows, None, limit=args.limit, parallel=True, procNumber=args.procnumber, normalize=args.normalize)
 
-            outputFiles, counts = ph.integrateAll("T", None, rr, tWindows, None, limit=args.limit, parallel=True, normalize=args.normalize)
+        elapsed = round(time()-start, 2)
+        print(f"Took: {elapsed} sec. Produced: {len(outputFiles)} files.")
 
-            elapsed = round(time()-start, 2)
-            print(f"Took: {elapsed} sec. Produced: {len(outputFiles)} files.")
+        with open(configFile, "a") as cfg:
+            cfg.write(f"\nTook={elapsed}")
 
-            with open(configFile, "a") as cfg:
-                cfg.write(f"\nTook={elapsed}")
+        if args.makeplots:
 
-            if args.makeplots:
-
-                makePlots(args, "T", outputFiles, onset)
-    
-
+            makePlots(args, "T", outputFiles, onset)
 
 
     ## TIME + ENERGY INTEGRATION
+    else:
 
-    for rr in args.regionradius:
+        it = args.integrationtime
+        rr = args.regionradius
 
-        for it in args.integrationtimes:
-            
-            if args.timeserieslenght is not None:
+        if args.timeserieslenght is not None:
 
-                wmax = int(it) * args.timeserieslenght
+            wmax = int(it) * args.timeserieslenght
 
-            else:
+        else:
 
-                args.timeserieslenght = int(wmax / int(it))
+            args.timeserieslenght = int(wmax / int(it))
 
-            print(f"AP data generation --> integration time: {it} region radius: {rr} (TE integration) Normalization: {args.normalize}")
+        print(f"AP data generation --> integration time: {it} region radius: {rr} (TE integration) Normalization: {args.normalize}")
 
-            paramsString = f"integration_te_integration_time_{it}_region_radius_{rr}_timeseries_lenght_{args.timeserieslenght}"
+        paramsString = f"integration_te_integration_time_{it}_region_radius_{rr}_timeseries_lenght_{args.timeserieslenght}"
 
-            outputDir = outputRootDir.joinpath(paramsString)
+        outputDir = outputRootDir.joinpath(paramsString)
 
-            tWindows = Photometry2.getLinearWindows(wmin, wmax, int(it), int(it))
+        tWindows = Photometry2.getLinearWindows(wmin, wmax, int(it), int(it))
 
-            eWindows = Photometry2.getLogWindows(emin, emax, args.energybins)
-            
-            ph = Photometry2(args.dataDir, outputDir)
+        eWindows = Photometry2.getLogWindows(emin, emax, args.energybins)
 
-            start = time() 
+        ph = Photometry2(args.dataDir, outputDir)
 
-            outputFiles, counts = ph.integrateAll("TE", None, rr, tWindows, eWindows, limit=args.limit, parallel=True, normalize=args.normalize)
+        start = time()
 
-            elapsed = round(time()-start, 2)
-            print(f"Took: {elapsed} sec. Produced: {len(outputFiles)} files.")
+        outputFiles, counts = ph.integrateAll("TE", None, rr, tWindows, eWindows, limit=args.limit, parallel=True, procNumber=args.procnumber, normalize=args.normalize)
 
-            with open(configFile, "a") as cfg:
-                cfg.write(f"\nTook={elapsed}")
+        elapsed = round(time()-start, 2)
+        print(f"Took: {elapsed} sec. Produced: {len(outputFiles)} files.")
 
-            if args.makeplots:
+        with open(configFile, "a") as cfg:
+            cfg.write(f"\nTook={elapsed}")
 
-                makePlots(args, "TE", outputFiles, onset)
+        if args.makeplots:
 
-
+            makePlots(args, "TE", outputFiles, onset)
