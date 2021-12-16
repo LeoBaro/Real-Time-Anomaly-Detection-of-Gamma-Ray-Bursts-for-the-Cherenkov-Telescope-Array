@@ -4,30 +4,19 @@ from tensorflow.keras import layers
 
 class ModelBuilder:
 
-  @staticmethod
-  def buildLSTM_2layers(inputShape, units, dropoutRate):
+    @staticmethod
+    def buildLSTM_1(timesteps, nfeatures):
 
-    print(f"Building 2 layers - LSTM model. Input shape: {inputShape}")
+    @staticmethod
+    def buildLSTM_2(inputShape, units, dropoutRate):
 
-    model = keras.Sequential()
+        print(f"Building LSTM 2 - input shape: {inputShape}")
 
-    lstmlayer = keras.layers.LSTM(
-        units=units,
-        input_shape=(inputShape[0], inputShape[1])
-    )
+        model = keras.Sequential()
 
-    model.add(lstmlayer)
+        model.add(keras.layers.LSTM(units=units, activation=activation, input_shape=(inputShape[0],inputShape[1])))
+        model.add(keras.layers.RepeatVector(n=inputShape[0]))
+        model.add(keras.layers.LSTM(units=units, activation=activation, return_sequences=True))
+        model.add(keras.layers.TimeDistributed(units=inputShape[1]))
 
-    model.add(keras.layers.Dropout(rate=dropoutRate))
-    model.add(keras.layers.RepeatVector(n=inputShape[0])) # repeats the input n times
-
-    model.add(keras.layers.LSTM(units=units, return_sequences=True)) # makes it return the sequence
-    model.add(keras.layers.Dropout(rate=dropoutRate))
-
-    model.add(
-      keras.layers.TimeDistributed( # creates a vector with a length of the number of outputs from the previous layer
-        keras.layers.Dense(units=inputShape[1])
-      )
-    )
-
-    return model
+        return model

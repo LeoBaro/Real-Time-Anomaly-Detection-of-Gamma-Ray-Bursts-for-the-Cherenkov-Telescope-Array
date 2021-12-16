@@ -14,44 +14,38 @@ from tensorflow.keras.losses import mean_absolute_error
 from rtapipe.analysis.models.builder import ModelBuilder
 from sklearn.metrics import roc_curve, roc_auc_score, RocCurveDisplay, precision_score, recall_score, precision_recall_curve, f1_score, confusion_matrix, ConfusionMatrixDisplay, PrecisionRecallDisplay
 import matplotlib.colors as mcolors
-
 from sklearn import metrics
 from tqdm import tqdm
+from abc import ABC, abstracmethod
 
 COLORS = list(mcolors.BASE_COLORS)
 plt.rcParams.update({'font.size': 18, 'lines.markersize': 0.5,'legend.markerscale': 3, 'lines.linewidth':1, 'lines.linestyle':'-'})
 FIG_SIZE = (15,7)
 DPI=300
 
-class AnomalyDetector:
+class AnomalyDetectorBase(ABC):
 
+    @abstracmethod
     def loadModel(modelDir):
-        try:
-            print(f"Loading model from {modelDir}")
-            ad = AnomalyDetector(0, 0, 0, Path(modelDir).parent, True)
-            ad.model = load_model(modelDir)
-            return ad
-        except Exception:
-            print(f"Unable to load model from {modelDir}.")
+        pass
 
-
-    def __init__(self, shape, units, dropoutRate, outDir, loadModel = False):
+    def __init__(self, timesteps, nfeatures, outDir, loadModel = False):
 
         self.model = None
-
-        if not loadModel:
-            self.model = ModelBuilder.buildLSTM_2layers(shape, units, dropoutRate)
+        self.mp = None
 
         self.history = []
         self.classificationThreshold = {
-            "MAE":None,
-            "AS": None
+            "MAE":None
         }
 
         self.outDir = outDir
         self.outDir.mkdir(parents=True, exist_ok=True)
 
         self.featuresColsNames = []
+
+    def getModelParams(self):
+        return self.mp
 
     def setFeaturesColsNames(self, featuresColsNames):
         self.featuresColsNames = featuresColsNames
@@ -70,7 +64,7 @@ class AnomalyDetector:
     def summary(self):
         self.model.summary()
 
-    def fit(self, X_train, y_train, epochs=50, batchSize=32, verbose=1, validation_data=None, validation_split=0.1, plotTrainingLoss=True):
+    def fit(self, X_train, y_train, epochs, batchSize, validation_data, verbose=1, plotTrainingLoss=True):
 
         # batch_size: number of samples per gradient update.
         # epoch: an epoch is an iteration over the entire x and y data provided
@@ -83,7 +77,7 @@ class AnomalyDetector:
         #                  the fact that the validation loss of data provided using validation_split
         #                  or validation_data is not affected by regularization layers like noise and dropout.
 
-        history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batchSize, validation_data=validation_data, validation_split=validation_split, verbose=verbose, callbacks=[])
+        history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batchSize, validation_data=validation_data, verbose=verbose, callbacks=[])
 
         self.history.append(history)
 
@@ -265,63 +259,6 @@ class AnomalyDetector:
 
 
 
-
-
-
-    """
-    Plotting
-    """
-
-    def pdfPlot(self, losses, filenamePostfix="", showFig=False, saveFig=True):
-
-        mu, std = norm.fit(losses)
-
-        trials = len(losses)
-        fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
-
-        n, bins, patches = ax.hist(losses, bins=50, density=True, facecolor='none', edgecolor=COLORS[0])
-        xmin, xmax = plt.xlim()
-        x = np.linspace(xmin, xmax, 100)
-        pdf = norm.pdf(x, mu, std)
-        ax.plot(x, pdf, linestyle="--", linewidth=2, label=f"mu = {round(mu,2)},  std = {round(std,2)}")
-
-        ax.set_title(f"Reconstruction errors PDF. Trials={trials}")
-        ax.set_xlabel('Reconstruction errors')
-        ax.set_ylabel('Counts (normalized)')
-        ax.legend()
-        if saveFig:
-            outputPath = self.outDir.joinpath(f"mae_pdf_{filenamePostfix}.png")
-            fig.savefig(outputPath, dpi=DPI)
-            print(f"Plot {outputPath} created.")
-        if showFig:
-            plt.show()
-        plt.close()
-
-    def cdfPlot(self, losses, filenamePostfix="", showFig=False, saveFig=True):
-
-        mu, std = norm.fit(losses)
-
-        # Test with 10e7 samples
-        #losses = np.random.normal(loc=mu, scale=std, size=int(10e7))
-        n_bins = 100
-        trials = len(losses)
-        fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
-
-        # Overlay a reversed cumulative histogram.
-        n, bins, patches = ax.hist(losses, bins=n_bins, density=True, histtype='step', cumulative=-1, label='Reversed empirical')
-
-        ax.set_title(f'Cumulative step histograms. Trials={trials}')
-        ax.set_xlabel('Reconstruction errors')
-        ax.set_ylabel('Likelihood of occurrence')
-        ax.set_yscale('log')
-        ax.legend()
-        if saveFig:
-            outputPath = self.outDir.joinpath(f"mae_cdf_{filenamePostfix}.png")
-            fig.savefig(outputPath, dpi=DPI)
-            print(f"Plot {outputPath} created.")
-        if showFig:
-            plt.show()
-        plt.close()
 
 
     def confusionMatrixPlot(self, realLabels, predLabels, showFig=False, saveFig=True):

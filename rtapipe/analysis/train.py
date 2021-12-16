@@ -11,36 +11,38 @@ from rtapipe.analysis.models.anomaly_detector import AnomalyDetector
 if __name__=='__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-di", "--dataset_id", type=int, required=True, help="", choices=[1,2,3,4])
+    parser.add_argument("-m", "--model_name", type=str, required=True)
+    parser.add_argument("-di", "--dataset_id", type=int, required=True, help="")
     parser.add_argument('-sa', '--save-after', type=int, required=False, default=1, help="Store trained model after sa training epochs")
     parser.add_argument("-v", "--verbose", type=int, required=False, default=0, choices = [0,1], help="If 1 plots will be shown")
     parser.add_argument("-dc", "--dataset_config", type=str, required=False, default="./dataset/config/agilehost3.yml")
     args = parser.parse_args()
+
+    if args.model_name not in ["AnomalyDetector_2layers", "AnomalyDetector_2layers_small"]:
+        raise ValueError(f"Model '{args.model_name}' does not exist.")
 
     showPlots = False
     if args.verbose == 1:
         showPlots = True
 
     # Output dir
-    outDirRoot = Path(__file__).parent.resolve().joinpath("training_output",f"lstm_models_{strftime('%Y%m%d-%H%M%S')}")
+    outDirRoot = Path(__file__) \
+                    .parent \
+                    .resolve() \
+                    .joinpath("training_output",f"lstm_models_{strftime('%Y%m%d-%H%M%S')}")
+
     outDirRoot.mkdir(parents=True, exist_ok=True)
 
     # Dataset
     ds = APDataset.get_dataset(args.dataset_config, args.dataset_id, scaler="mm", outDir=outDirRoot)
-    ds.loadData(size=5120)
+    ds.loadData(size=24)
 
     ds.plotRandomSample(howMany=4, showFig=showPlots)
 
     ds.dumpDatasetParams(type="pickle")
     ds.dumpDatasetParams(type="ini")
 
-    # LSTM params
-    model_params = {
-        "units" : 32,
-        "dropoutrate" : 0.2,
-        "epochs" : 5,
-        "batchSize" : 16
-    }
+
 
     with open(outDirRoot.joinpath("model_params.ini"), "w") as handle:
         for key, val in model_params.items():
@@ -51,8 +53,11 @@ if __name__=='__main__':
     print(f"Train shape: {train.shape}. Example: {train[0].flatten()}")
     print(f"Val shape: {val.shape}. Example: {val[0].flatten()}")
 
+    timesteps = train[0].shape[0]
+    nfeatures = train[0].shape[1]
+
     # Building the model
-    adLSTM = AnomalyDetector(train[0].shape, model_params["units"], model_params["dropoutrate"], outDirRoot)
+    adLSTM = AnomalyDetector(timesteps, nfeatures, outDirRoot)
     adLSTM.setFeaturesColsNames(ds.getFeaturesColsNames())
 
     # Compiling the model
@@ -98,10 +103,6 @@ if __name__=='__main__':
                 for vv in maeLossesVal.squeeze():
                     recoFile.write(f"{vv}\n")
 
-            # Plotting the pdf and cdf of the recostruction errors on the validation set
-            adLSTM.pdfPlot(maeLossesVal, filenamePostfix=f"val_set", showFig=showPlots)
-            adLSTM.cdfPlot(maeLossesVal, filenamePostfix=f"val_set", showFig=showPlots)
-
             # Plotting reconstruction error distribution on the validation set
             adLSTM.recoErrorDistributionPlot(maeLossesVal, threshold=None, filenamePostfix=f"val_set", title=f"Reconstruction error distribution on validation set (epoch={ep+1})", showFig=showPlots)
 
@@ -114,6 +115,11 @@ if __name__=='__main__':
             # Saving time statistics
             with open(outDirRoot.joinpath("statistics.csv"), "a") as statFile:
                 statFile.write(f"{ep+1},{fit_cron.get_statistics()[0]},{fit_cron.get_statistics()[1]},{fit_cron.get_total_elapsed_time()}\n")
+
+
+    # with open(outDirRoot.joinpath("statistics.csv"), "r") as statFile:
+
+
 
 
 
