@@ -92,92 +92,57 @@ class AnomalyDetectorBase(ABC):
             val_loss += history.history["val_loss"]
         self.lossPlot(loss, val_loss, showFig=showFig, saveFig=True)
 
-    def predict(self, samples, verbose=1):
+    def modelPredict(self, samples, verbose=1):
         return self.model.predict(samples, verbose=verbose)
 
     def save(self, dir):
         self.model.save(dir)
 
-    def computeSimpleThreshold(self, valSamples, showFig=False):
+    def computeThreshold(self, samples, recoErrMean="simple", showFig=False):
         """
         The threshold is calculated as the 98% quantile of the mean absolute errors distribution for the normal examples of the training set,
         then classify future examples as anomalous if the reconstruction error is higher than one standard
         deviation from the training set.
         """
-        reco = self.predict(valSamples)
-
-        # Computes the mean absolute error between labels and predictions.
-        maeLosses = np.mean(np.abs(reco - valSamples), axis=1)
+        recostructions, maeLossPerEnergyBin, maeLoss = self.computeReconstructionError(samples, recoErrMean)
 
         # Calcolarla attraverso il fitting della distrubuzione dell'errore in modo analitico
-        self.classificationThreshold = np.percentile(maeLosses, 98)
+        self.classificationThreshold = np.percentile(maeLoss, 98)
 
         # Compute the threshold as the max of those errors
-        return self.classificationThreshold, maeLosses
+        return self.classificationThreshold, recostructions, maeLossPerEnergyBin, maeLoss
 
 
-
-        """
-        maeLosses = maeLosses.squeeze()
-        binsNum = 50
-        mu, std = norm.fit(maeLosses)
-
-        hist, bins, patches = plt.hist(maeLosses, bins=binsNum, density=True, facecolor='none', edgecolor=COLORS[0])
-        print("hist",hist)
-
-        binCenters = []
-        for idx in range(len(bins)-1):
-            binCenters.append((bins[idx+1]+bins[idx])/2)
-        pdf2 = norm.pdf(binCenters, mu, std)
-
-        xmin, xmax = plt.xlim()
-        x = np.linspace(xmin, xmax, binsNum)
-        pdf1 = norm.pdf(x, mu, std)
-
-        #print(hist)
-        #print(pdf1)
-        #print(pdf2)
-
-        plt.plot(x, pdf1, linestyle="--", linewidth=2, label=f"mu = {round(mu,2)},  std = {round(std,2)}")
-        plt.plot(binCenters, pdf2, linestyle="-.", linewidth=2, label=f"Expected")
-        plt.legend()
-        plt.show()
-        #chi2 = chisquare(hist, pdf1)
-        #print(chi2)
-        #chi2 = chisquare(hist, pdf2)
-        #print(chi2)
-
-        return mu, std
-        """
-    # TODO
-    def computeAnomalyScoreThreshold(self, valSamples):
-
-        reco = self.predict(valSamples)
-
-        # Computes the mean absolute error between labels and predictions.
-        maeLosses = np.mean(mae(valSamples, reco), axis=1) # mae = np.abs(reco - valSamples)
-
-        mu, std = norm.fit(maeLosses)
-
-        return -666, maeLosses
-
-    """
-    def reconstruct(self, samples):
-        # encoding and decoding
-        recostructions = self.predict(samples)
-
-        # computing the recostruction errors
-        maeLosses = np.mean(np.abs(recostructions - samples), axis=1).flatten()
-
-
-        return recostructions, maeLosses
-    """
-
-    def classify_with_distance_from_distribution(self, samples):
+    def classifyWithKullbackLeibler(self, samples):
+        # https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
         pass
 
 
-    def compute_reconstruction_error(self, samples, verbose=1):
+
+
+
+    def classifyWithMae(self, samples, recoErrMean="simple"):
+
+        if self.classificationThreshold is None:
+            raise ValueError("The classification threshold is None. Call computeThreshold() to calculate it or sei it with setClassificationThreshold()")
+
+        recostructions, maeLossPerEnergyBin, maeLoss = self.computeReconstructionError(samples, recoErrMean)
+
+        mask = (maeLosses > self.classificationThreshold)
+
+        return recostructions, maeLosses, maeLossesPerEnergyBin, mask
+
+    def computeReconstructionError(self, samples, recoErrMean="simple",  verbose=1):
+
+        recostructions = self.predict(samples, verbose)
+
+        maeLossPerEnergyBin = self.computeMaeLoss(samples, recostructions)
+
+        maeLoss = self.computeMaeLossMean(maeLossPerEnergyBin, recoErrMean)
+
+        return recostructions, maeLossPerEnergyBin, maeLoss
+
+    def predict(self, samples, verbose):
         # The reconstructions:
         # [
         #   [
@@ -199,22 +164,24 @@ class AnomalyDetectorBase(ABC):
         #   ],
         #   ... up to X samples
         # ]
-        recostructions = self.predict(samples, verbose)
+        return self.modelPredict(samples, verbose)
 
-
+    def computeMaeLoss(self, samples, recostructions):
         # The recostruction errors:
         # For each sample, it computes X arrays of distances between the points, where X is the number of energy bins.
         distances = np.abs(recostructions - samples)
 
         # The mae loss is defined as the mean of those distances, for each sample, for each energy bin.
+        # In this example we have 4 energy bins
         # [
         #   [0.11891678 0.11762658 0.11594792 0.08139625]
         #   [0.11626169 0.11343022 0.12967022 0.08330123]
         #   ... up to X samples
         # ]
         #
-        maeLossesPerEnergyBin = np.mean(distances, axis=1)
+        return np.mean(distances, axis=1)
 
+    def computeMaeLossMean(self, maeLossPerEnergyBin, recoErrMean="simple"):
         # How do I "merge" the mae of each energy bin? Maybe with a weighted mean. For now I'll use a simple mean.
         # [
         #   0.10847188,
@@ -222,21 +189,14 @@ class AnomalyDetectorBase(ABC):
         #   ... up to X samples
         # ]
         #
-        maeLosses = np.mean(maeLossesPerEnergyBin, axis=1)
+        # TODO: the mean could be weighted to give more importance to high energy photons
+        if recoErrMean == "simple":
+            return np.mean(maeLossPerEnergyBin, axis=1)
 
-        return recostructions, maeLossesPerEnergyBin, maeLosses
+        elif recoErrMean == "weighted":
+            return np.average(maeLossPerEnergyBin, axis=1, weights=[1./10, 1./5, 3./10, 2./5])
 
 
-    def classify_with_mae(self, samples):
-
-        if self.classificationThreshold is None:
-            raise ValueError("The classification threshold is None. Call computeThreshold() to calculate it or sei it with setClassificationThreshold()")
-
-        recostructions, maeLossesPerEnergyBin, maeLosses = self.compute_reconstruction_error(samples)
-
-        mask = (maeLosses > self.classificationThreshold)
-
-        return recostructions, maeLosses, maeLossesPerEnergyBin, mask
 
 
 
@@ -313,18 +273,18 @@ class AnomalyDetectorBase(ABC):
         if title:
             fig.suptitle(title)
 
-        # print(losses.shape)
-
         if len(losses.shape) == 1:
             numFeatures = 1
-            losses = np.expand_dims(losses, axis=0)
+            losses = np.expand_dims(losses, axis=1)
+            featuresColsNames = [self.featuresColsNames[0]+"_"+self.featuresColsNames[-1]]
         else:
             numFeatures = losses.shape[1]
+            featuresColsNames = self.featuresColsNames
 
         # print(losses.shape, numFeatures,losses[:, 0])
 
         for f in range(numFeatures):
-            ax.hist(losses[:, f], bins=50, label=self.featuresColsNames[f], facecolor='none', edgecolor=COLORS[f])
+            ax.hist(losses[:, f], bins=50, label=featuresColsNames[f], facecolor='none', edgecolor=COLORS[f])
         # plt.yscale('log', nonposy='clip')
 
         if threshold:
@@ -420,7 +380,7 @@ class AnomalyDetectorBase(ABC):
 
                 plt.close()
 
-            print(f"Plot {outputPath} created.")
+            #print(f"Plot {outputPath} created.")
 
 
 

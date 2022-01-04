@@ -119,7 +119,8 @@ class APDataset:
             print(f"Dropped columns={uselessCols} from dataset")
             print(f"Dataframe shape: {self.data.shape}. Columns: {self.data.columns.values}")
         self.featureCols = self._findColumns(self.featureColsNamesPattern)
-
+        if len(self.featureCols) > 1:
+            self.featureCols.sort(key = lambda col : float(col.split("COUNTS_")[1].split("-")[0]))
 
     def loadDataBatch(self, batchsize, verbose=False):
         # print(f"Loading batch of files ({batchsize}) from {Path(self.dataset_params['path'])}")

@@ -71,7 +71,7 @@ if __name__=='__main__':
         statFile.write("epoch,training_time_mean,training_time_dev,total_time\n")
     ######################################################################################################################################################################
 
-    maxEpochs = 1000
+    maxEpochs = 10
     convergence = False
     fit_cron = Chronometer()
 
@@ -101,13 +101,25 @@ if __name__=='__main__':
                 adLSTM.save(outDir.joinpath("lstm_trained_model"))
 
             # Computing the threshold using a validation set
-            maeThreshold, maeLossesVal = adLSTM.computeSimpleThreshold(validationSet, showFig=showPlots)
+            maeThreshold, recostructions, maeLossPerEnergyBin, maeLossVal = adLSTM.computeThreshold(validationSet, recoErrMean="simple", showFig=showPlots)
             with open(outDir.joinpath("reconstruction_errors.csv"), "w") as recoFile:
-                for vv in maeLossesVal.squeeze():
+                for vv in maeLossVal.squeeze():
                     recoFile.write(f"{vv}\n")
 
             # Plotting reconstruction error distribution on the validation set
-            adLSTM.recoErrorDistributionPlot(maeLossesVal, threshold=None, filenamePostfix=f"val_set", title=f"Reconstruction error distribution on validation set (epoch={ep+1})", showFig=showPlots)
+            # For each energy bin
+            adLSTM.recoErrorDistributionPlot(maeLossPerEnergyBin, threshold=None, filenamePostfix=f"reco_error_distribution_on_val_set_for_4_energy_bins", title=f"Reconstruction error distribution on validation set (epoch={ep+1})", showFig=showPlots)
+            # Mean recostruction error
+            adLSTM.recoErrorDistributionPlot(maeLossVal, threshold=None, filenamePostfix=f"reco_error_distribution_on_val_set_for_1_energy_bin", title=f"Reconstruction error distribution on validation set (epoch={ep+1})", showFig=showPlots)
+
+            # Test for weighted mean
+            _, _, _, maeLossVal = adLSTM.computeThreshold(validationSet, recoErrMean="weighted", showFig=showPlots)
+            adLSTM.recoErrorDistributionPlot(maeLossVal, threshold=None, filenamePostfix=f"reco_error_distribution_on_val_set_for_1_energy_bin_weighted_mean", title=f"Reconstruction error distribution on validation set (epoch={ep+1})", showFig=showPlots)
+
+
+            # Plotting some reconstructions
+            # recostructions, maeLosses, maeLossesPerEnergyBin, mask = adLSTM.classify_with_mae(validationSet)
+            # adLSTM.plotPredictions(validationSet, valLabels, recostructions, maeLossesPerEnergyBin, mask, showFig=False, saveFig=True)
 
             with open(outDir.joinpath("threshold.txt"), "w") as thresholdFile:
                 thresholdFile.write(f"{maeThreshold}")
