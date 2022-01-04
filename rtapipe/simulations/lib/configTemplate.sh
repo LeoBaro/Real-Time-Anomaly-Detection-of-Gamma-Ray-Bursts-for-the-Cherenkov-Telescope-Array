@@ -46,7 +46,7 @@ analysis:
 
 options:
     set_ebl: True                     # uses the EBL absorbed template
-    extract_data: True                # if True extracts lightcurves and spectra
+    extract_data: False                # if True extracts lightcurves and spectra
     plotsky: False                    # if True generates skymap plot (bool)
 
 path:

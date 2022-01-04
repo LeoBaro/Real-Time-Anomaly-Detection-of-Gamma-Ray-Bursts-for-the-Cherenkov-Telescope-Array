@@ -12,4 +12,10 @@ rtapipe/testing/output/**
 rtapipe_training_plots_*
 ap_data_for_inspection_*
 ap_data_for_training_and_testing_*
-training_output
+training_output_*
+*/simulations/logs/*
+*/simulations/conf/*
+*/slurm_out/*
+job_file.tmp
+generate_ap_data.err
+generate_ap_data.out

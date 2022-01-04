@@ -34,8 +34,9 @@ else
             - virtual environment name (used for SLURM)
 
           Examples:
-            - ./run_simulation.sh 50 mp bkg 0   100 1000 0 0.03 1 2.5 1 bphd
-            - ./run_simulation.sh 50 mp grb 900 100 1000 0 0.03 1 2.5 1 bphd
+            - ./run_simulations.sh 50 mp bkg 0   100 1000 0 0.03 1 2.5 1 bphd
+            - ./run_simulations.sh 50 mp grb 900 100 1000 0 0.03 1 2.5 1 bphd
+            - ./run_simulations.sh 40 slurm bkg 0 100 1000 666 0.03 1 2.5 1 bphd
 """
     else
 
@@ -103,9 +104,7 @@ else
 
           elif [ "$parallelization" = "slurm" ]; then
             printf "Starting simulation with Slurm..\n"
-            trials_per_node=$(($trials/$cpus))
-            printf "cpus: $cpus\ntrials_per_node: $trials_per_node\n"
-            python "$scriptPath/RTAscience/makeConfig_runJobs.py" --infile "$configFilePath" --tt $trials --tn $trials_per_node --delay 0 --off 0 --flux 1 --env $virtualenvname --script $script --print false
+            python "$scriptPath/RTAscience/makeConfig_runJobs.py" --infile "$configFilePath" --tt $trials --cpus $cpus --delay 0 --off 0 --flux 1 --env $virtualenvname --script $script --print false
 
           else
             printf "Error: '$parallelization' is not supported. \$2=[mp, slurm]\n"

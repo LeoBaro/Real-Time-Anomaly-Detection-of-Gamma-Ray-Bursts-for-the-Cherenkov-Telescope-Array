@@ -11,12 +11,11 @@ from tensorflow.train import latest_checkpoint
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.losses import mean_absolute_error
-from rtapipe.analysis.models.builder import ModelBuilder
 from sklearn.metrics import roc_curve, roc_auc_score, RocCurveDisplay, precision_score, recall_score, precision_recall_curve, f1_score, confusion_matrix, ConfusionMatrixDisplay, PrecisionRecallDisplay
 import matplotlib.colors as mcolors
 from sklearn import metrics
 from tqdm import tqdm
-from abc import ABC, abstracmethod
+from abc import ABC, abstractmethod
 
 COLORS = list(mcolors.BASE_COLORS)
 plt.rcParams.update({'font.size': 18, 'lines.markersize': 0.5,'legend.markerscale': 3, 'lines.linewidth':1, 'lines.linestyle':'-'})
@@ -25,9 +24,10 @@ DPI=300
 
 class AnomalyDetectorBase(ABC):
 
-    @abstracmethod
+    @abstractmethod
     def loadModel(modelDir):
         pass
+
 
     def __init__(self, timesteps, nfeatures, outDir, loadModel = False):
 
