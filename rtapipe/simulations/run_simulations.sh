@@ -100,7 +100,9 @@ else
             printf "Starting simulation with Multiprocessing..\n"
             logFile="$DIR/logs/simBKG_$current_time.log"
             # nohup python "$script" -f "$configFilePath" --mp-enabled false --mp-threads "$cpus" 2>&1 > "$logFile" &
-            python "$script" -f "$configFilePath" --mp-enabled true --mp-threads "$cpus" 2>&1 > "$logFile"
+            cmd="python $script -f $configFilePath --mp-enabled true --mp-threads $cpus"
+            echo "Running: $cmd"
+            $cmd 2>&1 > $logFile
 
           elif [ "$parallelization" = "slurm" ]; then
             printf "Starting simulation with Slurm..\n"

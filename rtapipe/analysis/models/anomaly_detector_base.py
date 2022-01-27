@@ -64,7 +64,7 @@ class AnomalyDetectorBase(ABC):
     def summary(self):
         self.model.summary()
 
-    def fit(self, X_train, y_train, epochs, batchSize, validation_data, verbose=1, plotTrainingLoss=True):
+    def fit(self, X_train, y_train, epochs, batchSize, validation_data, verbose=1):
 
         # batch_size: number of samples per gradient update.
         # epoch: an epoch is an iteration over the entire x and y data provided
@@ -81,16 +81,15 @@ class AnomalyDetectorBase(ABC):
 
         self.history.append(history)
 
-        if plotTrainingLoss:
-            self.lossPlot(history.history["loss"], history.history["val_loss"], showFig=True)
+        return self.history
 
-    def plotTrainingLoss(self, showFig=True, saveFig=True):
+    def plotTrainingLoss(self, ylim=None, showFig=True, saveFig=True, figName="loss_plot.png", title="Training loss"):
         loss = []
         val_loss = []
         for history in self.history:
             loss += history.history["loss"]
             val_loss += history.history["val_loss"]
-        self.lossPlot(loss, val_loss, showFig=showFig, saveFig=True)
+        self.lossPlot(loss, val_loss, ylim=ylim, showFig=showFig, saveFig=True, figName=figName, title=title)
 
     def modelPredict(self, samples, verbose=1):
         return self.model.predict(samples, verbose=verbose)
@@ -112,7 +111,6 @@ class AnomalyDetectorBase(ABC):
         # Compute the threshold as the max of those errors
         return self.classificationThreshold, recostructions, maeLossPerEnergyBin, maeLoss
 
-
     def classifyWithKullbackLeibler(self, samples):
         # https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence
         pass
@@ -128,9 +126,9 @@ class AnomalyDetectorBase(ABC):
 
         recostructions, maeLossPerEnergyBin, maeLoss = self.computeReconstructionError(samples, recoErrMean)
 
-        mask = (maeLosses > self.classificationThreshold)
+        mask = (maeLoss > self.classificationThreshold)
 
-        return recostructions, maeLosses, maeLossesPerEnergyBin, mask
+        return recostructions, maeLoss, maeLossPerEnergyBin, mask
 
     def computeReconstructionError(self, samples, recoErrMean="simple",  verbose=1):
 
@@ -251,19 +249,21 @@ class AnomalyDetectorBase(ABC):
             pf.write(score_str)
         print(f"File {outputPath} created.")
 
-    def lossPlot(self, loss, val_loss, showFig=False, saveFig=True):
+    def lossPlot(self, loss, val_loss, title="Training loss", ylim=None, showFig=False, saveFig=True, figName="loss_plot.png"):
         fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
-        fig.suptitle("Losses during training")
+        fig.suptitle(title)
         ax.plot(loss, label="Training Loss")
         ax.plot(val_loss, label="Validation Loss")
         ax.set_xlabel('Epochs')
         ax.set_ylabel('Loss')
+        if ylim is not None:
+            ax.set_ylim(ylim[0], ylim[1])
         ax.grid()
         plt.legend()
         if showFig:
             plt.show()
         if saveFig:
-            outputPath = self.outDir.joinpath("loss_plot.png")
+            outputPath = self.outDir.joinpath(figName)
             fig.savefig(outputPath, dpi=DPI)
             print(f"Plot {outputPath} created.")
         plt.close()
@@ -302,9 +302,16 @@ class AnomalyDetectorBase(ABC):
             print(f"Plot {outputPath} created.")
         plt.close()
 
-    def plotPredictions(self, samples, samplesLabels, recostructions, maeLossePerEnergyBin, mask, showFig=False, saveFig=True):
-        ylim = samples.max(axis=1).flatten().max()
+    def plotPredictions(self, samples, samplesLabels, recostructions, maeLossePerEnergyBin, mask, maxSamples=None, rows=5, cols=10, predictionsPerFigure=40, showFig=False, saveFig=True):
+        if maxSamples is not None:
+            samples = samples[:maxSamples]
+            samplesLabels = samplesLabels[:maxSamples]
+            recostructions = recostructions[:maxSamples]
+            mask = mask[:maxSamples]
 
+        # ylim = samples.max(axis=1).flatten().max()
+        ymax = 3
+        ymin = -3
         print(f"Number of predictions: {len(samples)}. Sample shape: {samples.shape}")
 
         featureNum = samples.shape[2]
@@ -322,12 +329,6 @@ class AnomalyDetectorBase(ABC):
                 predLabels.append("grb")
             else:
                 predLabels.append("bkg")
-
-
-        predictionsPerFigure = 40
-
-        cols = 5
-        rows = 10
 
         figsize_x = 20
         figsize_y = rows*4
@@ -363,7 +364,7 @@ class AnomalyDetectorBase(ABC):
                         # And plot them
                         ax[row, col].plot(recoSample, color='red', linestyle='dashed', label=f'mae={round(maeLossePerEnergyBin[count,f],2)}')
                         ax[row, col].scatter(range(sample.shape[0]), sample, color=color, s=5)
-                        ax[row, col].set_ylim(0, ylim)
+                        ax[row, col].set_ylim(ymin, ymax)
                         ax[row, col].set_title(f"Real: {realLabels[count]} Pred: {predLabels[count]}")
                         ax[row, col].legend(loc='upper left')
                         ax[row, col].grid()

@@ -1,12 +1,39 @@
 import pandas as pd
+from time import time
+from os import listdir
 from pathlib import Path
-
+from shutil import rmtree
+from astropy.io import fits
+from datetime import datetime
 from rtapipe.lib.datasource.Photometry2 import Photometry2
 from rtapipe.lib.datasource.integrationstrat.IntegrationStrategies import IntegrationType
 
 tolerance = 1e-14
 
 class TestPhotometry2:
+
+
+
+    def read_photons_list_rows(self, fitsFile):
+        with fits.open(fitsFile) as hdul:
+            return len(hdul[1].data)
+
+    def count_photons(self, fitsFile):
+        with fits.open(fitsFile) as hdul:
+            return len(hdul[1].data["TIME"])
+
+    def count_photons_in_csv(self, csv_file):
+        df_counts = 0
+        df = pd.read_csv(csv_file, sep=",")
+        for col in df.columns:
+            if "COUNTS" in col:
+                df_counts += sum(df[col])
+        return df_counts
+        
+    def destroy_output(self, outputDir):
+        if outputDir.exists():
+            rmtree(outputDir)
+        outputDir.mkdir(parents=True)        
 
     def test_getLinearWindows(self):
 
@@ -44,7 +71,7 @@ class TestPhotometry2:
         # assert len(ph.dataFiles) == 2
 
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_only_single_file")
 
         outputDir = Path(__file__).parent.joinpath("photometry_test_output")
 
@@ -57,7 +84,8 @@ class TestPhotometry2:
 
         dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
         outputDir = Path(__file__).parent.joinpath("photometry_test_output")
-        inputFilename = dataDir.joinpath("bkg000002.fits")
+        self.destroy_output(outputDir)
+        inputFilename = dataDir.joinpath("bkg000001.fits")
 
         ph = Photometry2(dataDir, outputDir)
 
@@ -73,218 +101,217 @@ class TestPhotometry2:
         outputFilePath = ph.getOutputFilePath(inputFilename, IntegrationType.FULL, True)
         assert f"{outputFilePath}" == f"{outputDir}/bkg000002_full_simtype_bkg_onset_0_normalized_True.csv"
 
-
+    ################################################################################
+    # NOT NORMALIZED 
+    ################################################################################
 
     def test_integrate_full_not_normalized(self):
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_full_not_normalized")
+        self.destroy_output(outputDir)
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_full")
-        inputFilePath = dataDir.joinpath("bkg000002.fits")
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only_single_file")
+        dataFile = dataDir.joinpath("bkg000001.fits")
 
         ph = Photometry2(dataDir, outputDir)
-        customRegion = None
-        regionRadius = 0.2
-        outputFilePath, totalCounts = ph.integrateF(inputFilePath, customRegion, regionRadius, parallel=False, normalize=False)
+        computedOutputFilesNumber, computedTotalCounts = ph.integrateAll("F", 10, tWindows=None, eWindows=None, normalize=False, limit=None, parallel=False)
 
-        assert Path(outputFilePath).is_file() == True
-        assert totalCounts == 1945
+        # Check output files
+        realOutputFiles = listdir(outputDir)
+        assert computedOutputFilesNumber == len(realOutputFiles)
+        outputFile = realOutputFiles[0]
+        assert ".csv" in outputFile
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
-        inputFilePath = dataDir.joinpath("grb000002.fits")
+        # Check counts
+        realTotalCounts = self.count_photons(dataFile)
+        csvTotalCounts = self.count_photons_in_csv(outputDir.joinpath(outputFile))
+        assert computedTotalCounts == realTotalCounts
+        assert csvTotalCounts == realTotalCounts
+        print(f"[BKG] Real total counts: {realTotalCounts}, Csv Total Counts: {csvTotalCounts}, Computed Total Counts: {computedTotalCounts}")
+
+        self.destroy_output(outputDir)
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_only_single_file")
+        dataFile = dataDir.joinpath("grb000001.fits")
+
         ph = Photometry2(dataDir, outputDir)
-        customRegion = None
-        regionRadius = 0.2
-        outputFilePath, totalCounts = ph.integrateF(inputFilePath, customRegion, regionRadius, parallel=False, normalize=False)
+        computedOutputFilesNumber, computedTotalCounts = ph.integrateAll("F", 10, tWindows=None, eWindows=None, normalize=False, limit=None, parallel=False)
 
-        assert Path(outputFilePath).is_file() == True
-        assert totalCounts == 3316
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
+        # Check output files
+        realOutputFiles = listdir(outputDir)
+        assert computedOutputFilesNumber == len(realOutputFiles)
+        outputFile = realOutputFiles[0]
+        assert ".csv" in outputFile
 
+        # Check counts
+        realTotalCounts = self.count_photons(dataFile)
+        csvTotalCounts = self.count_photons_in_csv(outputDir.joinpath(outputFile))
+        assert computedTotalCounts == realTotalCounts
+        assert csvTotalCounts == realTotalCounts
+        print(f"[GRB] Real total counts: {realTotalCounts}, Csv Total Counts: {csvTotalCounts}, Computed Total Counts: {computedTotalCounts}")
+
+
+    def test_integrate_t_not_normalized_bkg(self):
+
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only_single_file")
+        dataFile = dataDir.joinpath("bkg000001.fits")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_t_not_normalized_bkg")
+        self.destroy_output(outputDir)
+
+        ph = Photometry2(dataDir, outputDir)
+
+        tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
+
+        computedOutputFilesNumber, computedTotalCounts = ph.integrateAll("T", 10, tWindows=tWindows, eWindows=None, limit=None, parallel=False, normalize=False)
+
+        # Check output files
+        realOutputFiles = listdir(outputDir)
+        assert computedOutputFilesNumber == len(realOutputFiles)
+        outputFile = realOutputFiles[0]
+        assert ".csv" in outputFile
+
+        # Check counts
+        realTotalCounts = self.count_photons(dataFile)
+        csvTotalCounts = self.count_photons_in_csv(outputDir.joinpath(outputFile))
+        assert computedTotalCounts == realTotalCounts
+        assert csvTotalCounts == realTotalCounts
+
+        
+
+    def test_integrate_te_not_normalized_bkg(self):
+
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only_single_file")
+        dataFile = dataDir.joinpath("bkg000001.fits")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_te_not_normalized_bkg")
+        self.destroy_output(outputDir)
+
+        ph = Photometry2(dataDir, outputDir)
+
+        tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
+        eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
+
+        computedOutputFilesNumber, computedTotalCounts = ph.integrateAll("TE", 10, tWindows=tWindows, eWindows=eWindows, limit=None, parallel=False, normalize=False)
+
+        # Check output files
+        realOutputFiles = listdir(outputDir)
+        assert computedOutputFilesNumber == len(realOutputFiles)
+        outputFile = realOutputFiles[0]
+        assert ".csv" in outputFile
+
+        # Check counts
+        realTotalCounts = self.count_photons(dataFile)
+        csvTotalCounts = self.count_photons_in_csv(outputDir.joinpath(outputFile))
+        assert computedTotalCounts == realTotalCounts
+        assert csvTotalCounts == realTotalCounts
+
+
+
+    def test_integrate_te_not_normalized_grb(self):
+
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_only_single_file")
+        dataFile = dataDir.joinpath("grb000001.fits")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_te_not_normalized_grb")
+        self.destroy_output(outputDir)
+
+
+        ph = Photometry2(dataDir, outputDir)
+
+        tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
+        eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
+
+        computedOutputFilesNumber, computedTotalCounts = ph.integrateAll("TE", 10, tWindows=tWindows, eWindows=eWindows, limit=None, parallel=False, normalize=False)
+
+        # Check output files
+        realOutputFiles = listdir(outputDir)
+        assert computedOutputFilesNumber == len(realOutputFiles)
+        outputFile = realOutputFiles[0]
+        assert ".csv" in outputFile
+
+        # Check counts
+        realTotalCounts = self.count_photons(dataFile)
+        csvTotalCounts = self.count_photons_in_csv(outputDir.joinpath(outputFile))
+        assert computedTotalCounts == realTotalCounts
+        assert csvTotalCounts == realTotalCounts
+
+
+
+
+    ################################################################################
+    # NORMALIZED 
+    ################################################################################
 
     def test_integrate_full_normalized(self):
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_full_normalized")
+        self.destroy_output(outputDir)
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_full")
-        inputFilePath = dataDir.joinpath("bkg000002.fits")
 
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only_single_file")
         ph = Photometry2(dataDir, outputDir)
-        customRegion = None
-        regionRadius = 0.2
-        outputFilePath, totalCounts = ph.integrateF(inputFilePath, customRegion, regionRadius, parallel=False, normalize=True)
+        outputFiles, totalCounts = ph.integrateAll("F", 0.2, tWindows=None, eWindows=None, limit=None, parallel=False, normalize=True)
+        assert (totalCounts - 1.831337521220006e-09) < tolerance
+        assert outputFiles == 1
 
-        assert Path(outputFilePath).is_file() == True
-        assert (totalCounts - 1.8267166610338249e-09) < tolerance
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
-        inputFilePath = dataDir.joinpath("grb000002.fits")
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_only_single_file")
+        self.destroy_output(outputDir)
         ph = Photometry2(dataDir, outputDir)
-        customRegion = None
-        regionRadius = 0.2
-        outputFilePath, totalCounts = ph.integrateF(inputFilePath, customRegion, regionRadius, parallel=False, normalize=True)
-
-        assert Path(outputFilePath).is_file() == True
+        outputFiles, totalCounts = ph.integrateAll("F", 0.2, tWindows=None, eWindows=None, limit=None, parallel=False, normalize=True)
         assert (totalCounts - 3.114340590225277e-09) < tolerance
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
 
 
-    def test_integrate_t_not_normalized(self):
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_t")
+
+
+    def test_integrate_t_normalized_bkg(self):
+
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only_single_file")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_t_normalized_bkg")
+        self.destroy_output(outputDir)
+
+
+        ph = Photometry2(dataDir, outputDir)
+
         tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
 
-        inputFilePath = dataDir.joinpath("bkg000002.fits")
+        outputFiles, totalCounts = ph.integrateAll("T", 0.2, tWindows=tWindows, eWindows=None, normalize=True, limit=None, parallel=False)
+
+        assert (totalCounts - 3.296407538196011e-08) < tolerance
+        assert outputFiles == 1
+
+        for fileName in listdir(outputDir):
+            assert ".csv" in fileName
+            assert pd.read_csv(outputDir.joinpath(fileName), sep=",").isnull().values.any() == False
+
+
+
+
+
+
+    """
+    def test_integrate_te_normalized_grb(self):
+
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_only_single_file")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_te_normalized_grb")
+        try: rmtree(outputDir)
+        except: pass
+        outputDir.mkdir(parents=True)
+
         ph = Photometry2(dataDir, outputDir)
-        regionRadius = 0.2
-        customRegion = None
-        outputFilePath, totalCounts = ph.integrateT(inputFilePath, customRegion, regionRadius, tWindows, parallel=False, normalize=False)
-        assert Path(outputFilePath).is_file() == True
-        assert totalCounts == 1945
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
-        inputFilePath = dataDir.joinpath("grb000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        regionRadius = 0.2
-        customRegion = None
-        outputFilePath, totalCounts = ph.integrateT(inputFilePath, customRegion, regionRadius, tWindows, parallel=False, normalize=False)
-        assert Path(outputFilePath).is_file() == True
-        assert totalCounts == 3316
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
-
-
-
-    def test_integrate_t_normalized(self):
-
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_t")
-        tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
-
-        inputFilePath = dataDir.joinpath("bkg000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        regionRadius = 0.2
-        customRegion = None
-        outputFilePath, totalCounts = ph.integrateT(inputFilePath, customRegion, regionRadius, tWindows, parallel=False, normalize=True)
-        assert Path(outputFilePath).is_file() == True
-        assert (totalCounts - 3.288089989860884e-08) < tolerance
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
-
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
-        inputFilePath = dataDir.joinpath("grb000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        regionRadius = 0.2
-        customRegion = None
-        outputFilePath, totalCounts = ph.integrateT(inputFilePath, customRegion, regionRadius, tWindows, parallel=False, normalize=True)
-        assert Path(outputFilePath).is_file() == True
-        assert (totalCounts - 5.6058130624054985e-08) < tolerance
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
-
-
-    def test_integrate_e_not_normalized(self):
-
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_e")
-        eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
-
-        inputFilePath = dataDir.joinpath("bkg000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        regionRadius = 0.2
-        customRegion = None
-        outputFilePath, totalCounts = ph.integrateE(inputFilePath, customRegion, regionRadius, eWindows, parallel=False, normalize=False)
-        assert Path(outputFilePath).is_file() == True
-        assert totalCounts == 1945
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
-
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
-        inputFilePath = dataDir.joinpath("grb000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        regionRadius = 0.2
-        outputFilePath, totalCounts = ph.integrateE(inputFilePath, customRegion, regionRadius, eWindows, parallel=False, normalize=False)
-        assert Path(outputFilePath).is_file() == True
-        assert totalCounts == 3316
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
-
-
-
-    def test_integrate_e_normalized(self):
-
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_e")
-        eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
-
-        inputFilePath = dataDir.joinpath("bkg000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        regionRadius = 0.2
-        customRegion = None
-        outputFilePath, totalCounts = ph.integrateE(inputFilePath, customRegion, regionRadius, eWindows, parallel=False, normalize=True)
-        assert Path(outputFilePath).is_file() == True
-        assert (totalCounts - 2.4770990166353848e-09) < tolerance
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
-
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
-        inputFilePath = dataDir.joinpath("grb000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        regionRadius = 0.2
-        outputFilePath, totalCounts = ph.integrateE(inputFilePath, customRegion, regionRadius, eWindows, parallel=False, normalize=True)
-        assert Path(outputFilePath).is_file() == True
-        assert (totalCounts - 3.766885883843366e-09) < tolerance
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
-
-
-
-    def test_integrate_t_e_not_normalized(self):
-
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_t_e")
         tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
         eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
+        print("eWindows",eWindows)
+        outputFiles, totalCounts = ph.integrateAll("TE", 0.2, tWindows=tWindows, eWindows=eWindows, normalize=True, limit=None, parallel=False)
 
-        inputFilePath = dataDir.joinpath("bkg000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        customRegion = None
-        regionRadius = 0.2
-        outputFilePath, totalCounts = ph.integrateTE(inputFilePath, customRegion, regionRadius, tWindows, eWindows, parallel=False, normalize=False)
-        assert Path(outputFilePath).is_file() == True
-        assert totalCounts == 1945
+        assert (totalCounts - 4.881458728926591e-08) < tolerance
+        assert outputFiles == 1
 
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
-        inputFilePath = dataDir.joinpath("grb000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        customRegion = None
-        regionRadius = 0.2
-        outputFilePath, totalCounts = ph.integrateTE(inputFilePath, customRegion, regionRadius, tWindows, eWindows, parallel=False, normalize=False)
-        assert Path(outputFilePath).is_file() == True
-        assert totalCounts == 3316
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
+        for fileName in listdir(outputDir):
+            assert ".csv" in fileName
+            assert pd.read_csv(outputDir.joinpath(fileName), sep=",").isnull().values.any() == False
 
 
 
 
-    def test_integrate_t_e_normalized(self):
-
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_t_e")
-        tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
-        eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
-
-        inputFilePath = dataDir.joinpath("bkg000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        customRegion = None
-        regionRadius = 0.2
-        outputFilePath, totalCounts = ph.integrateTE(inputFilePath, customRegion, regionRadius, tWindows, eWindows, parallel=False, normalize=True)
-        assert Path(outputFilePath).is_file() == True
-        assert (totalCounts - 4.458778229943692e-08) < tolerance
-
-        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
-        inputFilePath = dataDir.joinpath("grb000002.fits")
-        ph = Photometry2(dataDir, outputDir)
-        customRegion = None
-        regionRadius = 0.2
-        outputFilePath, totalCounts = ph.integrateTE(inputFilePath, customRegion, regionRadius, tWindows, eWindows, parallel=False, normalize=True)
-        assert Path(outputFilePath).is_file() == True
-        assert (totalCounts - 6.780394590918058e-08) < tolerance
-        assert pd.read_csv(outputFilePath, sep=",").isnull().values.any() == False
-
+    
 
     def checkOutput(self, outputFiles, expected_files, counts_expected, counts_found):
         assert len(outputFiles) == expected_files
@@ -297,43 +324,46 @@ class TestPhotometry2:
     def test_integrate_all_not_normalized(self):
 
         dataDirBkg = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        dataDirGrb = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
+        dataDirGrb = Path(__file__).parent.joinpath("test_data", "fits", "grb_only_single_file")
 
         outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_all")
+        rmtree(outputDir)
+        outputDir.mkdir(parents=True)
+
         tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
         eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
 
-        customRegion = None
+
         regionRadius = 0.2
 
 
         ph = Photometry2(dataDirBkg, outputDir)
 
-        outputFiles, totalCounts = ph.integrateAll("T", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
+        outputFiles, totalCounts = ph.integrateAll("T", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
         self.checkOutput(outputFiles, 2, 3989, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("E", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
+        outputFiles, totalCounts = ph.integrateAll("E", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
         self.checkOutput(outputFiles, 2, 3989, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("TE", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
+        outputFiles, totalCounts = ph.integrateAll("TE", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
         self.checkOutput(outputFiles, 2, 3989, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("F", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
+        outputFiles, totalCounts = ph.integrateAll("F", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
         self.checkOutput(outputFiles, 2, 3989, totalCounts)
 
 
         ph = Photometry2(dataDirGrb, outputDir)
 
-        outputFiles, totalCounts = ph.integrateAll("T", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
+        outputFiles, totalCounts = ph.integrateAll("T", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
         self.checkOutput(outputFiles, 1, 3316, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("E", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
+        outputFiles, totalCounts = ph.integrateAll("E", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
         self.checkOutput(outputFiles, 1, 3316, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("TE", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
+        outputFiles, totalCounts = ph.integrateAll("TE", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
         self.checkOutput(outputFiles, 1, 3316, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("F", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
+        outputFiles, totalCounts = ph.integrateAll("F", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=False)
         self.checkOutput(outputFiles, 1, 3316, totalCounts)
 
 
@@ -341,42 +371,76 @@ class TestPhotometry2:
     def test_integrate_all_normalized(self):
 
         dataDirBkg = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only")
-        dataDirGrb = Path(__file__).parent.joinpath("test_data", "fits", "grb_onset")
+        dataDirGrb = Path(__file__).parent.joinpath("test_data", "fits", "grb_only_single_file")
 
         outputDir = Path(__file__).parent.joinpath("photometry_test_output", "test_integrate_all")
+        rmtree(outputDir)
+        outputDir.mkdir(parents=True)
+
         tWindows = Photometry2.getLinearWindows(0, 1800, 100, 100)
         eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
 
-        customRegion = None
+
         regionRadius = 0.2
 
 
         ph = Photometry2(dataDirBkg, outputDir)
 
 
-        outputFiles, totalCounts = ph.integrateAll("T", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
+        outputFiles, totalCounts = ph.integrateAll("T", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
         self.checkOutput(outputFiles, 2, 6.743542914938338e-08, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("E", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
+        outputFiles, totalCounts = ph.integrateAll("E", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
         self.checkOutput(outputFiles, 2, 5.117216049208847e-09, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("TE", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
+        outputFiles, totalCounts = ph.integrateAll("TE", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
         self.checkOutput(outputFiles, 2, 9.210988888575927e-08, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("F", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
+        outputFiles, totalCounts = ph.integrateAll("F", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
         self.checkOutput(outputFiles, 2, 3.746412730521299e-09, totalCounts)
 
 
         ph = Photometry2(dataDirGrb, outputDir)
 
-        outputFiles, totalCounts = ph.integrateAll("T", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
+        outputFiles, totalCounts = ph.integrateAll("T", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
         self.checkOutput(outputFiles, 1, 5.6058130624054985e-08, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("E", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
+        outputFiles, totalCounts = ph.integrateAll("E", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
         self.checkOutput(outputFiles, 1, 3.766885883843366e-09, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("TE", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
+        outputFiles, totalCounts = ph.integrateAll("TE", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
         self.checkOutput(outputFiles, 1, 6.780394590918058e-08, totalCounts)
 
-        outputFiles, totalCounts = ph.integrateAll("F", customRegion, regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
+        outputFiles, totalCounts = ph.integrateAll("F", regionRadius, tWindows, eWindows, limit=None, parallel=False, normalize=True)
         self.checkOutput(outputFiles, 1, 3.114340590225277e-09, totalCounts)
+
+
+    def test_benchmark_t_e_integration_without_normalization_with_offset(self):
+        folderName = "test_benchmark_t_e_integration_without_normalization_with_offset_ver6"
+        dataDir = Path(__file__).parent.joinpath("test_data", "fits", "bkg_only_benchmark_2")
+        outputDir = Path(__file__).parent.joinpath("photometry_test_output", folderName)
+        try: rmtree(outputDir)
+        except: pass
+        outputDir.mkdir(parents=True)
+
+        tWindows = Photometry2.getLinearWindows(0, 100, 10, 10)
+        eWindows = Photometry2.getLogWindows(0.03, 0.15, 4)
+        print("eWindows",eWindows)
+        customRegion = "pippoplutopaperino"
+        rr = 0.2
+        procnumber = 40
+        normalize = False
+        batchSize = 40
+
+        ph = Photometry2(dataDir, outputDir)
+
+        start = time()
+        outputFiles, counts = ph.integrateAll("TE", rr, tWindows, eWindows, parallel=False, procNumber=procnumber, normalize=normalize, batchSize=batchSize)
+        end = time() - start
+        timeStr = f"[{datetime.now()}] Total time: {round(end,2)} seconds\n"
+        with open(outputDir.parent.joinpath(f"{folderName}.txt"), "a") as bf:
+            bf.write(timeStr)
+        print(timeStr)
+        assert len(listdir(outputDir)) == len(listdir(dataDir)) - 1
+
+        """

@@ -16,16 +16,8 @@ class IntegrationType:
 
 class IntegrationStrategy(ABC):
     @abstractmethod
-    def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None, regionEffForEB=None):
+    def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None, areaEffForEnergyBins=None):
         pass
-
-    """
-    def computeAeffArea(self, normConfTemplate, emin, emax, region, pointing):
-        normConfTemplate.energy_min = emin
-        normConfTemplate.energy_max = emax
-        region_eff_resp = aeff_eval(normConfTemplate, region, {'ra': pointing[0], 'dec': pointing[1]})
-        return region_eff_resp
-    """
 
     def normalize(self, counts, region_eff_resp, livetime):
 
@@ -36,10 +28,10 @@ class IntegrationStrategy(ABC):
 
 class TimeIntegration(IntegrationStrategy):
 
-    def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None, regionEffForEB=None):
+    def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None, areaEffForEnergyBins=None):
 
-        if normalize and (regionEffForEB is None):
-            raise ValueError(f"normalize is {normalize} and regionEffForEB is {normConfTemplate}")
+        if normalize and (areaEffForEnergyBins is None):
+            raise ValueError(f"normalize is {normalize} and areaEffForEnergyBins is {normConfTemplate}")
 
         assert len(eWindows) == 1
 
@@ -62,7 +54,7 @@ class TimeIntegration(IntegrationStrategy):
 
                 if normalize:
 
-                    counts = self.normalize(counts, regionEffForEB[str(eWindows[0])], livetime)
+                    counts = self.normalize(counts, areaEffForEnergyBins[str(eWindows[0])], livetime)
 
                 of.write(f"{twin[0]},{twin[1]},{counts},{round(sqrt(counts), 4)}\n")
                 totalCounts += counts
@@ -73,10 +65,10 @@ class TimeIntegration(IntegrationStrategy):
 
 class EnergyIntegration(IntegrationStrategy):
 
-    def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None, regionEffForEB=None):
+    def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None, areaEffForEnergyBins=None):
 
-        if normalize and (regionEffForEB is None):
-            raise ValueError(f"normalize is {normalize} and regionEffForEB is {normConfTemplate}")
+        if normalize and (areaEffForEnergyBins is None):
+            raise ValueError(f"normalize is {normalize} and areaEffForEnergyBins is {normConfTemplate}")
 
         assert len(tWindows) == 1
 
@@ -99,7 +91,7 @@ class EnergyIntegration(IntegrationStrategy):
 
                     # region_eff_resp = self.computeAeffArea(normConfTemplate, ewin[0], ewin[1], region, pointing)
 
-                    counts = self.normalize(counts, regionEffForEB[str(ewin)], livetime)
+                    counts = self.normalize(counts, areaEffForEnergyBins[str(ewin)], livetime)
 
                 of.write(f"{ewin[0]},{ewin[1]},{counts},{round(sqrt(counts), 4)}\n")
                 totalCounts += counts
@@ -110,10 +102,10 @@ class EnergyIntegration(IntegrationStrategy):
 
 class TimeEnergyIntegration(IntegrationStrategy):
 
-    def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None, regionEffForEB=None):
+    def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None, areaEffForEnergyBins=None):
 
-        if normalize and (regionEffForEB is None):
-            raise ValueError(f"normalize is {normalize} and regionEffForEB is {normConfTemplate}")
+        if normalize and (areaEffForEnergyBins is None):
+            raise ValueError(f"normalize is {normalize} and areaEffForEnergyBins is {normConfTemplate}")
 
         header="TMIN,TMAX"
         for energyBin in eWindows:
@@ -126,11 +118,6 @@ class TimeEnergyIntegration(IntegrationStrategy):
 
             livetime = tWindows[0][1] - tWindows[0][0]
 
-            # Compute aeff area for the energy bins
-            #region_eff_resp_for_eb = {}
-            #for ewin in tqdm(eWindows, disable=parallel):
-            # region_eff_resp_for_eb[str(ewin)] = self.computeAeffArea(normConfTemplate, ewin[0], ewin[1], region, pointing)
-
             for twin in tqdm(tWindows, disable=parallel, leave=False):
 
                 of.write(f"{twin[0]},{twin[1]}")
@@ -141,8 +128,7 @@ class TimeEnergyIntegration(IntegrationStrategy):
 
                     if normalize:
 
-                        counts = self.normalize(counts, regionEffForEB[str(ewin)], livetime)
-
+                        counts = self.normalize(counts, areaEffForEnergyBins[str(ewin)], livetime)
 
                     of.write(f",{counts},{round(sqrt(counts), 4)}")
                     totalCounts += counts
@@ -157,10 +143,10 @@ class TimeEnergyIntegration(IntegrationStrategy):
 
 class FullIntegration(IntegrationStrategy):
 
-    def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None, regionEffForEB=None):
+    def integrate(self, photometrics, outputFilePath, region, tWindows, eWindows, parallel=False, normalize=True, normConfTemplate=None, pointing=None, areaEffForEnergyBins=None):
 
-        if normalize and (regionEffForEB is None):
-            raise ValueError(f"normalize is {normalize} and regionEffForEB is {normConfTemplate}")
+        if normalize and (areaEffForEnergyBins is None):
+            raise ValueError(f"normalize is {normalize} and areaEffForEnergyBins is {normConfTemplate}")
 
         assert len(tWindows) == 1
         assert len(eWindows) == 1
@@ -182,7 +168,7 @@ class FullIntegration(IntegrationStrategy):
 
             if normalize:
 
-                counts = self.normalize(counts, regionEffForEB[str(eWindows[0])], livetime)
+                counts = self.normalize(counts, areaEffForEnergyBins[str(eWindows[0])], livetime)
 
             of.write(f"{counts},{round(sqrt(counts), 4)}\n")
             totalCounts += counts

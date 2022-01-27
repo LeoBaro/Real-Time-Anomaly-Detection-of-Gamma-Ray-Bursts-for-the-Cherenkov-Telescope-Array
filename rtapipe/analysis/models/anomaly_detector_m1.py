@@ -16,7 +16,7 @@ class AnomalyDetector_m1(AnomalyDetectorBase):
     def __init__(self, timesteps, nfeatures, outDir, loadModel = False):
         super().__init__(timesteps, nfeatures, outDir, loadModel)
 
-        print(f"Building AnomalyDetector_2layers - input shape: ({timesteps},{nfeatures})")
+        print(f"Building AnomalyDetector_m1 - input shape: ({timesteps},{nfeatures})")
 
         self.mp = {
             "units" : [8, 8],

@@ -31,7 +31,7 @@ class Photometry2:
         self.irfFile = Path(expandvars('$CTOOLS')).joinpath(f"share/caldb/data/cta/{cfg.get('caldb')}/bcf/{cfg.get('irf')}/irf_file.fits")
         template =  Path(os.environ["DATA"]).joinpath(f'templates/{cfg.get("runid")}.fits')
 
-        self.sourcePosition = get_pointing(template) # source position
+        self.sourcePosition = get_pointing(template) # alias get_target
         self.sim_type = cfg.get("simtype")
         self.sim_onset = cfg.get("onset")
         self.sim_emin = cfg.get("emin")
@@ -70,26 +70,18 @@ class Photometry2:
             windows.append((round(npwindows[idx],4) , round(npwindows[idx+1], 4)))
         return windows
 
-    def computeAeffArea(self, eWindows, regionRadius, region=None):
-
-        # for the moment I dont need phm_options
-        # opts = phm_options(erange=[emin, emax], texp=(tmax-tmin), time_int=(tmin, tmax), target=normParams.pointing, pointing=normParams.pointing, index=normParams.index, save_off_reg=None, irf_file=Path(expandvars('$CTOOLS')).joinpath(f"share/caldb/data/cta/{normParams.caldb}/bcf/{normParams.irf}/irf_file.fits"))
-
-        # This configuration is needed by Simone's tool.
-        # It describe the spatial integration.
-        reg = {
-            'ra': None,
-            'dec': None,
+    def computeRegion(self, regionRadius, regionOffset = 2):
+        """ Computes the region ra and dec, starting from the source position (== map center)
+            and adding an offset.
+        """
+        # TODO: the offset should depend on the regionRadius
+        return {
+            'ra': self.sourcePosition[0] + regionOffset,
+            'dec': self.sourcePosition[1],
             'rad' : float(regionRadius)
         }
-        # You can integrate in a region by specifying the region input parameter
-        # If region param is None, the region will be defined by the source position.
-        if region is not None:
-            reg["ra"] = region[0]
-            reg["dec"] = region[1]
-        else:
-            reg["ra"] = self.sourcePosition[0]
-            reg["dec"] = self.sourcePosition[1]
+
+    def computeAeffArea(self, eWindows, region):
 
         # This configuration is needed by Ambra's normalization tool
         # The None parameters will be updated later
@@ -98,12 +90,12 @@ class Photometry2:
             "end_time" : 0,
             "source_ra" : self.sourcePosition[0],
             "source_dec" : self.sourcePosition[1],
-            "region_radius" : regionRadius,
+            "region_radius" : region["rad"],
             "verbose" : 0,
             "energy_min" : 0,
             "energy_max" : 0,
             "pixel_size" : 0.05,
-            "power_law_index" : -2.4,
+            "power_law_index" : -2.1,
             "irf_file" : self.irfFile
         })
 
@@ -116,15 +108,13 @@ class Photometry2:
         # altrimenti si può prendere anche dall'header del FITS  --> TODO <--
         pointing = self.sourcePosition
 
-        regionEffForEB = {}
+        areaEffForEB = {}
         for ewin in eWindows:
             normConfTemplate.energy_min = ewin[0]
             normConfTemplate.energy_max = ewin[1]
-            regionEffForEB[str(ewin)] = aeff_eval(normConfTemplate, reg, {'ra': pointing[0], 'dec': pointing[1]})
+            areaEffForEB[str(ewin)] = aeff_eval(normConfTemplate, region, {'ra': pointing[0], 'dec': pointing[1]})
 
-        return reg, regionEffForEB
-
-
+        return areaEffForEB
 
     def getOutputFilePath(self, inputFilePath, integrationType, normalize):
 
@@ -159,92 +149,62 @@ class Photometry2:
 
 
 
-    def integrateAll(self, integrationType, region, regionRadius, tWindows, eWindows, limit=None, parallel=False, procNumber=10, normalize=True):
+    def integrateAll(self, integrationType, regionRadius, tWindows=None, eWindows=None, limit=None, parallel=False, procNumber=10, normalize=True, batchSize=1200):
         """
             Integrate multiples input files in a directory
         """
-        totalCounts = 0
-        outputFiles = []
+        region = self.computeRegion(regionRadius)
 
+        if tWindows is None:
+            tWindows = [(self.sim_tmin, self.sim_tmax)]
+
+        if eWindows is None:
+            eWindows = [(self.sim_emin, self.sim_emax)]
+
+        areaEffForEnergyBins = None
+        if normalize:
+            areaEffForEnergyBins = self.computeAeffArea(eWindows, region)
+            
         if integrationType == "T":
-            func = partial(self.integrateT, region=region, regionRadius=regionRadius, tWindows=tWindows, parallel=parallel, normalize=normalize)
-        elif integrationType == "E":
-            func = partial(self.integrateE, region=region, regionRadius=regionRadius, eWindows=eWindows, parallel=parallel, normalize=normalize)
+            integrationType = self.setIntegrationType(IntegrationType.TIME)
+
+        #elif integrationType == "E":
+        #    integrationType = self.setIntegrationType(IntegrationType.ENERGY)
+
         elif integrationType == "TE":
-            func = partial(self.integrateTE, region=region, regionRadius=regionRadius, tWindows=tWindows, eWindows=eWindows, parallel=parallel, normalize=normalize)
+            integrationType = self.setIntegrationType(IntegrationType.TIME_ENERGY)
+
         elif integrationType == "F":
-            func = partial(self.integrateF, region=region, regionRadius=regionRadius, parallel=parallel, normalize=normalize)
+            integrationType = self.setIntegrationType(IntegrationType.FULL)
+
+        else:
+            raise ValueError(f"Integration {integrationType} is not supported")
+
+        func = partial(self.integrate, integrationType=integrationType, region=region, tWindows=tWindows, eWindows=eWindows, areaEffForEnergyBins=areaEffForEnergyBins, parallel=parallel, normalize=normalize)
 
         output = None
-        count = 0
-        batchIterator = FileSystemUtils.iterDirBatch(self.dataDir, 1200)
-
-        # OPTIMIZE: pass multiple files to integrate..
+        totalCounts = 0
+        outputFilesCounts = 0
+        batchIterator = FileSystemUtils.iterDirBatch(self.dataDir, batchSize)
 
         while True:
             try:
                 batchFiles = next(batchIterator)
                 with Pool(procNumber) as p:
                     output = p.map(func, batchFiles)
-                    # print(output) # [ (PosixPath, counts), (PosixPath, counts), ..]
-                    outputFiles = [str(tuple[0]) for tuple in output]
+                    outputFilesCounts += len([str(tuple[0]) for tuple in output])
                     totalCounts = sum([tuple[1] for tuple in output])
-                count += len(batchFiles)
+
             except StopIteration:
-                print(f"Processed {count} files")
+                print(f"Processed {outputFilesCounts} files")
                 break
 
         del batchIterator
 
-        return outputFiles, totalCounts
+        return outputFilesCounts, totalCounts
 
 
-    """
-        API
-    """
-    def integrateT(self, inputFilePath, region, regionRadius, tWindows, parallel=False, normalize=True):
-        """
-            Integrate along temporal and spatial dimensions.
-        """
-        integrationType = self.setIntegrationType(IntegrationType.TIME)
-        outputFilePath = self.getOutputFilePath(inputFilePath, integrationType, normalize)
-        eWindows = [(self.sim_emin, self.sim_emax)]
-        region, regionEffForEB = self.computeAeffArea(eWindows, regionRadius, region)
-        return self.integrate(inputFilePath, outputFilePath, region, regionRadius, tWindows, eWindows, parallel, normalize, regionEffForEB)
-
-    def integrateE(self, inputFilePath, region, regionRadius, eWindows, parallel=False, normalize=True):
-        """
-            Integrate along energetic and spatial dimensions.
-        """
-        integrationType = self.setIntegrationType(IntegrationType.ENERGY)
-        outputFilePath = self.getOutputFilePath(inputFilePath, integrationType, normalize)
-        tWindows = [(self.sim_tmin, self.sim_tmax)]
-        region, regionEffForEB = self.computeAeffArea(eWindows, regionRadius, region)
-        return self.integrate(inputFilePath, outputFilePath, region, regionRadius, tWindows, eWindows, parallel, normalize, regionEffForEB)
-
-    def integrateTE(self, inputFilePath, region, regionRadius, tWindows, eWindows, parallel=False, normalize=True):
-        """
-            Integrate along temporal, energetic and spatial dimensions.
-        """
-        integrationType = self.setIntegrationType(IntegrationType.TIME_ENERGY)
-        outputFilePath = self.getOutputFilePath(inputFilePath, integrationType, normalize)
-        region, regionEffForEB = self.computeAeffArea(eWindows, regionRadius, region)
-        return self.integrate(inputFilePath, outputFilePath, region, regionRadius, tWindows, eWindows, parallel, normalize, regionEffForEB)
-
-    def integrateF(self, inputFilePath, region, regionRadius, parallel=False, normalize=True):
-        """
-            Integrate only along the spatial dimension.
-        """
-        integrationType = self.setIntegrationType(IntegrationType.FULL)
-        outputFilePath = self.getOutputFilePath(inputFilePath, integrationType, normalize)
-        tWindows = [(self.sim_tmin, self.sim_tmax)]
-        eWindows = [(self.sim_emin, self.sim_emax)]
-        region, regionEffForEB = self.computeAeffArea(eWindows, regionRadius, region)
-        return self.integrate(inputFilePath, outputFilePath, region, regionRadius, tWindows, eWindows, parallel, normalize, regionEffForEB)
-
-
-
-    def integrate(self, inputFilePath, outputFilePath, region, regionRadius, tWindows, eWindows, parallel=False, normalize=True, regionEffForEB=None):
+    def integrate(self, inputFilePath, integrationType, region, tWindows, eWindows, parallel=False, normalize=True, areaEffForEnergyBins=None):
         """
             Può usare la posizione della sorgente (self.sourcePosition) (che sta nell'header del template).
             Oppure, può usare una positione custom passata come parametro. Oppure un offest??
@@ -253,14 +213,16 @@ class Photometry2:
                 inputFilePath: str ->
                 outputFilePath: str ->
                 region: tuple -> The region that describes the spatial integration. If None, the region (ra,dec) will correspond to the source position.
-                regionRadius: float -> The radius of the region
                 tWindows: list ->
                 eWindows: list ->
         """
+
+        outputFilePath = self.getOutputFilePath(inputFilePath, integrationType, normalize)
+
         if Path(outputFilePath).exists():
             # print(f"Skipped {outputFilePath}. Already exist!")
             return outputFilePath, 0
 
         photometrics = Photometrics({ 'events_filename': inputFilePath })
 
-        return self.integrationStrat.integrate(photometrics, outputFilePath, region, tWindows, eWindows, parallel=parallel, normalize=normalize, normConfTemplate=None, pointing=None, regionEffForEB=regionEffForEB)
+        return self.integrationStrat.integrate(photometrics, outputFilePath, region, tWindows, eWindows, parallel=parallel, normalize=normalize, normConfTemplate=None, pointing=None, areaEffForEnergyBins=areaEffForEnergyBins)

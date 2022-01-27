@@ -4,3 +4,6 @@
 [submodule "cta-sag-sci"]
 	path = cta-sag-sci
 	url = https://github.com/ambra-dipiano/cta-sag-sci
+[submodule "sagsci"]
+	path = sagsci
+	url = git@github.com:ASTRO-EDU/sagsci.git

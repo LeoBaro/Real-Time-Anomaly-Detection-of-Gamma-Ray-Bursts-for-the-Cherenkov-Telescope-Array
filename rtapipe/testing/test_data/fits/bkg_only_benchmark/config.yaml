@@ -1,0 +1,43 @@
+analysis:
+  binned: true
+  blind: false
+  cumulative: false
+  exposure: 10
+  index: -2.1
+  lightcurve: false
+  maxsrc: null
+  sgmthresh: 3
+  skypix: null
+  skyroifrac: null
+  smooth: null
+  tool: rtatool
+  type: 1d
+  usepnt: true
+options:
+  extract_data: true
+  plotsky: false
+  set_ebl: true
+path:
+  bkg: /data01/homes/baroncelli/DATA/models/CTAIrfBackground.xml
+  catalog: /data01/homes/baroncelli/DATA/templates/grb_afterglow/GammaCatalogV1.0
+  data: /data01/homes/baroncelli/DATA
+  ebl: /data01/homes/baroncelli/DATA/ebl_tables/gilmore_tau_fiducial.csv
+  merger: /data01/homes/baroncelli/DATA/mergers
+  model: /data01/homes/baroncelli/DATA/models
+setup:
+  runid: run0406_ID000126
+  scalefluxfactor: 1.0
+  simtype: bkg
+  start_count: 2000
+  trials: 100
+simulation:
+  caldb: prod3b
+  delay: 0.0
+  emax: 1
+  emin: 0.03
+  irf: South_z40_average_LST_30m
+  nruns: null
+  offset: 0.0
+  onset: 0
+  roi: 2.5
+  tobs: 100

@@ -2,7 +2,7 @@
 # CODES:
 # xyz
 #   x = T/TSL
-#   y = DATASET TYPE (TRAINING, VALIDATION, TEST) => [0,1,2]
+#   y = DATASET TYPE (TRAINING, VALIDATION, PVALUE) => [0,1,2]
 #   z = INTEGRATION TYPE (T, TE) => [0,1]
 
 # DATASET
@@ -201,6 +201,42 @@
   emax: 1
   roi: 2.5
 
+
+### P-VALUE T INTEGRATION
+420:
+  id: 420
+  path: /scratch
+  size: 10000000
+  simtype: bkg
+  onset: 0
+  integration_type: t
+  integration_time: 5
+  region_radius: 0.2
+  timeseries_lenght: 10
+  irf: irf_South_z40_average_LST_30m
+  emin: 0.03
+  emax: 1
+  roi: 2.5
+
+
+### P-VALUE TE INTEGRATION -- IN PROGRESS!
+421:
+  id: 421
+  path: /scratch/baroncelli/AP_DATA/ap_data_bkg_T_5_TSL_10/backgrounds_10mln/integration_te_integration_time_5_region_radius_0.2_timeseries_lenght_10/
+  size: 10000000
+  simtype: bkg
+  onset: 0
+  integration_type: te
+  integration_time: 5
+  region_radius: 0.2
+  timeseries_lenght: 10
+  irf: irf_South_z40_average_LST_30m
+  emin: 0.03
+  emax: 1
+  roi: 2.5
+
+
+
 ################################################################################
 # T=10 TSL=5
 ################################################################################
@@ -208,7 +244,7 @@
 ### TRAINING (SIZE 10000) T INTEGRATION
 500:
     id: 500
-    path: /data01/homes/baroncelli/AP_DATA_10000/ap_data_bkg_T_10_TSL_5/dataset_trials_10000_type_bkg_tobs_100/integration_t_integration_time_10_region_radius_0.2_timeseries_lenght_10
+    path: /data01/homes/baroncelli/AP_DATA_10000/ap_data_bkg_T_10_TSL_5/dataset_trials_10000_type_bkg_tobs_100/integration_t_integration_time_10_region_radius_0.2_timeseries_lenght_5
     size: 10000
     simtype: bkg
     onset: 0
@@ -239,7 +275,7 @@
 
 510:
   id: 510
-  
+
 511:
   id: 511
 
@@ -301,6 +337,39 @@
     id: 611
     path: /data01/homes/baroncelli/AP_DATA_800k_v2/ap_data_bkg_T_10_TSL_10/dataset_trials_861217_type_bkg_tobs_100/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_10
     size: 861207
+    simtype: bkg
+    onset: 0
+    integration_type: te
+    integration_time: 10
+    region_radius: 0.2
+    timeseries_lenght: 10
+    irf: irf_South_z40_average_LST_30m
+    emin: 0.03
+    emax: 1
+    roi: 2.5
+
+
+#### P-VALUE T INTEGRATION
+620:
+    id: 612
+    path: /scratch/baroncelli/AP_DATA/ap_data_bkg_T_10_TSL_10/backgrounds_10mln/integration_t_integration_time_10_region_radius_0.2_timeseries_lenght_10/
+    size: 9999997
+    simtype: bkg
+    onset: 0
+    integration_type: te
+    integration_time: 10
+    region_radius: 0.2
+    timeseries_lenght: 10
+    irf: irf_South_z40_average_LST_30m
+    emin: 0.03
+    emax: 1
+    roi: 2.5
+
+#### P-VALUE TE INTEGRATION
+621:
+    id: 612
+    path: /scratch/baroncelli/AP_DATA/ap_data_bkg_T_10_TSL_10/backgrounds_10mln/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_10/
+    size: 9999997
     simtype: bkg
     onset: 0
     integration_type: te

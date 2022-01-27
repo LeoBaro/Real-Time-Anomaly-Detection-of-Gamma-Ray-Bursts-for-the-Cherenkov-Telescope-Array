@@ -16,12 +16,12 @@ class AnomalyDetector_m2(AnomalyDetectorBase):
     def __init__(self, timesteps, nfeatures, outDir, loadModel = False):
         super().__init__(timesteps, nfeatures, outDir, loadModel)
 
-        print(f"Building AnomalyDetector_2layers - input shape: ({timesteps},{nfeatures})")
+        print(f"Building AnomalyDetector_m2 - input shape: ({timesteps},{nfeatures})")
 
         self.mp = {
             "units" : [32, 32],
             "dropoutrate" : [0.2, 0.2],
-            "layers" : 2            
+            "layers" : 2
         }
 
         if not loadModel:
