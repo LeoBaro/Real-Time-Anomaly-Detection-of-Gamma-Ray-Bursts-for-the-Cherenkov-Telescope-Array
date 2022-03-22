@@ -85,13 +85,13 @@ if __name__=='__main__':
 
     for i in range(nintervals):
 
-        print(f"Batch {i} start!")
+        print(f"Batch {i} start!", flush=True)
 
         start = time()
 
         endID = startID + args.batch_size
 
-        print(startID, endID)
+        print(f"Loading batch: {startID}-{endID}..")
 
         testData = ds.loadBatchFromIDs(args.pattern_name, startID, endID)
 

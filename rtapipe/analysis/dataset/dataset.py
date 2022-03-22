@@ -118,23 +118,24 @@ class APDataset:
         ids = list(range(fromID, toID))
         ids = [ f'{id:06d}' for id in ids if id < 10e6 ]
         dataDir = self.dataset_params["path"]
-        firstFile = Path(dataDir).joinpath(patternName.replace("*", str(ids[0])))
-        self.singleFileDataShapes = pd.read_csv(firstFile, sep=",").shape
         
         s = time()
-        countMissingFiles = 0
-        data = np.empty(shape=(len(ids)), dtype=object)
+        countMissing = 0
+        data = []
         for i,id in enumerate(ids):
-            try:
-                data[i] = pd.read_csv( Path(dataDir).joinpath(patternName.replace("*", str(id)))  , sep=",")
-            except:
-                countMissingFiles += 1
-        # Removing None..
-        data = data[data != np.array(None)]
+            csvFile = Path(dataDir).joinpath(patternName.replace("*", str(id)))
+            if csvFile.exists():
+                df = pd.read_csv(csvFile, sep=",")
+                data.append(df)
+            else:
+                print(f"[WARNING] File {csvFile} is missing!", flush=True)
+                countMissing += 1
+
+        self.singleFileDataShapes = data[0].shape
         self.data = pd.concat(data)
         self.filesLoaded = len(data)
         data = None
-        print(f"Loaded: {self.filesLoaded}, took: {time()-s} seconds, missing files: {countMissingFiles}.")
+        print(f"Loaded: {self.filesLoaded}, took: {time()-s} seconds, missing files: {countMissing}.")
         
         s = time()
         self.preprocessData(verbose=False)
