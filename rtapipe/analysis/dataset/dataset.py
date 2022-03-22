@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from time import time
 from pathlib import Path
 from random import randrange
 import matplotlib.pyplot as plt
@@ -63,27 +64,12 @@ class APDataset:
 
     def checkCompatibilityWith(self, otherDatasetParams):
 
-        if self.dataset_params["integration_type"] != otherDatasetParams["integration_type"]:
-            print("integration_type is not compatible!")
-            return False
-        if self.dataset_params["integration_time"] != otherDatasetParams["integration_time"]:
-            print("integration_time is not compatible!")
-            return False
-        if self.dataset_params["region_radius"] != otherDatasetParams["region_radius"]:
-            print("region_radius is not compatible!")
-            return False
-        if self.dataset_params["irf"] != otherDatasetParams["irf"]:
-            print("irf is not compatible!")
-            return False
-        if self.dataset_params["emin"] != otherDatasetParams["emin"]:
-            print("emin is not compatible!")
-            return False
-        if self.dataset_params["emax"] != otherDatasetParams["emax"]:
-            print("emax is not compatible!")
-            return False
-        if self.dataset_params["roi"] != otherDatasetParams["roi"]:
-            print("roi is not compatible!")
-            return False
+        params = ["integration_type", "integration_time", "region_radius", "irf", "emin", "emax", "roi"]
+
+        for p in params:
+            if self.dataset_params[p] != otherDatasetParams[p]:
+                print(f"{p} is not compatible! {self.dataset_params[p]} != {otherDatasetParams[p]}")
+                return False
         return True
 
     def setOutDir(self, outDir):
@@ -121,6 +107,48 @@ class APDataset:
         self.featureCols = self._findColumns(self.featureColsNamesPattern)
         if len(self.featureCols) > 1:
             self.featureCols.sort(key = lambda col : float(col.split("COUNTS_")[1].split("-")[0]))
+
+    def loadBatchFromIDs(self, patternName, fromID, toID):
+        """
+        ids: list of files' ids
+
+        Load len(ids) files as a pandas.DataFrame and scale them. 
+        bkg000001_t_simtype_bkg_onset_0_normalized_True.csv
+        """
+        ids = list(range(fromID, toID))
+        ids = [ f'{id:06d}' for id in ids if id < 10e6 ]
+        dataDir = self.dataset_params["path"]
+        firstFile = Path(dataDir).joinpath(patternName.replace("*", str(ids[0])))
+        self.singleFileDataShapes = pd.read_csv(firstFile, sep=",").shape
+        
+        s = time()
+        countMissingFiles = 0
+        data = np.empty(shape=(len(ids)), dtype=object)
+        for i,id in enumerate(ids):
+            try:
+                data[i] = pd.read_csv( Path(dataDir).joinpath(patternName.replace("*", str(id)))  , sep=",")
+            except:
+                countMissingFiles += 1
+        # Removing None..
+        data = data[data != np.array(None)]
+        self.data = pd.concat(data)
+        self.filesLoaded = len(data)
+        data = None
+        print(f"Loaded: {self.filesLoaded}, took: {time()-s} seconds, missing files: {countMissingFiles}.")
+        
+        s = time()
+        self.preprocessData(verbose=False)
+        print(f"Preprocessing took: {time()-s} seconds.")
+
+        #print(self.data.values[0:10,2])
+        s = time()
+        data = self.scaler.transform(self.data.values)
+        print(f"Scaling took: {time()-s} seconds.")
+
+        # print(f"Dataset shape: {data.shape}")
+        numFeatures = self.data.shape[1]
+        data = data.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures))
+        return data
 
     def loadDataBatch(self, batchsize, verbose=False):
         # print(f"Loading batch of files ({batchsize}) from {Path(self.dataset_params['path'])}")
