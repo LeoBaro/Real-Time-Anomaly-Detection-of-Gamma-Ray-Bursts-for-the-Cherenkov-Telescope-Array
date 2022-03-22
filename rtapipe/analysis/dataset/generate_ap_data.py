@@ -106,8 +106,8 @@ if __name__=='__main__':
 
         start = time()
 
-        outputFiles, counts = ph.integrateAll("T", None, rr, tWindows, None, limit=args.limit, parallel=True, procNumber=args.procnumber, normalize=args.normalize)
-
+        outputFiles, counts = ph.integrateAll("T", rr, tWindows=tWindows, eWindows=None, limit=args.limit, parallel=True, procNumber=args.procnumber, normalize=args.normalize)
+    
         elapsed = round(time()-start, 2)
         print(f"Took: {elapsed} sec. Produced: {len(outputFiles)} files.")
 
@@ -147,7 +147,7 @@ if __name__=='__main__':
 
         start = time()
 
-        outputFiles, counts = ph.integrateAll("TE", None, rr, tWindows, eWindows, limit=args.limit, parallel=True, procNumber=args.procnumber, normalize=args.normalize)
+        outputFiles, counts = ph.integrateAll("TE", rr, tWindows=tWindows, eWindows=eWindows, limit=args.limit, parallel=True, procNumber=args.procnumber, normalize=args.normalize)
 
         elapsed = round(time()-start, 2)
         print(f"Took: {elapsed} sec. Produced: {len(outputFiles)} files.")
