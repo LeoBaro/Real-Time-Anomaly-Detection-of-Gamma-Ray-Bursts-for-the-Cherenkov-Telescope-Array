@@ -37,6 +37,7 @@ else
             - ./run_simulations.sh 50 mp bkg 0   100 1000 0 0.03 1 2.5 1 bphd
             - ./run_simulations.sh 50 mp grb 900 100 1000 0 0.03 1 2.5 1 bphd
             - ./run_simulations.sh 40 slurm bkg 0 100 1000 666 0.03 1 2.5 1 bphd
+            - ./run_simulations.sh 30 slurm bkg 0 100 10000001 1 0.03 1 2.5 1 bphd
 """
     else
 
