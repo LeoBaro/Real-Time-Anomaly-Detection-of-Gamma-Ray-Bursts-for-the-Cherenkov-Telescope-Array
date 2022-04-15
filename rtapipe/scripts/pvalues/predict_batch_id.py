@@ -7,6 +7,7 @@ import argparse
 import numpy as np
 from time import time
 from pathlib import Path
+from datetime import datetime
 from rtapipe.analysis.dataset.dataset import APDataset
 from rtapipe.analysis.models.anomaly_detector_builder import AnomalyDetectorBuilder
 
@@ -31,6 +32,12 @@ if __name__=='__main__':
     parser.add_argument("-dc", "--dataset_config", type=str, required=False, default="/data01/homes/baroncelli/phd/rtapipe/analysis/dataset/config/agilehost3.yml", help="The configuration file that contains the descriptions of all the datasets")
     args = parser.parse_args()
 
+
+    now = datetime.now()
+    
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    print("Start:", dt_string)	
+
     # Loading training dataset params
     with open(Path(args.trained_model_dir).joinpath('dataset_params.pickle'), 'rb') as handle:
         training_dataset_params = pickle.load(handle)
@@ -39,7 +46,7 @@ if __name__=='__main__':
     # Loading the dataset for pvalue computation
     ds = APDataset.get_dataset(args.dataset_config, args.pvalue_dataset_id)
     if not ds.checkCompatibilityWith(training_dataset_params):
-        print("The test set is not compatible with the dataset used for training..")
+        print(f"The pvalue dataset {args.pvalue_dataset_id} is not compatible with the dataset used for training..")
         exit(1)
 
     ds.setScalerFromPickle(Path(args.trained_model_dir).joinpath('fitted_scaler.pickle'))
