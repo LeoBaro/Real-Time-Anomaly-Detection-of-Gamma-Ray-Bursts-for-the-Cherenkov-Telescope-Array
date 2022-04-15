@@ -1,3 +1,4 @@
+import os
 import yaml
 import pickle
 import numpy as np
@@ -45,6 +46,15 @@ class APDataset:
         self.featureColsNamesPattern = ["COUNT"]
         self.uselessColsNamesPattern = ['TMIN', 'TMAX', 'LABEL', 'ERROR']
 
+        # Get filename of first file in the data dir
+        dataDir = self.dataset_params["path"]
+        # Get first filename:
+        self.filenamePattern = None 
+        for root, dirs, files in os.walk(dataDir, topdown=False):
+            for name in files:
+                self.filenamePattern = name
+                break
+            
         # Scalers
         if scaler is None:
             self.scaler = scaler
@@ -117,13 +127,16 @@ class APDataset:
         """
         ids = list(range(fromID, toID))
         ids = [ f'{id:06d}' for id in ids if id < 10e6 ]
+
         dataDir = self.dataset_params["path"]
-        
+     
         s = time()
         countMissing = 0
         data = []
         for i,id in enumerate(ids):
-            csvFile = Path(dataDir).joinpath(patternName.replace("*", str(id)))
+            parts = self.filenamePattern.split("_t")
+            fileName = f"bkg{id}_t{parts[-1]}"
+            csvFile = Path(dataDir).joinpath(fileName)
             if csvFile.exists():
                 df = pd.read_csv(csvFile, sep=",")
                 data.append(df)
