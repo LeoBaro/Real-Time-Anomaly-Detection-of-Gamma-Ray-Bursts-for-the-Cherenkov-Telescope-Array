@@ -12,6 +12,10 @@ Not enought arguments supplied.
           - the number of processes
           - integration type (t/te)
           - slurm (yes/no)
+          - partition
+
+       Examples:
+       source generate_for_training.sh backgrounds_10mln 1 5 /scratch/baroncelli/AP_DATA/ 30 te yes tiny
 """
     else
 
@@ -25,6 +29,7 @@ Not enought arguments supplied.
       processes=$5
       integration_type=$6
       use_slurm=$7
+      partition=$8
 
       for i; do
          echo $i
@@ -42,11 +47,11 @@ Not enought arguments supplied.
           job_file="$SCRIPT_DIR/job_file.tmp"
 
           echo "#!/bin/bash
-#SBATCH --job-name=generate_ap_data.job
+#SBATCH --job-name=gen_ap_data-t$t-tsl$tsl.job
 #SBATCH --cpus-per-task=$processes
 #SBATCH --output=slurm_out/generate_ap_data.out
 #SBATCH --error=slurm_out/generate_ap_data.err
-#SBATCH --qos=normal
+#SBATCH --partition=$partition
 $command" > $job_file
 
           printf "\n\t> Job file: $job_file created! Sbatch it!\n\n"
