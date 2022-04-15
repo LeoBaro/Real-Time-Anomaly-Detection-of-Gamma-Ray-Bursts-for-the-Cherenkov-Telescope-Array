@@ -4,6 +4,8 @@ from time import sleep
 from pathlib import Path
 from shutil import rmtree
 
+PARTITION="deeplearning"
+
 def setup_filesystem(args):
 
     pvalueFolder = Path(args.trained_model_dir).joinpath("epochs", f"epoch_{args.epoch}", "pvalues")
@@ -32,7 +34,7 @@ def create_job_file_for_predictions(jobName, args, jobsFileDir, jobsOutDir):
         jf.write(f"#SBATCH --job-name={jobName}\n")
         jf.write(f"#SBATCH --output={jobOut}\n")
         jf.write("#SBATCH --cpus-per-task=1\n")
-        jf.write("#SBATCH --partition=small\n")
+        jf.write(f"#SBATCH --partition={PARTITION}\n")
         jf.write(f"python {Path(__file__).parent}/predict_batch_id.py {argsStr}\n")
 
     import subprocess
@@ -63,7 +65,7 @@ def create_job_file_for_pvalue(jobIDs, pvalueFolder, jobsFileDir, jobsOutDir):
         jf.write(f"#SBATCH --job-name=pvalue_job\n")
         jf.write(f"#SBATCH --output={jobOut}\n")
         jf.write("#SBATCH --cpus-per-task=1\n")
-        jf.write("#SBATCH --partition=small\n")
+        jf.write(f"#SBATCH --partition={PARTITION}\n")
         jf.write(f"#SBATCH --dependency={dependencyStr}\n")
         jf.write(f"python {Path(__file__).parent}/merge_ts_files.py -p {tsDataPath}\n")
         jf.write(f"python {Path(__file__).parent}/compute_pvalues.py -p {tsMergedDataFilePath}")
@@ -101,10 +103,11 @@ if __name__=='__main__':
 
 
     ## Split 10 millions files in 10 batches for 10 jobs 
-    njobs = 10
-    #totalSamplesPerJob = 10000
-    #arguments["batch_size"] = 1000
+    #njobs = 40
+    #totalSamplesPerJob = 1000000
+    #arguments["batch_size"] = 10000
 
+    njobs = 10
     totalSamplesPerJob = 1000000
     arguments["batch_size"] = 10000
 
