@@ -26,14 +26,12 @@ def compute_pval_comp(args):
     for root, dirs, files in os.walk(args.input_path, topdown=False):
           
         for name in files:
-    
+            
             if name == "merged_ts_for_pvalues.pickle.npy":
 
                 dataset_id, model_id, training_type = parse_folder_name(str(Path(root).parent.parent))
-                #print(dataset_id, model_id, training_type)
-                dataF = Path(root).joinpath(name)
-
                 if dataset_id in args.add_ds and model_id in args.add_model and training_type in args.add_training:
+                    dataF = Path(root).joinpath(name)
                     tasks.append(dataF)     
 
     print(f"{len(tasks)} jobs..")
@@ -41,7 +39,7 @@ def compute_pval_comp(args):
     if len(tasks) > 0:
         Path(args.out).mkdir(parents=True, exist_ok=True)
 
-    compare_pval(tasks, args.out)
+    compare_pval(tasks, Path(args.out))
 
 if __name__ == '__main__':
     
