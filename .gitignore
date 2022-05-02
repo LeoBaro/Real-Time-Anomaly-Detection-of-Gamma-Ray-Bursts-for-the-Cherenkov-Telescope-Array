@@ -19,3 +19,4 @@ training_output_*
 job_file.tmp
 generate_ap_data.err
 generate_ap_data.out
+wandb
