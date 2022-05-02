@@ -8,7 +8,10 @@ from time import strftime
 from rtapipe.analysis.dataset.dataset import APDataset
 from rtapipe.lib.rtapipeutils.Chronometer import Chronometer
 from rtapipe.analysis.models.anomaly_detector_builder import AnomalyDetectorBuilder
+from rtapipe.analysis.callbacks import CustomLogCallback
 
+import wandb
+from wandb.keras import WandbCallback
 
 if __name__=='__main__':
 
@@ -26,6 +29,10 @@ if __name__=='__main__':
     showPlots = False
     if args.verbose == 1:
         showPlots = True
+
+    # Weight and biases
+    name = f"datasetid_{args.dataset_id}-modelname_{args.model_name}-trainingtype_{args.training_type}-timestamp_{strftime('%Y%m%d-%H%M%S')}"
+    wandb.init(project=f"flstm-{name}", entity="leobaro_")
 
     # Output dir
     outDirBase = Path(__file__) \
@@ -51,6 +58,7 @@ if __name__=='__main__':
     # Building the model
     adLSTM = AnomalyDetectorBuilder.getAnomalyDetector(args.model_name, timesteps, nfeatures, outDirRoot)
     adLSTM.setFeaturesColsNames(ds.getFeaturesColsNames())
+
 
     # Logging params to files
     model_params = adLSTM.getModelParams()
@@ -86,9 +94,18 @@ if __name__=='__main__':
 
         # Fitting the model
         fit_cron.start()
-        history = adLSTM.fit(train, train, epochs=1, batchSize=training_params["batch_size"], verbose=1, validation_data=(validationSet, validationSet))
+        history = adLSTM.fit( train, 
+                              train, 
+                              epochs=1, 
+                              batchSize=training_params["batch_size"], 
+                              verbose=1, 
+                              validation_data=(validationSet, validationSet),
+                              callbacks=[CustomLogCallback(), WandbCallback()]
+        )
         fit_cron.stop()
         print(f"Fitting time: {fit_cron.get_statistics()[0]} +- {fit_cron.get_statistics()[1]}")
+
+
 
         # Saving the model
 
@@ -148,7 +165,6 @@ if __name__=='__main__':
     print(f"Total time for training: {fit_cron.total_time} seconds")
 
     print("Renaming output directory")
-    name = f"datasetid_{args.dataset_id}-modelname_{args.model_name}-trainingtype_{args.training_type}-timestamp_{strftime('%Y%m%d-%H%M%S')}"
     target = outDirBase.joinpath(name)
     outDirRoot.rename(target)
     print(f"Results in: {target}")
