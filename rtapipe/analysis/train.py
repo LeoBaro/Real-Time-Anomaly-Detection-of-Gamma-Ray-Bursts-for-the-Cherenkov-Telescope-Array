@@ -159,7 +159,7 @@ if __name__=='__main__':
 
             # Saving time statistics
             with open(outDirRoot.joinpath("statistics.csv"), "a") as statFile:
-                statFile.write(f"{ep},{fit_cron.get_statistics()[0]},{fit_cron.get_statistics()[1]},{fit_cron.get_total_elapsed_time()}\n")
+                statFile.write(f"{ep},{round(fit_cron.get_statistics()[0], 2)},{round(fit_cron.get_statistics()[1], 2)},{round(fit_cron.get_total_elapsed_time(), 2)}\n")
 
 
     print(f"Total time for training: {fit_cron.total_time} seconds")
