@@ -36,18 +36,18 @@ class AnomalyDetectorBuilder:
     def getTrainingParams(trainingType):
         if trainingType == "light":
             return {
-                "sample_size" : 16,
+                "sample_size" : 8192,
                 "batch_size" : 4
             }
         elif trainingType == "medium":
             return {
-                "sample_size" : 256,
-                "batch_size" : 16
+                "sample_size" : 8192,
+                "batch_size" : 8
             }
         elif trainingType == "heavy":
             return {
-                "sample_size" : 4096,
-                "batch_size" : 64
+                "sample_size" : 8192,
+                "batch_size" : 16
             }
         else:
             raise ValueError()
