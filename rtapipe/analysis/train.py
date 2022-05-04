@@ -13,6 +13,7 @@ from rtapipe.analysis.callbacks import CustomLogCallback
 import wandb
 from wandb.keras import WandbCallback
 
+
 if __name__=='__main__':
 
     parser = argparse.ArgumentParser()
@@ -24,6 +25,7 @@ if __name__=='__main__':
     parser.add_argument('-sa', '--save-after', nargs='+', type=int, required=False, default=1, help="Store trained model after these epochs are reached")
     parser.add_argument("-v", "--verbose", type=int, required=False, default=0, choices = [0,1], help="If 1 plots will be shown")
     parser.add_argument("-dc", "--dataset_config", type=str, required=False, default="./dataset/config/agilehost3.yml")
+    parser.add_argument('-wb', "--weight_and_biases", type=int, choices=(0,1))
     args = parser.parse_args()
 
     showPlots = False
@@ -31,8 +33,7 @@ if __name__=='__main__':
         showPlots = True
 
     # Weight and biases
-    name = f"datasetid_{args.dataset_id}-modelname_{args.model_name}-trainingtype_{args.training_type}-timestamp_{strftime('%Y%m%d-%H%M%S')}"
-    wandb.init(project=f"flstm-{name}", entity="leobaro_")
+    name = f"datasetid_{args.dataset_id}-modelname_{args.model_name}-trainingtype_{args.training_type}"
 
     # Output dir
     outDirBase = Path(__file__) \
@@ -48,7 +49,7 @@ if __name__=='__main__':
     ds = APDataset.get_dataset(args.dataset_config, args.dataset_id, scaler="mm", outDir=outDirRoot)
     ds.loadData(size=training_params["sample_size"]*2)
     ds.plotRandomSample(howMany=4, showFig=showPlots)
-    train, trainLabels, validationSet, valLabels = ds.getTrainingAndValidationSet(split=50, scale=True)
+    train, trainLabels, validationSet, valLabels = ds.getTrainingAndValidationSet(split=10, scale=True)
     #print(f"Train shape: {train.shape}. Example: {train[0].flatten()}")
     #print(f"Val shape: {val.shape}. Example: {val[0].flatten()}")
 
@@ -86,21 +87,51 @@ if __name__=='__main__':
 
     print(training_params)
 
+    ## Per-batch fitting.
+    ## An epoch is one batch.
+    batch_size = training_params["batch_size"]
+    start_index = 0
+
+    callbacks = []#CustomLogCallback()]
+    
+    if args.weight_and_biases == 1:
+
+        config = dict (
+            entity="leobaro_",
+            architecture = "LSTM",
+            dataset_id = args.dataset_id,
+            machine = "agilehost3",
+            job_type='train',
+            batch_size = batch_size,
+            model = args.model_name
+        )
+
+        run = wandb.init(
+            project="phd-lstm",
+            config=config
+        )
+
+
+        callbacks.append(WandbCallback())
+
     for ep in range(1, maxEpochs+1):
 
         print(f"\nEpoch={ep}")
 
         titleStr = f"epoch: {ep} datasetid: {args.dataset_id} modelname: {args.model_name} trainingtype: {args.training_type}"
 
+        train_batch = train[start_index : start_index + batch_size]
+
+        print(f"\n batch size: ",train_batch.shape)
         # Fitting the model
         fit_cron.start()
-        history = adLSTM.fit( train, 
-                              train, 
+        history = adLSTM.fit( train_batch, 
+                              train_batch, 
                               epochs=1, 
-                              batchSize=training_params["batch_size"], 
-                              verbose=1, 
+                              batchSize=batch_size, 
+                              verbose=0,
                               validation_data=(validationSet, validationSet),
-                              callbacks=[CustomLogCallback(), WandbCallback()]
+                              callbacks=[callbacks]
         )
         fit_cron.stop()
         print(f"Fitting time: {fit_cron.get_statistics()[0]} +- {fit_cron.get_statistics()[1]}")
@@ -161,10 +192,25 @@ if __name__=='__main__':
             with open(outDirRoot.joinpath("statistics.csv"), "a") as statFile:
                 statFile.write(f"{ep},{round(fit_cron.get_statistics()[0], 2)},{round(fit_cron.get_statistics()[1], 2)},{round(fit_cron.get_total_elapsed_time(), 2)}\n")
 
+            artifact = wandb.Artifact(f'run-{run.id}', type='result', metadata = {
+                "run" : run.id,
+                "epoch" : ep
+            })
+            artifact.add_file(outDir.joinpath("mae_distr_reco_error_distribution_on_val_set_for_1_energy_bin_weighted_mean.png"))
+            artifact.add_file(outDir.joinpath("mae_distr_reco_error_distribution_on_val_set_for_1_energy_bin.png"))
+            artifact.add_file(outDir.joinpath("mae_distr_reco_error_distribution_on_val_set_for_4_energy_bins.png"))
+            artifact.add_file(outDir.joinpath("predictions_0_feature_0.png"))
+            artifact.add_file(outDir.joinpath("predictions_0_feature_1.png"))
+            artifact.add_file(outDir.joinpath("predictions_0_feature_2.png"))
+            artifact.add_file(outDir.joinpath("predictions_0_feature_3.png"))
+            artifact.add_file(outDirRoot.joinpath("statistics.csv"))
+            run.log_artifact(artifact)
 
     print(f"Total time for training: {fit_cron.total_time} seconds")
 
     print("Renaming output directory")
     target = outDirBase.joinpath(name)
+    if target.exists():
+        target.unlink()
     outDirRoot.rename(target)
     print(f"Results in: {target}")
