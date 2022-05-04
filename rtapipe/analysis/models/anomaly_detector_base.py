@@ -59,7 +59,7 @@ class AnomalyDetectorBase(ABC):
     def summary(self):
         self.model.summary()
 
-    def fit(self, X_train, y_train, epochs, batchSize, validation_data, verbose=1):
+    def fit(self, X_train, y_train, epochs, batchSize, validation_data, callbacks=[], verbose=1):
 
         # batch_size: number of samples per gradient update.
         # epoch: an epoch is an iteration over the entire x and y data provided
@@ -72,7 +72,7 @@ class AnomalyDetectorBase(ABC):
         #                  the fact that the validation loss of data provided using validation_split
         #                  or validation_data is not affected by regularization layers like noise and dropout.
 
-        history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batchSize, validation_data=validation_data, verbose=verbose, callbacks=[])
+        history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batchSize, validation_data=validation_data, verbose=verbose, callbacks=callbacks)
 
         self.history.append(history)
 
