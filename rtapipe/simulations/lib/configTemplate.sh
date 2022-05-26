@@ -16,8 +16,8 @@ setup:
     scalefluxfactor: XXX                # scale src nominal flux by factor (float)
 
 simulation:
-    caldb: prod3b                     # calibration database
-    irf: South_z40_average_LST_30m    # istrument response function
+    caldb: prod5-v0.1                     # calibration database
+    irf: North_z40_0.5h_LST    # istrument response function
     tobs: XXX                         # total obs time (s)
     onset: XXX                        # time of bkg only a.k.a. delayed onset of burst (s)
     delay: 0                         # delayed start of observation (s) (float)

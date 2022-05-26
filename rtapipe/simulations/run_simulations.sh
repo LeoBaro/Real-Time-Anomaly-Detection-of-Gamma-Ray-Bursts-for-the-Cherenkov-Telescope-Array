@@ -32,12 +32,13 @@ else
             - region of intereset (degrees)
             - scale
             - virtual environment name (used for SLURM)
+            - output directory
 
           Examples:
-            - ./run_simulations.sh 50 mp bkg 0   100 1000 0 0.03 1 2.5 1 bphd
-            - ./run_simulations.sh 50 mp grb 900 100 1000 0 0.03 1 2.5 1 bphd
-            - ./run_simulations.sh 40 slurm bkg 0 100 1000 666 0.03 1 2.5 1 bphd
-            - ./run_simulations.sh 30 slurm bkg 0 100 10000001 1 0.03 1 2.5 1 bphd
+            - ./run_simulations.sh 50 mp bkg 0   100 1000 0 0.03 2 2.5 1 bphd /scratch/baroncelli/DATA/obs/backgrounds
+            - ./run_simulations.sh 50 mp grb 900 100 1000 0 0.03 2 2.5 1 bphd /scratch/baroncelli/DATA/obs/backgrounds
+            - ./run_simulations.sh 40 slurm bkg 0 100 1000 666 0.03 2 2.5 1 bphd /scratch/baroncelli/DATA/obs/backgrounds
+            - ./run_simulations.sh 30 slurm bkg 0 100 10000001 1 0.03 2 2.5 1 bphd /scratch/baroncelli/DATA/obs/backgrounds
 """
     else
 
@@ -53,6 +54,7 @@ else
       roi=${10}
       scale=${11}
       virtualenvname=${12}
+      outputdir=${13}
 
       printf "cpus: $cpus\n"
       printf "parallelization: $parallelization\n"
@@ -66,6 +68,7 @@ else
       printf "roi: $roi\n"
       printf "scale: $scale\n"
       printf "virtualenvname: $virtualenvname\n"
+      printf "outputdir: $outputdir\n"
 
       # Logs
       DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -107,7 +110,7 @@ else
 
           elif [ "$parallelization" = "slurm" ]; then
             printf "Starting simulation with Slurm..\n"
-            python "$scriptPath/RTAscience/makeConfig_runJobs.py" --infile "$configFilePath" --tt $trials --cpus $cpus --delay 0 --off 0 --flux 1 --env $virtualenvname --script $script --print false
+            python "$scriptPath/RTAscience/makeConfig_runJobs.py" --infile "$configFilePath" --tt $trials --cpus $cpus --delay 0 --off 0 --flux 1 --env $virtualenvname --script $script --print false -out $outputdir
 
           else
             printf "Error: '$parallelization' is not supported. \$2=[mp, slurm]\n"
