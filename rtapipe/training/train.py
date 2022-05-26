@@ -8,7 +8,7 @@ from shutil import rmtree
 from rtapipe.lib.dataset.dataset import APDataset
 from rtapipe.lib.rtapipeutils.Chronometer import Chronometer
 from rtapipe.lib.models.anomaly_detector_builder import AnomalyDetectorBuilder
-from rtapipe.training.callbacks import CustomLogCallback
+from rtapipe.training.callbacks import CustomLogCallback, CustomEarlyStoppingCallback
 
 import wandb
 from wandb.keras import WandbCallback
@@ -85,9 +85,13 @@ def train(args):
         )
         callbacks.append(WandbCallback())
 
-    callbacks.append(
-        CustomLogCallback(args.save_after, validation_data=(validationSet, valLabels), out_dir_root=outDirRoot, wandb_run=run, metadata={"dataset_id":args.dataset_id,"model":args.model_name,"training":args.training_type})
-    )
+        callbacks.append(
+            CustomLogCallback(args.save_after, validation_data=(validationSet, valLabels), out_dir_root=outDirRoot, wandb_run=run, metadata={"dataset_id":args.dataset_id,"model":args.model_name,"training":args.training_type})
+        )
+
+        callbacks.append(
+            CustomEarlyStoppingCallback(validation_data=(validationSet, valLabels), out_dir_root=outDirRoot, wandb_run=run, metadata={"dataset_id":args.dataset_id,"model":args.model_name,"training":args.training_type})
+        )
 
     start_index = 0
 
@@ -114,6 +118,9 @@ def train(args):
         with open(outDirRoot.joinpath("statistics.csv"), "a") as statFile:
             statFile.write(f"{ep},{round(fit_cron.get_statistics()[0], 2)},{round(fit_cron.get_statistics()[1], 2)},{round(fit_cron.get_total_elapsed_time(), 2)}\n")
 
+        if anomalyDetector.model.stop_training:
+            print(f"Training is stopped at batch {ep}")
+            break
 
     print(f"Total time for training: {fit_cron.total_time} seconds")
 

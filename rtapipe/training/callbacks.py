@@ -3,6 +3,19 @@ import numpy as np
 from tensorflow import keras
 from rtapipe.lib.plotting import plotting
 
+class CustomEarlyStoppingCallback(keras.callbacks.Callback):
+
+    def __init__(self, validation_data, out_dir_root, wandb_run, metadata):
+        self.count = 0
+        self.validation_data = validation_data[0]
+        self.validation_data_labels = validation_data[1]
+        self.out_dir_root = out_dir_root
+        self.wandb_run = wandb_run
+        self.metadata = metadata
+
+    def on_train_end(self, batch, logs=None):
+        print(logs)
+
 class CustomLogCallback(keras.callbacks.Callback):
     
     def __init__(self, trigger_after_epochs, validation_data, out_dir_root, wandb_run, metadata):
