@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<source_library title="source library">
+  <source name="run0406_ID000126" tscalc="1" type="PointSource">
+    <spectrum file="data/spec.out" type="FileFunction">
+      <parameter free="1" max="1000" min="1e-7" name="Normalization" scale="1e+00" value="1.00000" />
+    </spectrum>
+    <spatialModel type="SkyDirFunction">
+      <parameter free="0" max="360" min="-360" name="RA" scale="1.0" value="33.057" />
+      <parameter free="0" max="90" min="-90" name="DEC" scale="1.0" value="-51.841" />
+    </spatialModel>
+  </source>
+  <source instrument="CTA" name="Background" type="CTAIrfBackground">
+    <spectrum type="PowerLaw">
+      <parameter free="1" max="1e+3" min="1e-03" name="Prefactor" scale="1" value="1" />
+      <parameter free="1" max="+5.0" min="-5" name="Index" scale="1" value="0.0" />
+      <parameter free="0" max="1000.0" min="0.01" name="PivotEnergy" scale="1e6" value="1" />
+    </spectrum>
+  </source>
+</source_library>
