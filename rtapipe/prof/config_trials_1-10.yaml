@@ -1,0 +1,43 @@
+analysis:
+  binned: false
+  blind: true
+  cumulative: false
+  exposure: null
+  index: -2.1
+  lightcurve: false
+  maxsrc: null
+  sgmthresh: 3
+  skypix: null
+  skyroifrac: null
+  smooth: null
+  tool: ctools
+  type: 3d
+  usepnt: true
+options:
+  extract_data: false
+  plotsky: false
+  set_ebl: true
+path:
+  bkg: "$DATA/models/CTAIrfBackground.xml"
+  catalog: "$DATA/templates/grb_afterglow/GammaCatalogV1.0"
+  data: "$DATA"
+  ebl: "$DATA/ebl_tables/gilmore_tau_fiducial.csv"
+  merger: "$DATA/mergers"
+  model: "$DATA/models"
+setup:
+  runid: run0406_ID000126
+  scalefluxfactor: 1.0
+  simtype: bkg
+  start_count: 0
+  trials: 10
+simulation:
+  caldb: prod5-v0.1
+  delay: 0.0
+  emax: 2
+  emin: 0.03
+  irf: North_z40_0.5h_LST
+  nruns: null
+  offset: 0.0
+  onset: 0
+  roi: 2.5
+  tobs: 100
