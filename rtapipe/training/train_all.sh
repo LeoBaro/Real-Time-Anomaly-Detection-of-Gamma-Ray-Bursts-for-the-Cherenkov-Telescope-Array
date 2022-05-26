@@ -10,8 +10,8 @@ do
     do 
         for t in ${training[@]}
         do 
-            printf "$d $m $t\n"
-            python train.py -m m1 -di 101 -tt light -of training_output_april_2022 -sa 5 10 20 30 40 10 -e 50 -wb 1
+            printf "\n\n\n$d $m $t\n"
+            python train.py -m $m -di $d -tt $t -of training_output_april_2022 -sa 1 5 10 20 30 40 10 -e 50 -wb 1
         done
     done
 done
