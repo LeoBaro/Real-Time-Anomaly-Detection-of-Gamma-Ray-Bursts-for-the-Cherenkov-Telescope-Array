@@ -12,8 +12,9 @@ from RTAscience.aph.utils import ObjectConfig
 from astro.lib.photometry import Photometrics
 from RTAscience.aph.utils import aeff_eval, ObjectConfig
 
+from rtapipe.lib.rtapipeutils.PhotometryUtils import *
 from rtapipe.lib.rtapipeutils.FileSystemUtils import FileSystemUtils
-from rtapipe.lib.datasource.integrationstrat.IntegrationStrategies import IntegrationType, TimeIntegration, EnergyIntegration, TimeEnergyIntegration, FullIntegration
+from rtapipe.lib.rtapipeutils.PhotometryUtils import PhotometryUtils
 
 class Photometry2:
     """
@@ -40,36 +41,15 @@ class Photometry2:
         self.sim_tmin = cfg.get("delay")
         self.sim_tmax = cfg.get("tobs")
 
+        self.dataDir = dataDir
+
         # Output directories
         self.outputDir = Path(outputDir)
         self.outputDir.mkdir(parents=True, exist_ok=True)
 
-        self.dataDir = dataDir
-        # get files
-        # self.dataFiles = FileSystemUtils.getAllFiles(dataDir)
-
         self.integrationStrat = None
 
-    @staticmethod
-    def getLinearWindows(wmin, wmax, wsize, wstep):
-        if wsize == 0:
-            raise ValueError("The 'wsize' argument must be greater than zero.")
-        windows = []
-        w_start = wmin
-        while w_start + wsize <= wmax:
-            windows.append((w_start, w_start + wsize))
-            w_start += wstep
-        return windows
 
-    @staticmethod
-    def getLogWindows(wmin, wmax, howMany):
-        windows = []
-        npwindows = np.geomspace(wmin, wmax, num=howMany+1)
-        for idx,_ in enumerate(npwindows):
-            if idx == len(npwindows)-1:
-                break
-            windows.append((round(npwindows[idx],4) , round(npwindows[idx+1], 4)))
-        return windows
 
     def computeRegion(self, regionRadius, regionOffset = 2):
         """ Computes the region ra and dec, starting from the source position (== map center)
@@ -117,43 +97,14 @@ class Photometry2:
 
         return areaEffForEB
 
-    def getOutputFilePath(self, inputFilePath, integrationType, normalize):
-
-        outputFileNameStr = Path(inputFilePath).with_suffix('').name
-
-        outputFileNameStr += f"_{integrationType}_simtype_{self.sim_type}_onset_{self.sim_onset}_normalized_{normalize}"
-
-        return self.outputDir.joinpath(outputFileNameStr).with_suffix(".csv")
-
-    def setIntegrationType(self, integrationType):
-
-        self.integrationStrat = None
-
-        if integrationType == IntegrationType.TIME:
-            self.integrationStrat = TimeIntegration()
-            return IntegrationType.TIME
-
-        elif integrationType == IntegrationType.ENERGY:
-            self.integrationStrat = EnergyIntegration()
-            return IntegrationType.ENERGY
-
-        elif integrationType == IntegrationType.TIME_ENERGY:
-            self.integrationStrat = TimeEnergyIntegration()
-            return IntegrationType.TIME_ENERGY
-
-        elif integrationType == IntegrationType.FULL:
-            self.integrationStrat = FullIntegration()
-            return IntegrationType.FULL
-
-        else:
-            raise ValueError(f"Integration type {integrationType} not supported")
-
 
 
     def integrateAll(self, integrationType, regionRadius, tWindows=None, eWindows=None, limit=None, parallel=False, procNumber=10, normalize=True, batchSize=1200):
         """
             Integrate multiples input files in a directory
         """
+        self.integrationStrat = PhotometryUtils.getIntegrationStrategy(integrationType)
+
         region = self.computeRegion(regionRadius)
 
         if tWindows is None:
@@ -165,22 +116,7 @@ class Photometry2:
         areaEffForEnergyBins = None
         if normalize:
             areaEffForEnergyBins = self.computeAeffArea(eWindows, region)
-            
-        if integrationType == "T":
-            integrationType = self.setIntegrationType(IntegrationType.TIME)
-
-        #elif integrationType == "E":
-        #    integrationType = self.setIntegrationType(IntegrationType.ENERGY)
-
-        elif integrationType == "TE":
-            integrationType = self.setIntegrationType(IntegrationType.TIME_ENERGY)
-
-        elif integrationType == "F":
-            integrationType = self.setIntegrationType(IntegrationType.FULL)
-
-        else:
-            raise ValueError(f"Integration {integrationType} is not supported")
-
+        
         func = partial(self.integrate, integrationType=integrationType, region=region, tWindows=tWindows, eWindows=eWindows, areaEffForEnergyBins=areaEffForEnergyBins, parallel=parallel, normalize=normalize)
 
         output = None
@@ -191,12 +127,13 @@ class Photometry2:
         while True:
             try:
                 batchFiles = next(batchIterator)
+
                 with Pool(procNumber) as p:
                     output = p.map(func, batchFiles)
                     outputFilesCounts += len([str(tuple[0]) for tuple in output])
                     totalCounts = sum([tuple[1] for tuple in output])
             except StopIteration:
-                print(f"Processed {outputFilesCounts} files")
+                print(f"Done! Processed {outputFilesCounts} files.")
                 break
 
         del batchIterator
@@ -216,10 +153,10 @@ class Photometry2:
                 tWindows: list ->
                 eWindows: list ->
         """
+        outputFileName = Path(inputFilePath).with_suffix('').name + f"_itype_{integrationType}_itime_{tWindows[0][1]-tWindows[0][0]}_normalized_{normalize}.csv"
+        outputFilePath = self.outputDir.joinpath(outputFileName)
 
-        outputFilePath = self.getOutputFilePath(inputFilePath, integrationType, normalize)
-
-        if Path(outputFilePath).exists():
+        if outputFilePath.exists():
             # print(f"Skipped {outputFilePath}. Already exist!")
             return outputFilePath, 0
 

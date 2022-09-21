@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import matplotlib.pyplot as plt
 
@@ -5,15 +6,15 @@ from rtapipe.lib.plotting.PhotometryPlot import PhotometryPlot
 
 class PhotometrySinglePlot(PhotometryPlot):
     
-    def __init__(self, title = None):
-        super().__init__(title)
+    def __init__(self, params):
+        super().__init__(None)
         self.fig = None
-        self.title = title
         self.outputfile = None
         self.data = []
         self.labels = []
         self.markers = []
         self.colors = []
+        self.params = params
 
     def getWindowSizes(self, dataframe):
         t_window_size = None
@@ -33,56 +34,60 @@ class PhotometrySinglePlot(PhotometryPlot):
             energyBins.add(f"{eminDf[0][0]}-{eminDf[0][1]}")
         return energyBins
 
+    def addData(self, photometryCsvFile):
+        self.data.append(super().getData(photometryCsvFile))
 
-
-    def addData(self, photometryCsvFile, labelPrefix="", marker=".", color="blue"):
-        
-        dataframe = super().getData(photometryCsvFile)
-                
-        # assert dataframe["TCENTER"].isnull().values.any() == False or dataframe["ECENTER"].isnull().values.any() == False
-        
-        self.data.append(dataframe)
-        self.labels.append(labelPrefix)
-        self.markers.append(marker)
-        self.colors.append(color)
-
-    def plotScatterSingleAxes(self, verticalLine=False, verticalLineX=None, plotError=True, showLegend=True):
+    def plotScatterSingleAxes(self, showLegend=True):
 
         with plt.style.context('ggplot'):
-
-            fs = 30
+            
+            fontsize = 30
             self.fig, ax  = plt.subplots(1,1, constrained_layout=False, figsize=(10,10))
-            self.fig.suptitle("Multivariate timeseries of gamma-ray photon counts", fontsize=fs)
+            self.fig.suptitle("Multivariate timeseries of gamma-ray photon counts", fontsize=fontsize)
+            ax.set_title(json.dumps(self.params), fontsize=10)
             self.fig.set_size_inches(PhotometryPlot.inch_x, PhotometryPlot.inch_y)
 
-            if verticalLine:
-                _ = ax.axvline(x=verticalLineX, color="red", linestyle="--")
+            if self.params["onset"] > 0:
+                _ = ax.axvline(x=self.params["onset"], color="red", linestyle="--")
 
-            for ii in range(len(self.data)): 
-            
-                dataframe = self.data[ii]
-                label = self.labels[ii]
+            dataframe = self.data[-1]
+
+            if self.params["simtype"] == "grb":
                 marker = "x"
                 markerSize = 10
+                colors = ["red"]
+
+            elif self.params["simtype"] == "bkg":
+                marker = "x"
+                markerSize = 10
+                colors = ["blue"]
+
+            if self.params["itype"] == "te":
                 colors = ["darkred", "red", "tomato", "darksalmon"]
-                t_window_size, e_window_size = self.getWindowSizes(dataframe)
+            
+            if self.params["normalized"] == "True":
+                ax.set_ylabel('Counts (normalized)', fontsize=fontsize)
+            else:
+                ax.set_ylabel('Counts', fontsize=fontsize)
+    
+            ax.set_xlabel(f'Time (sec)', fontsize=fontsize)
 
-                dataColNames = [col for col in dataframe.columns if "COUNTS" in col]
-                errorDataColNames = [col for col in dataframe.columns if "ERROR" in col]
+            t_window_size, e_window_size = self.getWindowSizes(dataframe)
 
-                for xx, dataColName in enumerate(dataColNames):
-                    ax.set_ylabel('Counts (normalized)', fontsize=fs)
-                    ax.set_xlabel(f'Time (sec)', fontsize=fs)
-                    errorColName = errorDataColNames[xx]
-                    energy_range = dataColName.replace("COUNTS_","")
-                    label = f"Energy {energy_range} TeV"
-                    color = colors[xx]
+            dataColNames = [col for col in dataframe.columns if "COUNTS" in col]
+            errorDataColNames = [col for col in dataframe.columns if "ERROR" in col]
 
-                    _ = ax.scatter(dataframe["TCENTER"], dataframe[dataColName], s=markerSize, label=label, marker=marker, color=color)
-                    _ = ax.errorbar(dataframe["TCENTER"], dataframe[dataColName], xerr=t_window_size/2, fmt="o", color=color)
+            for xx, dataColName in enumerate(dataColNames):
+                errorColName = errorDataColNames[xx]
+                energy_range = dataColName.replace("COUNTS_","")
+                label = f"Energy {energy_range} TeV"
+                color = colors[xx]
 
-                    if showLegend:
-                        ax.legend(loc="best", prop={'size': 15})
+                _ = ax.scatter(dataframe["TCENTER"], dataframe[dataColName], s=markerSize, label=label, marker=marker, color=color)
+                _ = ax.errorbar(dataframe["TCENTER"], dataframe[dataColName], xerr=t_window_size/2, fmt="o", color=color)
+
+                if showLegend:
+                    ax.legend(loc="best", prop={'size': 15})
 
 
 
