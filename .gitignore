@@ -20,3 +20,6 @@ job_file.tmp
 generate_ap_data.err
 generate_ap_data.out
 wandb
+**/*heavy.log
+**/*medium.log
+**/*light.log
