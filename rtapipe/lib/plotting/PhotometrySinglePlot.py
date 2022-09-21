@@ -46,8 +46,47 @@ class PhotometrySinglePlot(PhotometryPlot):
         self.markers.append(marker)
         self.colors.append(color)
 
+    def plotScatterSingleAxes(self, verticalLine=False, verticalLineX=None, plotError=True, showLegend=True):
 
-    def plotScatter(self, axesID, integration, verticalLine=False, verticalLineX=None, plotError=True):
+        with plt.style.context('ggplot'):
+
+            fs = 30
+            self.fig, ax  = plt.subplots(1,1, constrained_layout=False, figsize=(10,10))
+            self.fig.suptitle("Multivariate timeseries of gamma-ray photon counts", fontsize=fs)
+            self.fig.set_size_inches(PhotometryPlot.inch_x, PhotometryPlot.inch_y)
+
+            if verticalLine:
+                _ = ax.axvline(x=verticalLineX, color="red", linestyle="--")
+
+            for ii in range(len(self.data)): 
+            
+                dataframe = self.data[ii]
+                label = self.labels[ii]
+                marker = "x"
+                markerSize = 10
+                colors = ["darkred", "red", "tomato", "darksalmon"]
+                t_window_size, e_window_size = self.getWindowSizes(dataframe)
+
+                dataColNames = [col for col in dataframe.columns if "COUNTS" in col]
+                errorDataColNames = [col for col in dataframe.columns if "ERROR" in col]
+
+                for xx, dataColName in enumerate(dataColNames):
+                    ax.set_ylabel('Counts (normalized)', fontsize=fs)
+                    ax.set_xlabel(f'Time (sec)', fontsize=fs)
+                    errorColName = errorDataColNames[xx]
+                    energy_range = dataColName.replace("COUNTS_","")
+                    label = f"Energy {energy_range} TeV"
+                    color = colors[xx]
+
+                    _ = ax.scatter(dataframe["TCENTER"], dataframe[dataColName], s=markerSize, label=label, marker=marker, color=color)
+                    _ = ax.errorbar(dataframe["TCENTER"], dataframe[dataColName], xerr=t_window_size/2, fmt="o", color=color)
+
+                    if showLegend:
+                        ax.legend(loc="best", prop={'size': 15})
+
+
+
+    def plotScatter(self, axesID, integration, verticalLine=False, verticalLineX=None, plotError=True, showLegend=False):
         
         #assert axesID >= 0 and axesID <= 1 
         #self.axes[axesID].clear()
@@ -85,7 +124,8 @@ class PhotometrySinglePlot(PhotometryPlot):
 
                 axes[0].set_ylabel('Gamma Photons Counts')
                 axes[0].set_xlabel(f'Window center')
-                axes[0].legend(loc="best")
+                if showLegend:
+                    axes[0].legend(loc="best")
 
             elif integration == "E":
 
@@ -98,7 +138,8 @@ class PhotometrySinglePlot(PhotometryPlot):
 
                 axes[0].set_ylabel('Gamma Photons Counts')
                 axes[0].set_xlabel(f'Window center')
-                axes[0].legend(loc="best")
+                if showLegend:
+                    axes[0].legend(loc="best")
 
             elif integration == "TE":
 
@@ -108,8 +149,8 @@ class PhotometrySinglePlot(PhotometryPlot):
                 for xx, dataColName in enumerate(dataColNames):
                     
                     axes[xx].title.set_text(f'ENERGY {dataColName}')
-                    axes[xx].set_ylabel('Gamma Photons Counts')
-                    axes[xx].set_xlabel(f'Window center')
+                    axes[xx].set_ylabel('Counts (normalized)')
+                    axes[xx].set_xlabel(f'Time (sec)')
                                         
                     errorColName = errorDataColNames[xx]
                     label = f"{dataColName} TeV"
@@ -120,8 +161,9 @@ class PhotometrySinglePlot(PhotometryPlot):
                         _ = axes[xx].errorbar(dataframe["TCENTER"], dataframe[dataColName], xerr=t_window_size/2, yerr=dataframe[errorColName], fmt="o", color=color) 
                     else:
                         _ = axes[xx].errorbar(dataframe["TCENTER"], dataframe[dataColName], xerr=t_window_size/2, fmt="o", color=color)
-
-                    axes[xx].legend(loc="best")
+    
+                    if showLegend:
+                        axes[xx].legend(loc="best")
 
             
             else:
