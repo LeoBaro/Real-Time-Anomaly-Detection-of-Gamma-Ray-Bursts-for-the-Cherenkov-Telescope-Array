@@ -3,22 +3,48 @@ import numpy as np
 from tensorflow import keras
 from rtapipe.lib.plotting import plotting
 
-class CustomEarlyStoppingCallback(keras.callbacks.Callback):
+class EarlyStoppingCallback(keras.callbacks.Callback):
 
-    def __init__(self, validation_data, out_dir_root, wandb_run, metadata):
+    def __init__(self, patience, delta, out_dir_root, metadata, wandb_run=None):
         self.count = 0
-        self.validation_data = validation_data[0]
-        self.validation_data_labels = validation_data[1]
         self.out_dir_root = out_dir_root
         self.wandb_run = wandb_run
         self.metadata = metadata
+        self.count_batch = 0
+        self.patience = patience
+        self.val_loss_prev = None
+        self.val_loss_diff = None
+        self.delta = delta 
+        self.ok_count = 0
+        self.ok_prev = False
 
-    def on_train_end(self, batch, logs=None):
-        print(logs)
+    def on_epoch_end(self, epoch, logs=None):
+        keys = list(logs.keys())
+        self.count_batch += 1
+        print("End epoch {} of training; got log keys: {}. Batch: {}".format(epoch, keys, self.count_batch))
+
+        if self.val_loss_prev is not None:
+            self.val_loss_diff = round(abs(self.val_loss_prev - logs["val_loss"]), 5)
+            print(f"Val loss diff: {self.val_loss_diff:.8f}") 
+            if self.val_loss_diff <= self.delta:
+                if self.ok_prev:
+                    self.ok_count += 1
+                else:
+                    self.ok_prev = True
+            else:
+                self.ok_prev = False
+                self.ok_count = 0
+            
+            print(f"Ok count: {self.ok_count}")
+            if self.ok_count == self.patience:
+                self.model.stop_training = True
+                self.stopped_epoch = epoch
+        
+        self.val_loss_prev = logs["val_loss"]
 
 class CustomLogCallback(keras.callbacks.Callback):
     
-    def __init__(self, trigger_after_epochs, validation_data, out_dir_root, wandb_run, metadata):
+    def __init__(self, trigger_after_epochs, validation_data, out_dir_root, metadata, wandb_run=None):
         self.count = 0
         self.trigger_after_epochs = trigger_after_epochs
         self.validation_data = validation_data[0]
@@ -27,14 +53,16 @@ class CustomLogCallback(keras.callbacks.Callback):
         self.wandb_run = wandb_run
         self.metadata = metadata
     
-    def on_train_end(self, batch, logs=None):
+    def on_train_end(self, batch, logs=None, force=False):
+        print("--------------------- CustomLogCallback on_train_end:")
+
         self.count += 1
         epoch = self.count
         
         out_dir = self.out_dir_root.joinpath("epochs",f"epoch_{epoch}")
         out_dir.mkdir(exist_ok=True, parents=True)
 
-        if epoch in self.trigger_after_epochs:
+        if epoch in self.trigger_after_epochs or force:
             
             print("Checkpoint! Saving data -----------------------------")
 
@@ -99,7 +127,7 @@ class CustomLogCallback(keras.callbacks.Callback):
                     recoFile.write(f"{vv}\n")
 
 
-            # TODO: the mean could be weighted to give more importance to high energy photons
+            # The mean is weighted to give more importance to high energy photons
             maeLossAveraged = np.average(maeLossPerEnergyBin, axis=1, weights=[1./10, 1./5, 3./10, 2./5])
 
             plotting.recoErrorDistributionPlot(maeLossAveraged, threshold=None, title=f"Reco errors (averaged) on val set ({self.metadata})", outputDir=out_dir, figName="reco_errors_distr_4_en_bins_averaged.png", showFig=False)
@@ -125,35 +153,18 @@ class CustomLogCallback(keras.callbacks.Callback):
             mask_avg = (maeLossAveraged > c_threshold_avg)
 
             plotting.plotPredictions(self.validation_data, self.validation_data_labels, c_threshold, recostructions, maeLossPerEnergyBin, mask, maxSamples=5, rows=2, cols=5, predictionsPerFigure=5, showFig=False, saveFig=True, outputDir=out_dir, figName="predictions.png")
-
-            artifact = wandb.Artifact(f'run-{self.wandb_run.id}', type='result', metadata = {
-                "run" : self.wandb_run.id,
-                "epoch" : epoch
-            })
-            artifact.add_file(out_dir.joinpath("reco_errors_distr_1_en_bin.png"))
-            artifact.add_file(out_dir.joinpath("reco_errors_distr_4_en_bins.png"))
-            artifact.add_file(out_dir.joinpath("reco_errors_distr_4_en_bins_averaged.png"))
-            for i in range(4):
-                artifact.add_file(out_dir.joinpath(f"0_feature_{i}_predictions.png"))
-            artifact.add_file(out_dir.parent.parent.joinpath("statistics.csv"))
-            self.wandb_run.log_artifact(artifact)
+            
+            if self.wandb_run is not None:
+                artifact = wandb.Artifact(f'run-{self.wandb_run.id}', type='result', metadata = {
+                    "run" : self.wandb_run.id,
+                    "epoch" : epoch
+                })
+                artifact.add_file(out_dir.joinpath("reco_errors_distr_1_en_bin.png"))
+                artifact.add_file(out_dir.joinpath("reco_errors_distr_4_en_bins.png"))
+                artifact.add_file(out_dir.joinpath("reco_errors_distr_4_en_bins_averaged.png"))
+                for i in range(4):
+                    artifact.add_file(out_dir.joinpath(f"0_feature_{i}_predictions.png"))
+                artifact.add_file(out_dir.parent.parent.joinpath("statistics.csv"))
+                self.wandb_run.log_artifact(artifact)
             
             print("---------------Checkpoint ended! -----------------------------")
-
-    """
-    def on_train_batch_end(self, batch, logs=None):
-        keys = list(logs.keys())
-        print("...Training: end of batch {}; got log keys: {}".format(batch, keys))
-        print(
-            "Up to batch {}, the average loss is {:7.2f}.".format(batch, logs["loss"])
-        )
-      
-    def on_test_batch_end(self, batch, logs=None):
-        keys = list(logs.keys())
-        print("...Evaluating: end of batch {}; got log keys: {}".format(batch, keys))
-        print(
-            "Up to batch {}, the average loss is {:7.2f}.".format(batch, logs["loss"])
-        )
-
-  
-    """

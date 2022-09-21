@@ -8,7 +8,8 @@ from shutil import rmtree
 from rtapipe.lib.dataset.dataset import APDataset
 from rtapipe.lib.rtapipeutils.Chronometer import Chronometer
 from rtapipe.lib.models.anomaly_detector_builder import AnomalyDetectorBuilder
-from rtapipe.training.callbacks import CustomLogCallback, CustomEarlyStoppingCallback
+from rtapipe.training.callbacks import CustomLogCallback, EarlyStoppingCallback
+import tensorflow as tf
 
 import wandb
 from wandb.keras import WandbCallback
@@ -66,7 +67,12 @@ def train(args):
     ## An epoch is one batch.
     batch_size = training_params["batch_size"]
 
+    run = None
+    clc = CustomLogCallback(args.save_after, validation_data=(validationSet, valLabels), out_dir_root=outDirRoot, wandb_run=run, metadata={"dataset_id":args.dataset_id,"model":args.model_name,"training":args.training_type}),
+    esc = EarlyStoppingCallback(patience=5, delta=0.0005, out_dir_root=outDirRoot, wandb_run=run, metadata={"dataset_id":args.dataset_id,"model":args.model_name,"training":args.training_type})
+
     callbacks = [
+        clc, esc
     ]
     
     if args.weight_and_biases == 1:
@@ -80,18 +86,11 @@ def train(args):
             model = args.model_name
         )
         run = wandb.init(
-            project="phd-lstm",
+            project="phd-lstm-prod5-es",
             config=config
         )
         callbacks.append(WandbCallback())
 
-        callbacks.append(
-            CustomLogCallback(args.save_after, validation_data=(validationSet, valLabels), out_dir_root=outDirRoot, wandb_run=run, metadata={"dataset_id":args.dataset_id,"model":args.model_name,"training":args.training_type})
-        )
-
-        callbacks.append(
-            CustomEarlyStoppingCallback(validation_data=(validationSet, valLabels), out_dir_root=outDirRoot, wandb_run=run, metadata={"dataset_id":args.dataset_id,"model":args.model_name,"training":args.training_type})
-        )
 
     start_index = 0
 
@@ -109,7 +108,7 @@ def train(args):
                                             batch_size=batch_size, 
                                             verbose=1,
                                             validation_data=(validationSet, validationSet),
-                                            callbacks=[callbacks]
+                                            callbacks=callbacks
         )
         fit_cron.stop()
         print(f"Fitting time: {fit_cron.get_statistics()[0]} +- {fit_cron.get_statistics()[1]}")
@@ -120,9 +119,13 @@ def train(args):
 
         if anomalyDetector.model.stop_training:
             print(f"Training is stopped at batch {ep}")
+            clc[0].on_train_end(None, force=True)
             break
 
     print(f"Total time for training: {fit_cron.total_time} seconds")
+
+    if args.weight_and_biases == 1:
+        wandb.log({'early_stopping_epoch': ep, 'total_training_time': fit_cron.total_time})
 
     print("Renaming output directory")
     target = outDirBase.joinpath(name)
