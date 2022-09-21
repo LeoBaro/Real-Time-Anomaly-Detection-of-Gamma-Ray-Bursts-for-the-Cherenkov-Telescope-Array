@@ -1,0 +1,10 @@
+dataDir=/data01/homes/baroncelli/phd/rtapipe/scripts/simulations/old_vs_new_sim_code/new_sim_output/run0406_ID000126
+integrationtype=t
+integrationtime=1
+regionradius=0.2
+outputdir=/data01/homes/baroncelli/phd/rtapipe/scripts/simulations/old_vs_new_sim_code/ap_output/new
+normalize=False
+procnumber=20
+limit=5
+energybins=4
+Took=0.53

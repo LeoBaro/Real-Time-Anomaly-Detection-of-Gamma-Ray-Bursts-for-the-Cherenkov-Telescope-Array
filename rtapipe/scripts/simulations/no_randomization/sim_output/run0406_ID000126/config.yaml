@@ -1,35 +1,3 @@
-options:
-  extract_data: true
-  plotsky: false
-  set_ebl: true
-
-path:
-  bkg: /scratch/baroncelli/DATA/models/CTAIrfBackground.xml
-  catalog: /scratch/baroncelli/DATA/templates/grb_afterglow/GammaCatalogV1.0
-  data: /scratch/baroncelli/DATA
-  ebl: /scratch/baroncelli/DATA/ebl_tables/gilmore_tau_fiducial.csv
-  merger: /scratch/baroncelli/DATA/mergers
-  model: /scratch/baroncelli/DATA/models
-
-setup:
-  runid: run0406_ID000126 # run0063_ID000286] # all
-  scalefluxfactor: 1.0
-  simtype: grb
-  start_count: 1
-  trials: 5
-
-simulation:
-  caldb: prod5-v0.1
-  delay: 0
-  emax: 1
-  emin: 0.04
-  irf: North_z40_0.5h_LST
-  nruns: null
-  offset: 0.5 # maggiore del diametro della regione
-  onset: random$0-25
-  roi: 2.5
-  tobs: 100
-
 analysis:
   binned: false
   blind: true
@@ -45,3 +13,31 @@ analysis:
   tool: ctools
   type: 3d
   usepnt: true
+options:
+  extract_data: true
+  plotsky: false
+  set_ebl: true
+path:
+  bkg: /scratch/baroncelli/DATA/models/CTAIrfBackground.xml
+  catalog: /scratch/baroncelli/DATA/templates/grb_afterglow/GammaCatalogV1.0
+  data: /scratch/baroncelli/DATA
+  ebl: /scratch/baroncelli/DATA/ebl_tables/gilmore_tau_fiducial.csv
+  merger: /scratch/baroncelli/DATA/mergers
+  model: /scratch/baroncelli/DATA/models
+setup:
+  runid: run0406_ID000126
+  scalefluxfactor: 1.0
+  simtype: bkg
+  start_count: 1
+  trials: 5
+simulation:
+  caldb: prod5-v0.1
+  delay: 0
+  emax: 1
+  emin: 0.04
+  irf: North_z40_0.5h_LST
+  nruns: null
+  offset: 0.5
+  onset: 0
+  roi: 2.5
+  tobs: 100

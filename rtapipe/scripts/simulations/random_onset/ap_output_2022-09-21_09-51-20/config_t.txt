@@ -1,0 +1,10 @@
+dataDir=/data01/homes/baroncelli/phd/rtapipe/scripts/simulations/random_onset/sim_output_2022-09-21_09-51-20/run0406_ID000126
+integrationtype=t
+integrationtime=1
+regionradius=0.2
+outputdir=/data01/homes/baroncelli/phd/rtapipe/scripts/simulations/random_onset/ap_output_2022-09-21_09-51-20
+normalize=False
+procnumber=20
+limit=5
+energybins=4
+Took=0.1

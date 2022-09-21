@@ -26,7 +26,7 @@ simulation:
   irf: North_z40_0.5h_LST
   nruns: null
   offset: 0.5 # maggiore del diametro della regione
-  onset: random$0-25
+  onset: 50
   roi: 2.5
   tobs: 100
 

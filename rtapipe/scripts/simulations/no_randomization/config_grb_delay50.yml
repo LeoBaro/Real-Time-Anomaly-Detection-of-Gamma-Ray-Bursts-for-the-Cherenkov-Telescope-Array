@@ -20,13 +20,13 @@ setup:
 
 simulation:
   caldb: prod5-v0.1
-  delay: 0
+  delay: 50
   emax: 1
   emin: 0.04
   irf: North_z40_0.5h_LST
   nruns: null
   offset: 0.5 # maggiore del diametro della regione
-  onset: random$0-25
+  onset: 0
   roi: 2.5
   tobs: 100
 
