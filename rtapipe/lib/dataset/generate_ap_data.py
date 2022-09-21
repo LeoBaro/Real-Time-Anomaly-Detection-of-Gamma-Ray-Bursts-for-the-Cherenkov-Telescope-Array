@@ -40,25 +40,8 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-if __name__=='__main__':
 
-    parser = argparse.ArgumentParser(description='Generating aperture photometry data')
-    parser.add_argument("-dd", "--dataDir", type=str, required=True, help="The path to the folder containing the input files")
-    parser.add_argument("-t", "--type", type=str, choices=["bkg", "grb"], required=True, help="The type of the input files")
-    parser.add_argument("-mp", "--makeplots", type=str2bool, required=True, help="If 'yes' plots will be produced")
-    parser.add_argument("-lim", "--limit", type=int, required=None, default=None, help="The number of input files to use")
-    parser.add_argument("-itype", "--integrationtype", type=str, required=True, choices=["t", "te"], help="")
-    parser.add_argument("-itime", "--integrationtime", type=int, required=True, help="")
-
-    # TODO test multiple integration region radius
-    parser.add_argument("-rr", "--regionradius", type=float, required=True, help="A list of region radius values: a different output file will be created for each of those values")
-    parser.add_argument("-norm", "--normalize", type=str2bool, required=True, help="If 'yes' the counts will be normalized")
-    parser.add_argument("-tsl", "--timeserieslenght", type=int, required=True, default=None, help="The number of the csv files rows (time series lenght)")
-    parser.add_argument("-out", "--outputdir", type=str, required=True, help="The path to the output directory. If not provided the script's directory will be used")
-    # TODO verify ebins argument
-    parser.add_argument("-ebins", "--energybins", type=int, required=False, default=4, help="")
-    parser.add_argument("-proc", "--procnumber", type=int, required=False, default=10, help="")
-    args = parser.parse_args()
+def main(args):
 
     with open(Path(args.dataDir).joinpath("config.yaml"), "r") as stream:
         phListConfig = yaml.safe_load(stream)
@@ -147,10 +130,10 @@ if __name__=='__main__':
 
         start = time()
 
-        outputFiles, counts = ph.integrateAll("TE", rr, tWindows=tWindows, eWindows=eWindows, limit=args.limit, parallel=True, procNumber=args.procnumber, normalize=args.normalize)
+        outputFilesCounts, totalCounts = ph.integrateAll("TE", rr, tWindows=tWindows, eWindows=eWindows, limit=args.limit, parallel=True, procNumber=args.procnumber, normalize=args.normalize)
 
         elapsed = round(time()-start, 2)
-        print(f"Took: {elapsed} sec. Produced: {len(outputFiles)} files.")
+        print(f"Took: {elapsed} sec. Produced: {outputFilesCounts} files. Total counts (norm={args.normalize}): {totalCounts}")
 
         with open(configFile, "a") as cfg:
             cfg.write(f"\nTook={elapsed}")
@@ -158,3 +141,25 @@ if __name__=='__main__':
         if args.makeplots:
 
             makePlots(args, "TE", outputFiles, onset)
+
+if __name__=='__main__':
+
+    parser = argparse.ArgumentParser(description='Generating aperture photometry data')
+    parser.add_argument("-dd", "--dataDir", type=str, required=True, help="The path to the folder containing the input files")
+    parser.add_argument("-t", "--type", type=str, choices=["bkg", "grb"], required=True, help="The type of the input files")
+    parser.add_argument("-mp", "--makeplots", type=str2bool, required=True, help="If 'yes' plots will be produced")
+    parser.add_argument("-lim", "--limit", type=int, required=None, default=None, help="The number of input files to use")
+    parser.add_argument("-itype", "--integrationtype", type=str, required=True, choices=["t", "te"], help="")
+    parser.add_argument("-itime", "--integrationtime", type=int, required=True, help="")
+
+    # TODO test multiple integration region radius
+    parser.add_argument("-rr", "--regionradius", type=float, required=True, help="A list of region radius values: a different output file will be created for each of those values")
+    parser.add_argument("-norm", "--normalize", type=str2bool, required=True, help="If 'yes' the counts will be normalized")
+    parser.add_argument("-tsl", "--timeserieslenght", type=int, required=True, default=None, help="The number of the csv files rows (time series lenght)")
+    parser.add_argument("-out", "--outputdir", type=str, required=True, help="The path to the output directory. If not provided the script's directory will be used")
+    # TODO verify ebins argument
+    parser.add_argument("-ebins", "--energybins", type=int, required=False, default=4, help="")
+    parser.add_argument("-proc", "--procnumber", type=int, required=False, default=10, help="")
+    args = parser.parse_args()
+
+    main(args)

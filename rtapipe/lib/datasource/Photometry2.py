@@ -28,9 +28,10 @@ class Photometry2:
             raise EnvironmentError("Please, export $DATA")
 
         cfg = Config(Path(dataDir).joinpath("config.yaml"))
-        self.irfFile = Path(expandvars('$CTOOLS')).joinpath(f"share/caldb/data/cta/{cfg.get('caldb')}/bcf/{cfg.get('irf')}/irf_file.fits")
+        irfPath = Path(expandvars('$CTOOLS')).joinpath(f"share/caldb/data/cta/{cfg.get('caldb')}/bcf/{cfg.get('irf')}")
+        irfFileName = os.listdir(irfPath).pop()
+        self.irfFile = irfPath.joinpath(irfFileName) 
         template =  Path(os.environ["DATA"]).joinpath(f'templates/{cfg.get("runid")}.fits')
-
         self.sourcePosition = get_pointing(template) # alias get_target
         self.sim_type = cfg.get("simtype")
         self.sim_onset = cfg.get("onset")
@@ -194,7 +195,6 @@ class Photometry2:
                     output = p.map(func, batchFiles)
                     outputFilesCounts += len([str(tuple[0]) for tuple in output])
                     totalCounts = sum([tuple[1] for tuple in output])
-
             except StopIteration:
                 print(f"Processed {outputFilesCounts} files")
                 break

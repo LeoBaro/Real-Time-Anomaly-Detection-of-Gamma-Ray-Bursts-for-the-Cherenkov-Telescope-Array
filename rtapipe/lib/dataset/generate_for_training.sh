@@ -15,7 +15,7 @@ Not enought arguments supplied.
           - partition
 
        Examples:
-       source generate_for_training.sh backgrounds_10mln 1 5 /scratch/baroncelli/AP_DATA/ 30 te yes tiny
+       ./generate_for_training.sh backgrounds_10mln 1 5 /scratch/baroncelli/AP_DATA/ 30 te yes sim2
 """
     else
 
@@ -46,11 +46,13 @@ Not enought arguments supplied.
 
           job_file="$SCRIPT_DIR/job_file.tmp"
 
+          mkdir -p "slurm_out/gen_ap_data-t$it-tsl$tsl"
+
           echo "#!/bin/bash
-#SBATCH --job-name=gen_ap_data-t$t-tsl$tsl.job
+#SBATCH --job-name=gen_ap_data-t$it-tsl$tsl.job
 #SBATCH --cpus-per-task=$processes
-#SBATCH --output=slurm_out/generate_ap_data.out
-#SBATCH --error=slurm_out/generate_ap_data.err
+#SBATCH --output=slurm_out/gen_ap_data-t$it-tsl$tsl/generate_ap_data.out
+#SBATCH --error=slurm_out/gen_ap_data-t$it-tsl$tsl/generate_ap_data.err
 #SBATCH --partition=$partition
 $command" > $job_file
 
