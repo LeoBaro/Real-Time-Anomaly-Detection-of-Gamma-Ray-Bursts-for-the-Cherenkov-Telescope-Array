@@ -1,0 +1,144 @@
+#
+# CODES:
+# xyz
+#   x = T/TSL
+#   y = DATASET TYPE (TRAINING, SMALL-PVALUE, FULL-PVALUE) => [0,1,2]
+#   z = INTEGRATION TYPE (T, TE) => [0,1]
+
+# DATASET (summary)
+# T TSL -- no feat -- | training (10K) | small pvalue (800k) | full pvalue (10mln) |
+
+# x=1
+# T=1 TSL=5   -- 4f -- | 1000 (4MB)  |                      |                     |
+
+# x=2
+# T=1 TSL=10  -- 4f -- | 1000 (4MB)  |                      |                     |
+
+# x=3
+# T=5 TSL=5   -- 4f -- | 1000 (4MB)  |                      |                     |   
+
+# x=4
+# T=5 TSL=10  -- 4f -- | 1000 (4MB)  |                      |                     |
+
+# x=5
+# T=10 TSL=5  -- 4f -- | 1000 (4MB)  |                      |                     |
+
+# x=6
+# T=10 TSL=10 -- 4f -- | 1000 (4MB)  |                      |                     |
+ 
+
+################################################################################
+# T=1 TSL=5
+################################################################################
+101:
+  id: 101
+  path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_1_TSL_5/backgrounds_prod5b_1K/integration_te_integration_time_1_region_radius_0.2_timeseries_lenght_5
+  size: 1000
+  simtype: bkg
+  onset: 0
+  integration_type: te
+  integration_time: 1
+  region_radius: 0.2
+  timeseries_lenght: 5
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+
+################################################################################
+# T=1 TSL=10
+################################################################################
+201:
+  id: 201
+  path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_1_TSL_10/backgrounds_prod5b_1K/integration_te_integration_time_1_region_radius_0.2_timeseries_lenght_10
+  size: 1000
+  simtype: bkg
+  onset: 0
+  integration_type: te
+  integration_time: 1
+  region_radius: 0.2
+  timeseries_lenght: 10
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+
+
+
+################################################################################
+# T=5 TSL=5
+################################################################################
+301:
+  id: 301
+  path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_5_TSL_5/backgrounds_prod5b_1K/integration_te_integration_time_5_region_radius_0.2_timeseries_lenght_5
+  size: 1000
+  simtype: bkg
+  onset: 0
+  integration_type: te
+  integration_time: 5
+  region_radius: 0.2
+  timeseries_lenght: 5
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+
+
+################################################################################
+# T=5 TSL=10
+################################################################################
+ 
+### TRAINING (SIZE 1000) TE INTEGRATION
+401:
+  id: 410
+  path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_5_TSL_10/backgrounds_prod5b_1K/integration_te_integration_time_5_region_radius_0.2_timeseries_lenght_10
+  size: 1000
+  simtype: bkg
+  onset: 0
+  integration_type: te
+  integration_time: 5
+  region_radius: 0.2
+  timeseries_lenght: 10
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+  
+
+
+################################################################################
+# T=10 TSL=5
+################################################################################
+501:
+    id: 501
+    path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_10_TSL_5/backgrounds_prod5b_1K/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_5
+    size: 1000
+    simtype: bkg
+    onset: 0
+    integration_type: te
+    integration_time: 10
+    region_radius: 0.2
+    timeseries_lenght: 5
+    irf: North_z40_0.5h_LST
+    emin: 0.03
+    emax: 2
+    roi: 2.5
+
+
+################################################################################
+# T=10 TSL=10
+################################################################################
+601:
+    id: 601
+    path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_10_TSL_10/backgrounds_prod5b_1K/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_10
+    size: 861207
+    simtype: bkg
+    onset: 0
+    integration_type: te
+    integration_time: 10
+    region_radius: 0.2
+    timeseries_lenght: 10
+    irf: North_z40_0.5h_LST
+    emin: 0.03
+    emax: 2
+    roi: 2.5

@@ -1,7 +1,4 @@
-<<<<<<< Updated upstream:rtapipe/lib/dataset/dataset.py
 import os
-=======
->>>>>>> Stashed changes:rtapipe/analysis/dataset/dataset.py
 import yaml
 import pickle
 import numpy as np
