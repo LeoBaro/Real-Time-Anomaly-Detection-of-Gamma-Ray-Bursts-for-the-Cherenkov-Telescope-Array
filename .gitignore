@@ -23,3 +23,7 @@ wandb
 **/*heavy.log
 **/*medium.log
 **/*light.log
+**/runid_*.csv
+**/runid_*.fits
+**/ebl*.csv
+**/ebl*.fits
