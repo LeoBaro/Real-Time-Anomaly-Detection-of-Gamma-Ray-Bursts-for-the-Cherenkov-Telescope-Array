@@ -15,8 +15,8 @@ setup:
   runid: run0406_ID000126 # run0063_ID000286] # all
   scalefluxfactor: 1.0
   simtype: bkg
-  start_count: 1
-  trials: 1
+  start_count: 10000
+  trials: 90
 
 simulation:
   caldb: prod5-v0.1
