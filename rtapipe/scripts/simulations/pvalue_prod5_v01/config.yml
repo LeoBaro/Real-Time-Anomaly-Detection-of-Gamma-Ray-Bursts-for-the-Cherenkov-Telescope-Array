@@ -16,7 +16,7 @@ setup:
   scalefluxfactor: 1.0
   simtype: bkg
   start_count: 10000
-  trials: 30
+  trials: 10000000
 
 simulation:
   caldb: prod5-v0.1
