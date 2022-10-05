@@ -9,7 +9,7 @@ from multiprocessing import Pool
 from RTAscience.cfg.Config import Config
 from RTAscience.lib.RTAUtils import get_pointing
 from RTAscience.aph.utils import ObjectConfig
-from astro.lib.photometry import Photometrics
+from RTAscience.aph.photometry import Photometrics
 from RTAscience.aph.utils import aeff_eval, ObjectConfig
 
 from rtapipe.lib.rtapipeutils.PhotometryUtils import *
