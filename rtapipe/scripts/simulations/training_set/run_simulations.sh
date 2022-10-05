@@ -17,24 +17,22 @@ cta_sag_sci_path="/data01/homes/baroncelli/phd/cta-sag-sci"
 
 rtapipe_path=/data01/homes/baroncelli/phd/rtapipe
 
-output_dir_sim="$this_dir/sim_output"
+date_suffix=$(date +%Y-%m-%d_%H-%M-%S)
+
+output_dir_sim="$this_dir/sim_output_${date_suffix}"
 
 mkdir -p $output_dir_sim
 
+
+python $cta_sag_sci_path/RTAscience/simGRBcatalog.py  \
+                                        -f config.yml  \
+                                        --print yes \
+                                        --mp-enabled yes \
+                                        --mp-threads 20
+
 python $cta_sag_sci_path/RTAscience/simGRBcatalogWithRandomization.py  \
-                                        -f config_grb_onset50.yml  \
+                                        -f config.yml  \
                                         --output-dir $output_dir_sim  \
                                         --print yes \
                                         --mp-threads 20
 
-python $cta_sag_sci_path/RTAscience/simGRBcatalogWithRandomization.py  \
-                                        -f config_grb_delay50.yml  \
-                                        --output-dir $output_dir_sim  \
-                                        --print yes \
-                                        --mp-threads 20
-
-python $cta_sag_sci_path/RTAscience/simGRBcatalogWithRandomization.py  \
-                                        -f config_bkg.yml  \
-                                        --output-dir $output_dir_sim  \
-                                        --print yes \
-                                        --mp-threads 20

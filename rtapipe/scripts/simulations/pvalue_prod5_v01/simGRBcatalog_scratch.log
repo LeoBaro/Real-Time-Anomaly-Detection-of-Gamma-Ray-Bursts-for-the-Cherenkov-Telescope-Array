@@ -1,0 +1,104 @@
+root output dir: /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln
+total runids: 1
+total trials: 30
+total simulations: 30
+Threads: 30
+Output dirs created in 0.002 seconds
+start_count: 10000 trial id: 18
+Simulate template seed=10019
+Merge in photon-list
+start_count: 10000 trial id: 26
+Simulate template seed=10027
+Merge in photon-list
+start_count: 10000 trial id: 17
+Simulate template seed=10018
+Merge in photon-list
+start_count: 10000 trial id: 4
+Simulate template seed=10005
+Merge in photon-list
+start_count: 10000 trial id: 16
+Simulate template seed=10017
+Merge in photon-list
+start_count: 10000 trial id: 3
+Simulate template seed=10004
+Merge in photon-list
+start_count: 10000 trial id: 25
+Simulate template seed=10026
+Merge in photon-list
+start_count: 10000 trial id: 1
+Simulate template seed=10002
+Merge in photon-list
+start_count: 10000 trial id: 12
+Simulate template seed=10013
+Merge in photon-list
+start_count: 10000 trial id: 9
+Simulate template seed=10010
+Merge in photon-list
+start_count: 10000 trial id: 27
+Simulate template seed=10028
+Merge in photon-list
+start_count: 10000 trial id: 7
+Simulate template seed=10008
+Merge in photon-list
+start_count: 10000 trial id: 15
+Simulate template seed=10016
+Merge in photon-list
+start_count: 10000 trial id: 24
+Simulate template seed=10025
+Merge in photon-list
+start_count: 10000 trial id: 21
+Simulate template seed=10022
+Merge in photon-list
+start_count: 10000 trial id: 8
+Simulate template seed=10009
+Merge in photon-list
+start_count: 10000 trial id: 2
+Simulate template seed=10003
+Merge in photon-list
+start_count: 10000 trial id: 23
+Simulate template seed=10024
+Merge in photon-list
+start_count: 10000 trial id: 13
+Simulate template seed=10014
+Merge in photon-list
+start_count: 10000 trial id: 0
+Simulate template seed=10001
+Merge in photon-list
+start_count: 10000 trial id: 19
+Simulate template seed=10020
+Merge in photon-list
+start_count: 10000 trial id: 29
+Simulate template seed=10030
+Merge in photon-list
+start_count: 10000 trial id: 10
+Simulate template seed=10011
+Merge in photon-list
+start_count: 10000 trial id: 14
+Simulate template seed=10015
+Merge in photon-list
+start_count: 10000 trial id: 6
+Simulate template seed=10007
+Merge in photon-list
+start_count: 10000 trial id: 20
+Simulate template seed=10021
+Merge in photon-list
+start_count: 10000 trial id: 5
+Simulate template seed=10006
+Merge in photon-list
+start_count: 10000 trial id: 28
+Simulate template seed=10029
+Merge in photon-list
+start_count: 10000 trial id: 22
+Simulate template seed=10023
+Merge in photon-list
+start_count: 10000 trial id: 11
+Simulate template seed=10012
+Merge in photon-list
+trial_batch [('run0406_ID000126', 0, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 1, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 2, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 3, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 4, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 5, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 6, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 7, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 8, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 9, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 10, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 11, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 12, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 13, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 14, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 15, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 16, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 17, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 18, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 19, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 20, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 21, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 22, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 23, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 24, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 25, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 26, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 27, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 28, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 29, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True))]
+
+Processed 30 trials, computing statistics..
+Trials elapsed time (mean): 153.84542683760324 +- 10.351501463843856
+Number of trials with errors:  0
+
+... done.
+
