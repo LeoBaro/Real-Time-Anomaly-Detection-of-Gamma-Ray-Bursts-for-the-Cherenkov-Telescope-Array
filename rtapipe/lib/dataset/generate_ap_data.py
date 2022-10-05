@@ -76,7 +76,7 @@ if __name__=='__main__':
     parser.add_argument("-dd",    "--dataDir",          type=str,      required=True,  help="The path to the folder containing the input files")
     parser.add_argument("-itype", "--integrationtype",  type=str,      required=True,  choices=["t", "te"], help="")
     parser.add_argument("-itime", "--integrationtime",  type=int,      required=True,  help="")
-    parser.add_argument("-rr",    "--regionradius",     type=float,    required=True,  help="A list of region radius values: a different output file will be created for each of those values")
+    parser.add_argument("-rr",    "--regionradius",     type=float,    required=True,  help="The radius (degrees) of the region.")
     parser.add_argument("-out",   "--outputdir",        type=str,      required=True,  help="The path to the output directory.")
     parser.add_argument("-norm",  "--normalize",        type=str2bool, required=True,  help="If 'yes' the counts will be normalized")
     parser.add_argument("-proc",  "--procnumber",       type=int,      required=True,  help="The number of processes to use for parallelization")
