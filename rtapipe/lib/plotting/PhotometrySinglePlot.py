@@ -47,7 +47,7 @@ class PhotometrySinglePlot(PhotometryPlot):
             ax.set_title(json.dumps(self.params), fontsize=10)
             self.fig.set_size_inches(PhotometryPlot.inch_x, PhotometryPlot.inch_y)
 
-            if self.params["onset"] > 0:
+            if self.params["onset"] is not None and self.params["onset"] > 0:
                 _ = ax.axvline(x=self.params["onset"], color="red", linestyle="--")
 
             dataframe = self.data[-1]
