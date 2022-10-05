@@ -5,12 +5,8 @@ from functools import partial
 
 from rtapipe.lib.plotting.PhotometrySinglePlot import PhotometrySinglePlot
 
-# python plot_ap_timeseries.py -f /data01/homes/baroncelli/AP_DATA_10000/ap_data_bkg_T_10_TSL_10/dataset_trials_10000_type_bkg_tobs_100/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_10/
-def make_plot(file_path, outputdir):
-    filename = file_path.name   
-    print(f"Processing: {filename}")
-    # extract the information from the file name: runid_run0406_ID000126_trial_00000002_simtype_grb_onset_25_delay_0_offset_0.5_itype_t_itime_1_normalized_False.csv
-    params = {
+def parse_params(filename):
+    return {
         "runid":   filename.split("runid_")[1].split("_trial_")[0],
         "trial":   filename.split("trial_")[1].split("_simtype_")[0],
         "simtype": filename.split("simtype_")[1].split("_onset_")[0],
@@ -21,6 +17,23 @@ def make_plot(file_path, outputdir):
         "itime":   filename.split("itime_")[1].split("_normalized_")[0],
         "normalized": filename.split("normalized_")[1].split(".csv")[0]
     }
+    
+
+# python plot_ap_timeseries.py -f /data01/homes/baroncelli/AP_DATA_10000/ap_data_bkg_T_10_TSL_10/dataset_trials_10000_type_bkg_tobs_100/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_10/
+def make_plot(file_path, outputdir):
+    filename = file_path.name   
+    print(f"Processing: {filename}")
+    try:
+        params = parse_params(filename)
+    except:
+        params = {
+            "onset": None,
+            "simtype": "bkg",
+            "itype": "te",
+            "normalized": "True"
+        }
+        print(f"Error parsing filename: {filename}")
+    # extract the information from the file name: runid_run0406_ID000126_trial_00000002_simtype_grb_onset_25_delay_0_offset_0.5_itype_t_itime_1_normalized_False.csv
     plot = PhotometrySinglePlot(params)
     _ = plot.addData(file_path)        
     _ = plot.plotScatterSingleAxes()
@@ -34,12 +47,13 @@ if __name__=='__main__':
 
         parser = argparse.ArgumentParser()
         parser.add_argument("--dir", "-d", type=str, required=True)
-        parser.add_argument("--output-dir", "-od", type=str, required=True)
+        parser.add_argument("--output-dir", "-o", type=str, required=True)
+        parser.add_argument("--limit", "-l", type=int, required=False, default=-1)
         args = parser.parse_args()
 
         Path(args.output_dir).mkdir(parents=True, exist_ok=True)
 
-        files = list(Path(args.dir).glob('*.csv'))
+        files = list(Path(args.dir).glob('*.csv'))[:args.limit]
 
         print(f"Found {len(list(files))} files")
 
