@@ -1,0 +1,13 @@
+root output dir: /data01/homes/baroncelli/phd/rtapipe/scripts/simulations/training_single_phlist_7200s/sim_output_2022-10-07_14-21-14
+total runids: 1
+total trials: 1
+total simulations: 1
+Threads: 10
+
+[07/10/2022_14:21:38] Batch processed, computing statistics..
+Trials elapsed time (mean): 18.669028282165527 +- 0.0
+Number of trials with errors: 0
+Processed a total of 1 trials
+
+...[07/10/2022_14:21:38] done.
+
