@@ -3,20 +3,13 @@ import argparse
 from time import time
 from pathlib import Path
 
+from rtapipe.lib.utils.misc import str2bool
 from rtapipe.lib.datasource.Photometry2 import Photometry2
 from rtapipe.lib.plotting.PhotometrySinglePlot import PhotometrySinglePlot
 from rtapipe.lib.datasource.integrationstrat.IntegrationStrategies import IntegrationType, TimeIntegration, EnergyIntegration, TimeEnergyIntegration, FullIntegration
 from rtapipe.lib.rtapipeutils.PhotometryUtils import PhotometryUtils
 
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 def main(args):
 
