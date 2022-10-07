@@ -103,7 +103,6 @@ class Photometry2:
         """
             Integrate multiples input files in a directory
         """
-        self.integrationStrat = PhotometryUtils.getIntegrationStrategy(integrationType)
 
         region = self.computeRegion(regionRadius)
 
@@ -153,6 +152,8 @@ class Photometry2:
                 tWindows: list ->
                 eWindows: list ->
         """
+        self.integrationStrat = PhotometryUtils.getIntegrationStrategy(integrationType)
+
         outputFileName = Path(inputFilePath).with_suffix('').name + f"_itype_{integrationType}_itime_{tWindows[0][1]-tWindows[0][0]}_normalized_{normalize}.csv"
         outputFilePath = self.outputDir.joinpath(outputFileName)
 
