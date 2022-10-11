@@ -27,3 +27,5 @@ wandb
 **/runid_*.fits
 **/ebl*.csv
 **/ebl*.fits
+**/sim_output/**
+**/slurm_out/**
