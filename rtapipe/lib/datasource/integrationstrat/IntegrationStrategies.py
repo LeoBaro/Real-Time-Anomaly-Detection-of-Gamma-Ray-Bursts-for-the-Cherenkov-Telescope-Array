@@ -53,10 +53,12 @@ class TimeIntegration(IntegrationStrategy):
                 counts = photometrics.region_counter(region, float(region["rad"]), tmin=twin[0], tmax=twin[1], emin=emin, emax=emax)
 
                 if normalize:
-
                     counts = self.normalize(counts, areaEffForEnergyBins[str(eWindows[0])], livetime)
+                    error = 0 # TODO: compute error on FLUX
+                else:
+                    error = sqrt(counts)
 
-                of.write(f"{twin[0]},{twin[1]},{counts},{round(sqrt(counts), 4)}\n")
+                of.write(f"{twin[0]},{twin[1]},{counts},{error}\n")
                 totalCounts += counts
 
         return outputFilePath, totalCounts
@@ -88,12 +90,12 @@ class EnergyIntegration(IntegrationStrategy):
                 counts = photometrics.region_counter(region, float(region["rad"]), tmin=None, tmax=None, emin=ewin[0], emax=ewin[1])
 
                 if normalize:
-
-                    # region_eff_resp = self.computeAeffArea(normConfTemplate, ewin[0], ewin[1], region, pointing)
-
                     counts = self.normalize(counts, areaEffForEnergyBins[str(ewin)], livetime)
+                    error = 0 # TODO: compute error on FLUX
+                else:
+                    error = sqrt(counts)
 
-                of.write(f"{ewin[0]},{ewin[1]},{counts},{round(sqrt(counts), 4)}\n")
+                of.write(f"{ewin[0]},{ewin[1]},{counts},{error}\n")
                 totalCounts += counts
 
         return outputFilePath, totalCounts
@@ -127,10 +129,12 @@ class TimeEnergyIntegration(IntegrationStrategy):
                     counts = photometrics.region_counter(region, float(region["rad"]), tmin=twin[0], tmax=twin[1], emin=ewin[0], emax=ewin[1])
 
                     if normalize:
-
                         counts = self.normalize(counts, areaEffForEnergyBins[str(ewin)], livetime)
+                        error = 0 # TODO: compute error on FLUX
+                    else:
+                        error = sqrt(counts)
 
-                    of.write(f",{counts},{round(sqrt(counts), 4)}")
+                    of.write(f",{counts},{error}")
                     totalCounts += counts
 
                 of.write("\n")
@@ -167,10 +171,12 @@ class FullIntegration(IntegrationStrategy):
             counts = photometrics.region_counter(region, float(region["rad"]), tmin=None, tmax=None, emin=None, emax=None)
 
             if normalize:
-
                 counts = self.normalize(counts, areaEffForEnergyBins[str(eWindows[0])], livetime)
+                error = 0 # TODO: compute error on FLUX
+            else:
+                error = sqrt(counts)
 
-            of.write(f"{counts},{round(sqrt(counts), 4)}\n")
+            of.write(f"{counts},{error}\n")
             totalCounts += counts
 
         return outputFilePath, totalCounts
