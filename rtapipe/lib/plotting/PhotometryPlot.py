@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-plt.rcParams.update({'font.size': 10, 'lines.markersize': 0.5,'legend.markerscale': 5, 'lines.linewidth':0.5, 'lines.linestyle':'--'})
-
 class PhotometryPlot:
     
     inch_x = 15

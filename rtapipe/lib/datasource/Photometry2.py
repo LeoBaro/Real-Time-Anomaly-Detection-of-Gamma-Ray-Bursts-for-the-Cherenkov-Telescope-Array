@@ -20,15 +20,15 @@ class Photometry2:
     """
         This class uses the astro library to integrate gamma like counts in time and energy.
     """
-    def __init__(self, dataDir, outputDir):
+    def __init__(self, configPath, dataDir, outputDir):
 
         """
-            dataDir is the simulation directory and it must contain a config.yaml file
+            dataDir is the simulation directory and it must contain a config.yml file
         """
         if "DATA" not in os.environ:
             raise EnvironmentError("Please, export $DATA")
 
-        cfg = Config(Path(dataDir).joinpath("config.yaml"))
+        cfg = Config(Path(configPath))
         irfPath = Path(expandvars('$CTOOLS')).joinpath(f"share/caldb/data/cta/{cfg.get('caldb')}/bcf/{cfg.get('irf')}")
         irfFileName = os.listdir(irfPath).pop()
         self.irfFile = irfPath.joinpath(irfFileName) 

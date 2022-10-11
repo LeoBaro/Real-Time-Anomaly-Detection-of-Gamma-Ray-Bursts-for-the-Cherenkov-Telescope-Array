@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import matplotlib.pyplot as plt
+plt.style.use('ieee')
 
 from rtapipe.lib.plotting.PhotometryPlot import PhotometryPlot
 
@@ -37,7 +38,7 @@ class PhotometrySinglePlot(PhotometryPlot):
     def addData(self, photometryCsvFile):
         self.data.append(super().getData(photometryCsvFile))
 
-    def plotScatterSingleAxes(self, showLegend=True):
+    def plotScatterSingleAxes(self, lenght=None, showLegend=True):
 
         with plt.style.context('ggplot'):
             

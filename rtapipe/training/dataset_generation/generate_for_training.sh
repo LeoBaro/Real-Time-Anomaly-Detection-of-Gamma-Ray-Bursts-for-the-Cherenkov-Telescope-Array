@@ -13,13 +13,17 @@ Not enought arguments supplied.
           - integration type (t/te)
           - slurm (yes/no)
           - partition
+          - simulation config file
 
        Examples:
-       ./generate_for_training.sh backgrounds_10mln 1 5 /scratch/baroncelli/AP_DATA/ 30 te yes sim2
+       ./generate_for_training.sh /scratch/baroncelli/DATA/obs/backgrounds_10mln 1 5 /scratch/baroncelli/AP_DATA/ 30 te yes sim2 /scratch/baroncelli/DATA/obs/backgrounds_10mln/config.yml
 """
     else
 
       SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+      
+      
+      GEN_AP_DATA_SCRIPT_PATH=$SCRIPT_DIR/../../lib/dataset/generate_ap_data.py
 
       today=`date +%Y-%m-%d.%H:%M:%S`
       simdata=$1
@@ -30,6 +34,7 @@ Not enought arguments supplied.
       integration_type=$6
       use_slurm=$7
       partition=$8
+      simconfig=$9
 
       for i; do
          echo $i
@@ -37,7 +42,7 @@ Not enought arguments supplied.
 
       if [ "$integration_type" = "t" ] || [ "$integration_type" = "te" ]; then
 
-        command="python $SCRIPT_DIR/generate_ap_data.py -dd $DATA/obs/$simdata -t bkg -mp no -itype $integration_type -itime $it -rr 0.2 -norm yes -tsl $tsl -out $outdir -proc $processes"
+        command="python $GEN_AP_DATA_SCRIPT_PATH -c $simconfig -dd $simdata -itype $integration_type -itime $it -rr 0.2 -norm yes -tsl $tsl -out $outdir -proc $processes"
 
         echo "Command: $command"
 

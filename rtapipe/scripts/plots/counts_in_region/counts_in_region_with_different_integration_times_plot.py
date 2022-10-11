@@ -1,15 +1,18 @@
 import argparse
 import numpy as np
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 from RTAscience.aph.photometry import Photometrics
 from rtapipe.lib.datasource.Photometry2 import Photometry2
+from rtapipe.lib.plotting.PlotConfig import PlotConfig
 from rtapipe.lib.rtapipeutils.PhotometryUtils import PhotometryUtils
 from rtapipe.lib.datasource.integrationstrat.IntegrationStrategies import IntegrationType
 
-import matplotlib.pyplot as plt
 
-# plt.style.use('ieee')
+plt.style.use('ieee')
+
+pc = PlotConfig()
 
 def get_max_val(data):
     max_val = 0
@@ -38,7 +41,7 @@ def bar_plot(ax, data, errors, labels, ylabel):
 
         shift = x + width/2 - width*len(data)/2 + count*width
         rects.append(
-            ax.bar(shift, energy_range_data, width, yerr=yerr, label=energy_range+" TeV")
+            ax.bar(shift, energy_range_data, width, yerr=yerr, color=pc.colors[count], label=energy_range+" TeV")
         )
         count += 1 
 
@@ -85,7 +88,7 @@ if __name__=='__main__':
     # a plot for each integration time will be produced. 
     # The plot will show the average and dev of counts in the region
     # for different energy integration levels.
-    ph = Photometry2(args.photon_lists_dir, args.output_dir)
+    ph = Photometry2(Path(__file__).parent.resolve().joinpath("config.yml"), args.photon_lists_dir, args.output_dir)
     photometrics = Photometrics({'events_filename': input_photon_list })
 
     region = ph.computeRegion(0.2)

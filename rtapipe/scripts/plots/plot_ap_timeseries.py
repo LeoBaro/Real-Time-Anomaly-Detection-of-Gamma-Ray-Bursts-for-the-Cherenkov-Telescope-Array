@@ -3,7 +3,7 @@ import multiprocessing
 from pathlib import Path
 from functools import partial
 
-from rtapipe.lib.plotting.PhotometrySinglePlot import PhotometrySinglePlot
+from rtapipe.lib.plotting.APPlot import APPlot
 
 def parse_params(filename):
     return {
@@ -20,7 +20,7 @@ def parse_params(filename):
     
 
 # python plot_ap_timeseries.py -f /data01/homes/baroncelli/AP_DATA_10000/ap_data_bkg_T_10_TSL_10/dataset_trials_10000_type_bkg_tobs_100/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_10/
-def make_plot(file_path, outputdir):
+def make_plot(file_path, points, outputdir):
     filename = file_path.name   
     print(f"Processing: {filename}")
     try:
@@ -33,33 +33,32 @@ def make_plot(file_path, outputdir):
             "normalized": "True"
         }
         print(f"Error parsing filename: {filename}")
+
     # extract the information from the file name: runid_run0406_ID000126_trial_00000002_simtype_grb_onset_25_delay_0_offset_0.5_itype_t_itime_1_normalized_False.csv
-    plot = PhotometrySinglePlot(params)
-    _ = plot.addData(file_path)        
-    _ = plot.plotScatterSingleAxes()
-    plot.save(outputdir, f"{filename}")
-    plot.destroy()
+    applot = APPlot()
+    applot.plot(file_path, params, lenght=points)
+    applot.save(outputdir, f"{filename}")
 
-        
+def main():
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--dir", type=str, required=True)
+    parser.add_argument("-l", "--length", type=int, required=False, default=None)
+    parser.add_argument("-o", "--output-dir", type=str, required=True)
+    args = parser.parse_args()
+
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
+
+    # search all .csv inside the args.dir and its subdirectories
+    files = list(Path(args.dir).rglob("*.csv"))
+
+    print(f"Found {len(list(files))} files in {Path(args.dir)}")
+
+    func = partial(make_plot, points=args.length, outputdir=args.output_dir)
+
+    with multiprocessing.Pool(20) as p:
+        p.map(func, files)
 
 if __name__=='__main__':
-
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--dir", "-d", type=str, required=True)
-        parser.add_argument("--output-dir", "-o", type=str, required=True)
-        parser.add_argument("--limit", "-l", type=int, required=False, default=-1)
-        args = parser.parse_args()
-
-        Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-
-        files = list(Path(args.dir).glob('*.csv'))[:args.limit]
-
-        print(f"Found {len(list(files))} files")
-
-        func = partial(make_plot, outputdir=args.output_dir)
-
-        with multiprocessing.Pool(20) as p:
-            p.map(func, files)
-
+    main()
 

@@ -28,7 +28,7 @@ simulation:
   offset: 0.5 # maggiore del diametro della regione
   onset: 0
   roi: 2.5
-  tobs: 7200
+  tobs: 18000
 
 analysis:
   binned: false
