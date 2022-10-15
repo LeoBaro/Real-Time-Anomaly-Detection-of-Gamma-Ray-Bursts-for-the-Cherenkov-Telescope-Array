@@ -21,6 +21,8 @@ class APPlot:
 
     def set_layout(self, params):
         self.ax.set_xlabel("Time [s]")
+        if params["maxflux"] is not None:
+            self.ax.set_ylim(0, params["maxflux"])
         if params["normalized"]:
             self.fig.suptitle("Flux in region")
             self.ax.set_ylabel("Flux [ph/cm2/s]")

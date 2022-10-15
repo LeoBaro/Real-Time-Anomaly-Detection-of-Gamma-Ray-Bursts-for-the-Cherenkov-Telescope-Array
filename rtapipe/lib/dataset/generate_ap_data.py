@@ -39,7 +39,7 @@ def main(args):
         tobs = new_t_obs
 
     tWindows = PhotometryUtils.getLinearWindows(wmin, tobs , int(it), int(it))
-    print(f"\nAP data generation --> it: {it} rr: {args.regionradius} tobs: {tobs} ({args.integrationtype} integration) Normalization: {args.normalize} Windows: {tWindows}")
+    print(f"\nAP data generation --> it: {it} rr: {args.regionradius} tobs: {tobs} ({args.integrationtype} integration) Normalization: {args.normalize} Windows numbers: {len(tWindows)}")
 
     ph = Photometry2(configFile, args.dataDir, args.outputdir)
 
