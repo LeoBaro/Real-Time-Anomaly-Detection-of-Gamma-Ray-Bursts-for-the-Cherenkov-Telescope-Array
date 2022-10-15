@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+  - cta-observatory
+dependencies:
+  - python=3.9
+  - tensorflow-gpu
+  - wandb
