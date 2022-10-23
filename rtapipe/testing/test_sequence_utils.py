@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
-from rtapipe.lib.rtapipeutils.WindowsExtractor import WindowsExtractor
+from rtapipe.lib.rtapipeutils.SequenceUtils import *
 
-class TestWindowsExtractor:
+class TestSequenceUtils:
 
     def assert_array_equal(arr1, arr2):
         assert arr1.shape == arr2.shape
@@ -29,8 +29,8 @@ class TestWindowsExtractor:
     ])
 
     def test_extract_sub_windows(self,test_input,expected_windows):
-        windows = WindowsExtractor.test_extract_sub_windows(test_input["arr"], test_input["start"], test_input["stop"], test_input["ws"], test_input["stride"])
-        TestWindowsExtractor.assert_array_equal(windows, expected_windows)
+        windows = extract_sub_windows(test_input["arr"], test_input["start"], test_input["stop"], test_input["ws"], test_input["stride"])
+        TestSequenceUtils.assert_array_equal(windows, expected_windows)
 
     # 10,11,12,13,14,15,16,17,18,19
     #      piv=2
@@ -41,14 +41,38 @@ class TestWindowsExtractor:
         ({"arr":np.arange(10,20),"sub_window_size":3,"stride":2,"pivot_idx":5}, (np.array([[10,11,12], [12,13,14]]), np.array([[13,14,15],[15,16,17],[17,18,19]]))),
         ({"arr":np.arange(10,20),"sub_window_size":2,"stride":1,"pivot_idx":2}, (np.array([[10,11]]), np.array([[11,12],[12,13],[13,14],[14,15],[15,16],[16,17],[17,18],[18,19]])))
     ])
-
     def test_extract_sub_windows_pivot(self,test_input,expected_windows):
-        windows = WindowsExtractor.test_extract_sub_windows_pivot(test_input["arr"],test_input["sub_window_size"], test_input["stride"], test_input["pivot_idx"])
-        TestWindowsExtractor.assert_array_equal(windows[0], expected_windows[0])
-        TestWindowsExtractor.assert_array_equal(windows[1], expected_windows[1])
+        windows = extract_sub_windows_pivot(test_input["arr"],test_input["sub_window_size"], test_input["stride"], test_input["pivot_idx"])
+        TestSequenceUtils.assert_array_equal(windows[0], expected_windows[0])
+        TestSequenceUtils.assert_array_equal(windows[1], expected_windows[1])
 
-    
 
+    @pytest.mark.parametrize("test_input,expected_window", 
+    [
+        ({"arr":np.arange(1, 10),"start":5,"stop":7}, np.array([6,7,8])),
+        ({"arr":np.arange(1, 13).reshape(3,4),"start":0,"stop":2}, np.array([[1,2,3],[5,6,7],[9,10,11]])),
+        ({"arr":np.arange(1, 13).reshape(3,4),"start":0,"stop":3}, np.arange(1, 13).reshape(3,4))
+    ])
+    def test_crop_sequence(self,test_input,expected_window):
+        window = crop_sequence(test_input["arr"],test_input["start"], test_input["stop"])
+        #print(window)
+        #print(expected_window)
+        TestSequenceUtils.assert_array_equal(window, expected_window)
+
+
+
+    @pytest.mark.parametrize("test_input,expected_window", 
+    [
+        ({"arr":np.arange(1, 10),"center":5,"offset":3}, np.array([3,4,5,6,7,8,9])),
+        ({"arr":np.arange(1, 13).reshape(3,4),"center":1,"offset":1}, np.array([[1,2,3],[5,6,7],[9,10,11]])),
+        ({"arr":np.arange(1, 13).reshape(3,4),"center":2,"offset":1}, np.array([[2,3,4],[6,7,8],[10,11,12]]))
+
+    ])
+    def test_crop_sequence_around_center(self,test_input,expected_window):
+        window = crop_sequence_around_center(test_input["arr"],test_input["center"], test_input["offset"])
+        #print(window)
+        #print(expected_window)
+        TestSequenceUtils.assert_array_equal(window, expected_window)
 
 
 
