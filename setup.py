@@ -5,6 +5,8 @@ from setuptools import setup, find_packages
 entry_points = {
 	'console_scripts': [
 		'plot_ap_timeseries = rtapipe.scripts.plots.plot_ap_timeseries:main',
+          'generate_ap_data = rtapipe.lib.dataset.generate_ap_data:main',
+          'phlists_to_skymaps = rtapipe.scripts.plots.phlists_to_skymaps:main'
      ]
 }
 setup( 
