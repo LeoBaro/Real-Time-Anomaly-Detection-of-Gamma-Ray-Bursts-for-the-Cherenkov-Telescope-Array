@@ -36,12 +36,15 @@ class APPlot:
         df = self.read_data(csv_file_path)
         if lenght is not None and lenght > 0:
             df = df.loc[0:lenght,:]
-        print(df.shape)
 
         data_col_names  = [col_name for col_name in df.columns if "COUNTS" in col_name]
         error_col_names = [col_name for col_name in df.columns if "ERROR"  in col_name]
 
-
+        totc=0
+        for dc in data_col_names:
+            print(f"Counts in {dc}={df[dc].sum()}")
+            totc += df[dc].sum()
+        print(f"Total counts: {totc}")
 
         self.fig, self.ax = plt.subplots(nrows=1, ncols=1, figsize=self.pc.fig_size)
 
@@ -58,6 +61,9 @@ class APPlot:
                 "ecolor": self.pc.colors[i]
             }     
             self.ax.errorbar(df["TCENTER"], df[data_col_names[i]], yerr=df[error_col_names[i]], label=label, **self.pc.error_kw, **error_bar_kwargs)
+
+        if params["onset"] > 0:
+            self.ax.axvline(x = params["onset"], color = "purple", linestyle = 'dashed', label = "GRB start")
 
         self.set_layout(params)
 
