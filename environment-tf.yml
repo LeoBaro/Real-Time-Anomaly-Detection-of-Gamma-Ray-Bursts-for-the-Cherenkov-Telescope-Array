@@ -3,5 +3,12 @@ channels:
   - cta-observatory
 dependencies:
   - python=3.9
+  - numpy=1.19.5
   - tensorflow-gpu
   - wandb
+  - pandas
+  - scikit-sklearn
+  - matplotlib
+  - tqdm
+  - ipykernel
+  - jupyter
