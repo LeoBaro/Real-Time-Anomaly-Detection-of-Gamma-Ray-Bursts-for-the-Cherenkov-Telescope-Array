@@ -8,30 +8,55 @@ from time import time
 from pathlib import Path
 from random import randrange
 import matplotlib.pyplot as plt
+from abc import ABC, abstractmethod
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from rtapipe.lib.rtapipeutils.WindowsExtractor import WindowsExtractor
+from rtapipe.lib.rtapipeutils.SequenceUtils import extract_sub_windows, extract_sub_windows_pivot
 from rtapipe.lib.rtapipeutils.FileSystemUtils import FileSystemUtils
 
-class APDataset:
+class APDataset(ABC):
 
-    def get_dataset(datasetsConfig, datasetID, outDir=None, scaler=None):
+    @abstractmethod
+    def loadData(self, size = None):
+        pass     
+
+    @abstractmethod
+    def train_val_split(self, split=70, scale=True, verbose=True):
+        pass
+
+    @abstractmethod
+    def getTestSet(self, windowSize, stride):
+        pass
+
+    def get_random_train_sample(self, scaled, tsl=10):
+        if self.train_x is not None:
+            idx = np.random.randint(0, len(self.train_x))
+        sample = self.train_x[idx]
+        if self.scaler is not None and scaled:
+            sample = self.scale(sample)
+        return sample
+
+    @staticmethod
+    def get_dataset(datasetsConfig, datasetID, out_dir=None, scaler_type=None):
 
         with open(datasetsConfig, "r") as stream:
             datasets = yaml.safe_load(stream)
 
         if datasetID not in datasets:
             raise ValueError(f"Dataset with id={datasetID} not found. Available datasets: {datasets.keys()}")
-
+            
         dataset_params = datasets[datasetID]
+        dataset_params["outDir"] = out_dir
+        dataset_params["scaler"] = scaler_type
 
-        dataset_params["outDir"] = outDir
-        dataset_params["scaler"] = scaler
+        if dataset_params["type"] == "single":
+            return SinglePhList(dataset_params, out_dir, scaler_type)
 
-        return APDataset(dataset_params, outDir, scaler)
+        elif dataset_params["type"] == "multiple":
+            return MultiplePhList(dataset_params, out_dir, scaler_type)
 
 
-    def __init__(self, dataset_params, outDir=None, scaler=None):
+    def __init__(self, dataset_params, outDir=None, scaler_type=None):
 
         # The data container
         self.data = None
@@ -54,23 +79,21 @@ class APDataset:
             for name in files:
                 self.filenamePattern = name
                 break
-            
-        # Scalers
-        if scaler is None:
-            self.scaler = scaler
-        elif scaler == "mm":
-            self.scaler = MinMaxScaler(feature_range=(0,1))
-        elif scaler == "ss":
-            self.scaler = StandardScaler()
-        else:
-            raise ValueError("Supported scalers: mm, ss")
+        
+        self.scaler_type = scaler_type
+        self.scaler = None
 
+        if self.scaler_type not in ["ss", "mm"]:
+            raise ValueError("Scaler type not supported. Supported 'ss' and 'mm'.")
+
+        self.outDir = None
         if outDir is not None:
             self.outDir = Path(outDir)
-        else:
-            self.outDir = None
 
         self.batchIterator = None
+
+        self.train_x, self.train_y = None, None
+        self.val_x, self.val_y = None, None
 
     def checkCompatibilityWith(self, otherDatasetParams):
 
@@ -118,13 +141,15 @@ class APDataset:
         if len(self.featureCols) > 1:
             self.featureCols.sort(key = lambda col : float(col.split("COUNTS_")[1].split("-")[0]))
 
+
+
+    """
     def loadBatchFromIDs(self, patternName, fromID, toID):
-        """
         ids: list of files' ids
 
         Load len(ids) files as a pandas.DataFrame and scale them. 
         bkg000001_t_simtype_bkg_onset_0_normalized_True.csv
-        """
+        
         ids = list(range(fromID, toID))
         ids = [ f'{id:06d}' for id in ids if id < 10e6 ]
 
@@ -163,7 +188,9 @@ class APDataset:
         numFeatures = self.data.shape[1]
         data = data.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures))
         return data
+    """
 
+    """
     def loadDataBatch(self, batchsize, verbose=False):
         # print(f"Loading batch of files ({batchsize}) from {Path(self.dataset_params['path'])}")
         if self.batchIterator is None:
@@ -181,102 +208,11 @@ class APDataset:
         except Exception as genericEx:
             print(f"Exception: {genericEx}")
             return False
+    """
 
 
-    def loadData(self, size = None):
+    def plotRandomSample(self, howMany=1, scaled=True, showFig=False, saveFig=True):
 
-        print(f"Loading dataset..")
-
-        count = 0
-        for file in tqdm( Path(self.dataset_params["path"]).iterdir() ):
-            try:
-                if self.data is None:
-                    self.data = pd.read_csv(file, sep=",")
-                    self.singleFileDataShapes = self.data.shape
-                else:
-                    self.data = pd.concat([self.data, pd.read_csv(file, sep=",")])
-            except pd.errors.EmptyDataError as exc:
-                print(f"EmptyDataError exception! File {file} is empty!", exc)
-            count += 1
-            if size is not None and count >= size:
-                break
-
-        self.filesLoaded = count
-
-        self.preprocessData()
-
-
-    def getTrainingAndValidationSet(self, split=50, fitScaler=True, scale=True, verbose=True):
-
-        numFeatures = self.data.shape[1]
-
-        data = self.data.values
-
-        if fitScaler:
-            if verbose:
-                print("\tFitting scalers..")
-            self.scaler.fit(data)
-            with open(self.outDir.joinpath('fitted_scaler.pickle'), 'wb') as handle:
-                pickle.dump(self.scaler, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-        if scale:
-            if verbose:
-                print("\tScaling data..")
-            data = self.scaler.transform(data)
-
-        # print(f"Data before reshape: {data.shape}")
-        data = data.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures))
-
-        # windows = WindowsExtractor.test_extract_sub_windows(data, 0, data.shape[0], windowSize, stride)
-
-        labels = np.array([False for i in range(len(data))])
-
-        windows = self._splitArrayWithPercentage(data, split)
-        labels = self._splitArrayWithPercentage(labels, split)
-
-        if verbose:
-            print(f"Training set: {windows[0].shape} Labels: {labels[0].shape}")
-            print(f"\tValidation set: {windows[1].shape} Labels: {labels[1].shape}")
-
-        return windows[0], labels[0], windows[1], labels[1]
-
-
-
-    # TODO different types of test sets
-    def getTestSet(self, windowSize, stride):
-        """
-        At the moment it extracts subwindows from 1 GRB sample only
-        """
-        print("Exctracting test set..")
-
-        data = self.scaler.transform(self.data.values)
-
-        print(f"Dataset shape: {data.shape}")
-
-        numFeatures = self.data.shape[1]
-
-        data = data.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures))
-
-        print(f"Dataset shape after reshape: {data.shape}")
-
-        # TODO
-        # More samples in the test set..
-        sample = data[0,:]
-
-        # TODO
-        # Check/Fix the pivot
-        onset_after_time_integration = int(self.dataset_params["onset"] / self.dataset_params["integration_time"])
-        beforeOnsetWindows, afterOnsetWindows = WindowsExtractor.test_extract_sub_windows_pivot(sample, windowSize, stride, onset_after_time_integration)
-        beforeOnsetLabels = np.array([False for i in range(beforeOnsetWindows.shape[0])])
-        afterOnsetLabels = np.array([True for i in range(afterOnsetWindows.shape[0])])
-
-        return beforeOnsetWindows, beforeOnsetLabels, afterOnsetWindows, afterOnsetLabels
-
-
-
-
-
-    def plotRandomSample(self, howMany=1, showFig=False, saveFig=True):
         numFeatures = self.data.shape[1]
 
         #print(len(self.data),(self.dataset_params["timeseries_lenght"] * self.filesLoaded) / self.dataset_params["integration_time"])
@@ -289,17 +225,20 @@ class APDataset:
         if numFeatures == 1:
             ax = [ax]
 
-        x = range(1, self._getRandomSample().shape[0]+1) # or range(1, randomGrbSample.shape[0]+1)
+        x = range(1, self.get_random_train_sample(scaled).shape[0]+1) # or range(1, randomGrbSample.shape[0]+1)
 
         for f in range(numFeatures):
 
             for i in range(howMany):
-                ax[f].scatter(x, self._getRandomSample()[:,f], label=f"{self.dataset_params['simtype']} {self.featureCols[f]}", s=5)
+                ax[f].plot(x, self.get_random_train_sample(scaled)[:,f], marker='o', label=f"{self.dataset_params['simtype']} {self.featureCols[f]}")
 
             if self.dataset_params["onset"] > 0:
                 ax[f].axvline(x=self.onset, color="red", label=f"Onset: {self.dataset_params['onset']}")
 
             ax[f].set_title(self.featureCols[f])
+
+            if scaled:
+                ax[f].set_ylim(0,1)
 
         plt.tight_layout()
 
@@ -307,7 +246,7 @@ class APDataset:
             plt.show()
 
         if saveFig:
-            fig.savefig(self.outDir.joinpath(f"random_sample.png"), dpi=400)
+            fig.savefig(self.outDir.joinpath(f"random_sample_scaled_{scaled}.png"), dpi=400)
 
         plt.close()
 
@@ -335,13 +274,9 @@ class APDataset:
         return np.split(arr, [splitPoint1])
 
 
-    def _getRandomSample(self):
-        numFeatures = self.data.shape[1]
-        dataReshaped = self.data.values.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures))
-        randomSampleID = randrange(0, dataReshaped.shape[0])
-        return dataReshaped[randomSampleID]
 
 
+    """
     def plotSamples(self, samples, labels, showFig=False, saveFig=True):
 
 
@@ -377,3 +312,134 @@ class APDataset:
             print(self.outDir.joinpath(f"samples.png"))
 
         plt.close()
+    """
+
+    def fit_scaler(self, train_x):
+
+        if self.scaler_type == "mm":
+            self.scaler = MinMaxScaler(feature_range=(0,1))
+
+        elif self.scaler_type == "ss":
+            self.scaler = StandardScaler()
+
+        self.scaler.fit(train_x.reshape(-1, train_x.shape[-1]))
+
+        self.outDir.mkdir(parents=True, exist_ok=True)
+        with open(self.outDir.joinpath('fitted_scaler.pickle'), 'wb') as handle:
+            pickle.dump(self.scaler, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def scale(self, data):
+        if self.scaler is not None:
+            return self.scaler.transform(data.reshape(-1, data.shape[-1])).reshape(data.shape)
+        else:
+            print("Scaler not fitted yet!")
+
+    def split_and_fit(self, data, split=70, scale=True, verbose=True):
+        labels = np.array([False for i in range(len(data))])
+
+        self.train_x, self.val_x = self._splitArrayWithPercentage(data, split)
+        self.train_y, self.val_y = self._splitArrayWithPercentage(labels, split)
+        
+        if verbose:
+            print(f"Training set: {self.train_x.shape} Labels: {self.train_y.shape}")
+            print(f"Validation set: {self.val_x.shape} Labels: {self.val_y.shape}")
+
+        if self.scaler is None:
+            self.fit_scaler(self.train_x)
+
+        if scale:
+            return self.scale(self.train_x), self.train_y, self.scale(self.val_x), self.val_y
+        else:
+            return self.train_x, self.train_y, self.val_x, self.val_y
+
+class SinglePhList(APDataset):
+
+    def __init__(self, dataset_params, outDir=None, scaler_type=None):
+        super().__init__(dataset_params, outDir, scaler_type)
+
+    def loadData(self):
+        print(f"Loading dataset from {self.dataset_params['path']}")
+        for file in tqdm( Path(self.dataset_params["path"]).iterdir() ):
+            self.data = pd.read_csv(file, sep=",")
+            self.singleFileDataShapes = self.data.shape
+            break
+        self.filesLoaded = 1
+        self.preprocessData()
+
+    def train_val_split(self, tsl, split=70, scale=True, verbose=True):
+
+        sequences = extract_sub_windows(self.data.values, 0, len(self.data), tsl, tsl)
+        
+        return self.split_and_fit(sequences, split, scale, verbose)
+
+    def getTestSet(self, fitScaler=True, verbose=True):
+        return None
+
+
+
+class MultiplePhList(APDataset):
+    
+    def __init__(self, dataset_params, outDir=None, scaler_type=None):
+        super().__init__(dataset_params, outDir, scaler_type)
+
+    def loadData(self, size=None):
+        print(f"Loading dataset from {self.dataset_params['path']}")
+        count = 0
+        for file in tqdm( Path(self.dataset_params["path"]).iterdir() ):
+            try:
+                if self.data is None:
+                    self.data = pd.read_csv(file, sep=",")
+                    self.singleFileDataShapes = self.data.shape
+                else:
+                    self.data = pd.concat([self.data, pd.read_csv(file, sep=",")])
+            except pd.errors.EmptyDataError as exc:
+                print(f"EmptyDataError exception! File {file} is empty!", exc)
+            count += 1
+            if size is not None and count >= size:
+                break
+        self.filesLoaded = count
+        self.preprocessData()
+
+
+    def train_val_split(self, split=70, scale=True, verbose=True):
+
+        numFeatures = self.data.shape[1]
+
+        data = self.data.values
+
+        data = data.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures))
+
+        return self.split_and_fit(data, split, scale, verbose)
+
+
+
+    # TODO different types of test sets
+    def getTestSet(self, windowSize, stride):
+        """
+        At the moment it extracts subwindows from 1 GRB sample only
+        """
+        print("Exctracting test set..")
+
+        data = self.scaler.transform(self.data.values)
+
+        print(f"Dataset shape: {data.shape}")
+
+        numFeatures = self.data.shape[1]
+
+        data = data.reshape((self.filesLoaded, self.dataset_params["timeseries_lenght"], numFeatures))
+
+        print(f"Dataset shape after reshape: {data.shape}")
+
+        # TODO
+        # More samples in the test set..
+        sample = data[0,:]
+
+        # TODO
+        # Check/Fix the pivot
+        onset_after_time_integration = int(self.dataset_params["onset"] / self.dataset_params["integration_time"])
+        beforeOnsetWindows, afterOnsetWindows = extract_sub_windows_pivot(sample, windowSize, stride, onset_after_time_integration)
+        beforeOnsetLabels = np.array([False for i in range(beforeOnsetWindows.shape[0])])
+        afterOnsetLabels = np.array([True for i in range(afterOnsetWindows.shape[0])])
+
+        return beforeOnsetWindows, beforeOnsetLabels, afterOnsetWindows, afterOnsetLabels
+
