@@ -1,104 +1,218 @@
 root output dir: /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln
 total runids: 1
-total trials: 30
-total simulations: 30
-Threads: 30
-Output dirs created in 0.002 seconds
-start_count: 10000 trial id: 18
-Simulate template seed=10019
-Merge in photon-list
-start_count: 10000 trial id: 26
-Simulate template seed=10027
-Merge in photon-list
-start_count: 10000 trial id: 17
-Simulate template seed=10018
-Merge in photon-list
-start_count: 10000 trial id: 4
-Simulate template seed=10005
-Merge in photon-list
-start_count: 10000 trial id: 16
-Simulate template seed=10017
-Merge in photon-list
-start_count: 10000 trial id: 3
-Simulate template seed=10004
-Merge in photon-list
-start_count: 10000 trial id: 25
-Simulate template seed=10026
-Merge in photon-list
-start_count: 10000 trial id: 1
-Simulate template seed=10002
-Merge in photon-list
-start_count: 10000 trial id: 12
-Simulate template seed=10013
-Merge in photon-list
-start_count: 10000 trial id: 9
-Simulate template seed=10010
-Merge in photon-list
-start_count: 10000 trial id: 27
-Simulate template seed=10028
-Merge in photon-list
-start_count: 10000 trial id: 7
-Simulate template seed=10008
-Merge in photon-list
-start_count: 10000 trial id: 15
-Simulate template seed=10016
-Merge in photon-list
-start_count: 10000 trial id: 24
-Simulate template seed=10025
-Merge in photon-list
-start_count: 10000 trial id: 21
-Simulate template seed=10022
-Merge in photon-list
-start_count: 10000 trial id: 8
-Simulate template seed=10009
-Merge in photon-list
-start_count: 10000 trial id: 2
-Simulate template seed=10003
-Merge in photon-list
-start_count: 10000 trial id: 23
-Simulate template seed=10024
-Merge in photon-list
-start_count: 10000 trial id: 13
-Simulate template seed=10014
-Merge in photon-list
-start_count: 10000 trial id: 0
-Simulate template seed=10001
-Merge in photon-list
-start_count: 10000 trial id: 19
-Simulate template seed=10020
-Merge in photon-list
-start_count: 10000 trial id: 29
-Simulate template seed=10030
-Merge in photon-list
-start_count: 10000 trial id: 10
-Simulate template seed=10011
-Merge in photon-list
-start_count: 10000 trial id: 14
-Simulate template seed=10015
-Merge in photon-list
-start_count: 10000 trial id: 6
-Simulate template seed=10007
-Merge in photon-list
-start_count: 10000 trial id: 20
-Simulate template seed=10021
-Merge in photon-list
-start_count: 10000 trial id: 5
-Simulate template seed=10006
-Merge in photon-list
-start_count: 10000 trial id: 28
-Simulate template seed=10029
-Merge in photon-list
-start_count: 10000 trial id: 22
-Simulate template seed=10023
-Merge in photon-list
-start_count: 10000 trial id: 11
-Simulate template seed=10012
-Merge in photon-list
-trial_batch [('run0406_ID000126', 0, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 1, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 2, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 3, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 4, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 5, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 6, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 7, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 8, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 9, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 10, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 11, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 12, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 13, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 14, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 15, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 16, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 17, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 18, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 19, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 20, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 21, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 22, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 23, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 24, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 25, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 26, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 27, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 28, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True)), ('run0406_ID000126', 29, <RTAscience.cfg.Config.Config object at 0x2ab51f31a4c0>, Namespace(cfgfile='config.yml', merge=True, mp_threads=30, output_dir=PosixPath('/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln'), print=False, remove=True))]
+total trials: 1000000
+total simulations: 1000000
+Threads: 50
 
-Processed 30 trials, computing statistics..
-Trials elapsed time (mean): 153.84542683760324 +- 10.351501463843856
-Number of trials with errors:  0
+[21/10/2022_14:03:16] Batch processed, computing statistics..
+Trials elapsed time (mean): 9.268959946632386 +- 0.7990446795424819
+Number of trials with errors: 0
+Processed a total of 50 trials
 
-... done.
+[21/10/2022_14:03:24] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.865457143783569 +- 0.9863109448109483
+Number of trials with errors: 0
+Processed a total of 100 trials
 
+[21/10/2022_14:03:31] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.31441032409668 +- 0.438119477763856
+Number of trials with errors: 0
+Processed a total of 150 trials
+
+[21/10/2022_14:03:38] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.636965980529785 +- 0.23813543281402383
+Number of trials with errors: 0
+Processed a total of 200 trials
+
+[21/10/2022_14:03:44] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.348703246116639 +- 0.16438630490032607
+Number of trials with errors: 0
+Processed a total of 250 trials
+
+[21/10/2022_14:03:51] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.205630626678467 +- 0.22529615366896874
+Number of trials with errors: 0
+Processed a total of 300 trials
+
+[21/10/2022_14:03:58] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.66524878025055 +- 0.1928179153084472
+Number of trials with errors: 0
+Processed a total of 350 trials
+
+[21/10/2022_14:04:05] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.192287802696228 +- 0.2574325462743801
+Number of trials with errors: 0
+Processed a total of 400 trials
+
+[21/10/2022_14:04:11] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.295736737251282 +- 0.17521472316121506
+Number of trials with errors: 0
+Processed a total of 450 trials
+
+[21/10/2022_14:04:18] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.964061303138733 +- 0.2595800346951363
+Number of trials with errors: 0
+Processed a total of 500 trials
+
+[21/10/2022_14:04:25] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.224734840393066 +- 0.22321094672042147
+Number of trials with errors: 0
+Processed a total of 550 trials
+
+[21/10/2022_14:04:32] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.711809883117676 +- 0.36842727608660514
+Number of trials with errors: 0
+Processed a total of 600 trials
+
+[21/10/2022_14:04:39] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.947270617485047 +- 0.5680660984801574
+Number of trials with errors: 0
+Processed a total of 650 trials
+
+[21/10/2022_14:04:46] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.66093258857727 +- 0.3003699319701162
+Number of trials with errors: 0
+Processed a total of 700 trials
+
+[21/10/2022_14:04:53] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.3368144750595095 +- 0.5373639695804424
+Number of trials with errors: 0
+Processed a total of 750 trials
+
+[21/10/2022_14:05:00] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.224274959564209 +- 0.49878704391646944
+Number of trials with errors: 0
+Processed a total of 800 trials
+
+[21/10/2022_14:05:07] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.232195405960083 +- 0.21841216741850908
+Number of trials with errors: 0
+Processed a total of 850 trials
+
+[21/10/2022_14:05:14] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.324893307685852 +- 0.24905491140518507
+Number of trials with errors: 0
+Processed a total of 900 trials
+
+[21/10/2022_14:05:20] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.154720768928528 +- 0.25126549357708594
+Number of trials with errors: 0
+Processed a total of 950 trials
+
+[21/10/2022_14:05:30] Batch processed, computing statistics..
+Trials elapsed time (mean): 8.878582649230957 +- 0.33448750272350836
+Number of trials with errors: 0
+Processed a total of 1000 trials
+
+[21/10/2022_14:05:37] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.171997408866883 +- 0.46305623317506006
+Number of trials with errors: 0
+Processed a total of 1050 trials
+
+[21/10/2022_14:05:43] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.023937640190124 +- 0.25898377735441624
+Number of trials with errors: 0
+Processed a total of 1100 trials
+
+[21/10/2022_14:05:50] Batch processed, computing statistics..
+Trials elapsed time (mean): 5.98985239982605 +- 0.19112692569062614
+Number of trials with errors: 0
+Processed a total of 1150 trials
+
+[21/10/2022_14:05:56] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.014819049835205 +- 0.2107019127170673
+Number of trials with errors: 0
+Processed a total of 1200 trials
+
+[21/10/2022_14:06:03] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.093788843154908 +- 0.2641937480395206
+Number of trials with errors: 0
+Processed a total of 1250 trials
+
+[21/10/2022_14:06:09] Batch processed, computing statistics..
+Trials elapsed time (mean): 5.946437067985535 +- 0.27742103361014814
+Number of trials with errors: 0
+Processed a total of 1300 trials
+
+[21/10/2022_14:06:16] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.077132987976074 +- 0.34155634189126854
+Number of trials with errors: 0
+Processed a total of 1350 trials
+
+[21/10/2022_14:06:23] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.061723823547363 +- 0.32558174695851455
+Number of trials with errors: 0
+Processed a total of 1400 trials
+
+[21/10/2022_14:06:29] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.15477632522583 +- 0.19043008569244263
+Number of trials with errors: 0
+Processed a total of 1450 trials
+
+[21/10/2022_14:06:36] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.144813809394837 +- 0.3186235778736841
+Number of trials with errors: 0
+Processed a total of 1500 trials
+
+[21/10/2022_14:06:42] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.012319989204407 +- 0.317446940749731
+Number of trials with errors: 0
+Processed a total of 1550 trials
+
+[21/10/2022_14:06:51] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.6004640054702755 +- 1.0554562890147454
+Number of trials with errors: 0
+Processed a total of 1600 trials
+
+[21/10/2022_14:06:57] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.413248143196106 +- 0.2544548400109231
+Number of trials with errors: 0
+Processed a total of 1650 trials
+
+[21/10/2022_14:07:05] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.605595426559448 +- 0.8459739893063896
+Number of trials with errors: 0
+Processed a total of 1700 trials
+
+[21/10/2022_14:07:11] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.098142638206482 +- 0.23088688185445466
+Number of trials with errors: 0
+Processed a total of 1750 trials
+
+[21/10/2022_14:07:18] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.1110408496856685 +- 0.4569046431826109
+Number of trials with errors: 0
+Processed a total of 1800 trials
+
+[21/10/2022_14:07:25] Batch processed, computing statistics..
+Trials elapsed time (mean): 6.194903678894043 +- 0.6466045286918353
+Number of trials with errors: 0
+Processed a total of 1850 trials
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/data01/homes/baroncelli/.conda/envs/bphd/lib/python3.8/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+  File "/data01/homes/baroncelli/.conda/envs/bphd/lib/python3.8/multiprocessing/pool.py", line 48, in mapstar
+    return list(map(*args))
+  File "/data01/homes/baroncelli/phd/cta-sag-sci/RTAscience/simGRBcatalogWithRandomization.py", line 124, in simulate_trial_bkg
+    sim.run_simulation()
+  File "/data01/homes/baroncelli/phd/cta-sag-sci/RTAscience/lib/RTACtoolsSimulation.py", line 371, in run_simulation
+    sim.execute()
+  File "/data01/homes/baroncelli/.conda/envs/bphd/lib/python3.8/site-packages/ctools/tools.py", line 1047, in execute
+    return _tools.ctool_execute(self)
+RuntimeError: *** ERROR in GFits::open(GFilename&, bool&): Unable to open FITS file "/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds/runid_notemplate_trial_0010001862_simtype_bkg_onset_0_delay_0_offset_0.5_tobs_100.fits" (status=105)
+"""
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/data01/homes/baroncelli/phd/cta-sag-sci/RTAscience/simGRBcatalogWithRandomization.py", line 364, in <module>
+    main(args)
+  File "/data01/homes/baroncelli/phd/cta-sag-sci/RTAscience/simGRBcatalogWithRandomization.py", line 329, in main
+    trials_outputs = pool.map(simulate_trial, trial_batch)
+  File "/data01/homes/baroncelli/.conda/envs/bphd/lib/python3.8/multiprocessing/pool.py", line 364, in map
+    return self._map_async(func, iterable, mapstar, chunksize).get()
+  File "/data01/homes/baroncelli/.conda/envs/bphd/lib/python3.8/multiprocessing/pool.py", line 768, in get
+    raise self._value
+RuntimeError: *** ERROR in GFits::open(GFilename&, bool&): Unable to open FITS file "/scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds/runid_notemplate_trial_0010001862_simtype_bkg_onset_0_delay_0_offset_0.5_tobs_100.fits" (status=105)

@@ -4,20 +4,8 @@ from pathlib import Path
 from functools import partial
 
 from rtapipe.lib.plotting.APPlot import APPlot
+from rtapipe.lib.rtapipeutils.FileSystemUtils import parse_params
 
-def parse_params(filename):
-    return {
-        "runid":   filename.split("runid_")[1].split("_trial_")[0],
-        "trial":   filename.split("trial_")[1].split("_simtype_")[0],
-        "simtype": filename.split("simtype_")[1].split("_onset_")[0],
-        "onset":   int(filename.split("onset_")[1].split("_delay_")[0]),
-        "delay":   float(filename.split("delay_")[1].split("_offset_")[0]),
-        "offset":  float(filename.split("offset_")[1].split("_itype_")[0]),
-        "itype":   filename.split("itype_")[1].split("_itime_")[0],
-        "itime":   int(filename.split("itime_")[1].split("_normalized_")[0]),
-        "normalized": filename.split("normalized_")[1].split(".csv")[0]
-    }
-    
 
 # python plot_ap_timeseries.py -f /data01/homes/baroncelli/AP_DATA_10000/ap_data_bkg_T_10_TSL_10/dataset_trials_10000_type_bkg_tobs_100/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_10/
 def make_plot(file_path, points, outputdir, maxflux=None):

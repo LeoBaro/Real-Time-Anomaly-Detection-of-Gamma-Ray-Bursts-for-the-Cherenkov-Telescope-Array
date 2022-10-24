@@ -1,42 +1,41 @@
 from tensorflow import keras
 
-from rtapipe.lib.models.anomaly_detector_m1 import AnomalyDetector_m1
-from rtapipe.lib.models.anomaly_detector_m2 import AnomalyDetector_m2
-from rtapipe.lib.models.anomaly_detector_m3 import AnomalyDetector_m3
-from rtapipe.lib.models.anomaly_detector_m4 import AnomalyDetector_m4
+from rtapipe.lib.models.anomaly_detector_lstm import *
+from rtapipe.lib.models.anomaly_detector_rnn import *
+from rtapipe.lib.models.anomaly_detector_cnn import *
 
 class AnomalyDetectorBuilder:
 
     @staticmethod
     def getAnomalyDetector(name, timesteps, nfeatures, load_model=False, model_dir=None):
 
-        if name == "m1":
+        if name == "lstm-m1":
             if load_model:
-                ad = AnomalyDetector_m1(0, 0, True)
+                ad = AnomalyDetectorLSTM_m1(0, 0, True)
                 ad.model = keras.models.load_model(model_dir)
                 return ad
-            return AnomalyDetector_m1(timesteps, nfeatures, load_model)
+            return AnomalyDetectorLSTM_m1(timesteps, nfeatures, load_model)
 
-        elif name == "m2":
+        elif name == "lstm-m2":
             if load_model:
-                ad = AnomalyDetector_m2(0, 0, True)
+                ad = AnomalyDetectorLSTM_m2(0, 0, True)
                 ad.model = keras.models.load_model(model_dir)
                 return ad
-            return AnomalyDetector_m2(timesteps, nfeatures, load_model)
+            return AnomalyDetectorLSTM_m2(timesteps, nfeatures, load_model)
 
-        elif name == "m3":
+        elif name == "lstm-m3":
             if load_model:
-                ad = AnomalyDetector_m3(0, 0, True)
+                ad = AnomalyDetectorLSTM_m3(0, 0, True)
                 ad.model = keras.models.load_model(model_dir)
                 return ad
-            return AnomalyDetector_m3(timesteps, nfeatures, load_model)
+            return AnomalyDetectorLSTM_m3(timesteps, nfeatures, load_model)
 
-        elif name == "m4":
+        elif name == "lstm-m4":
             if load_model:
-                ad = AnomalyDetector_m4(0, 0, True)
+                ad = AnomalyDetectorLSTM_m4(0, 0, True)
                 ad.model = keras.models.load_model(model_dir)
                 return ad
-            return AnomalyDetector_m4(timesteps, nfeatures, load_model)
+            return AnomalyDetectorLSTM_m4(timesteps, nfeatures, load_model)
 
         else:
             raise ValueError("Model name not supported!")

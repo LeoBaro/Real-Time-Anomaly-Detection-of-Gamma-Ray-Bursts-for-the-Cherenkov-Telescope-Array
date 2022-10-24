@@ -15,3 +15,13 @@ conda env create --name <envname> python=3.8
 conda config --env --add channels cta-observatory
 conda install ctools=1.7.4 pyaml pandas tqdm matplotlib scikit-learn
 ```
+
+### Start Juyter server 
+Install the anaconda environment within the ipykernel (do it once):
+```bash
+python -m ipykernel install --user --name phd-tf
+```
+Deactivate and reactivate the environment, then start the server with:
+```bash
+jupyter notebook --ip='*' --port=8888 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+```
