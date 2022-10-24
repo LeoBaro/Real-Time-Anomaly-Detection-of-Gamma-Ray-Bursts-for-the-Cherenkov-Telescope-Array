@@ -1,0 +1,33 @@
+
+101:
+  id: 101
+  path: /data01/homes/baroncelli/phd/tests/test_data/ap_data/multiple
+  type: multiple
+  size: 2
+  simtype: bkg
+  onset: 0
+  integration_type: te
+  integration_time: 1
+  region_radius: 0.2
+  timeseries_lenght: 10
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+
+
+201:
+  id: 201
+  path: /data01/homes/baroncelli/phd/tests/test_data/ap_data/single
+  type: single
+  size: 1
+  simtype: bkg
+  onset: 0
+  integration_type: te
+  integration_time: 1
+  region_radius: 0.2
+  timeseries_lenght: 5
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5  
