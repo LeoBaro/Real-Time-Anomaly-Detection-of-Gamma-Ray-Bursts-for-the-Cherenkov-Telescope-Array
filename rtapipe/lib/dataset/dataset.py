@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from rtapipe.lib.rtapipeutils.SequenceUtils import extract_sub_windows, extract_sub_windows_pivot
-from rtapipe.lib.rtapipeutils.FileSystemUtils import FileSystemUtils
+from rtapipe.lib.rtapipeutils.FileSystemUtils import FileSystemUtils, parse_params
 
 class APDataset(ABC):
 
@@ -29,11 +29,15 @@ class APDataset(ABC):
         pass
 
     def get_random_train_sample(self, scaled, tsl=10):
+        if self.train_x is None:
+            raise ValueError("Train set is None. Call train_val_split() first!")
         if self.train_x is not None:
             idx = np.random.randint(0, len(self.train_x))
         sample = self.train_x[idx]
-        if self.scaler is not None and scaled:
+        if scaled and self.scaler is not None:
             sample = self.scale(sample)
+        elif scaled and self.scaler is None:
+            raise ValueError("Scaler is None. Call train_val_split() first!")
         return sample
 
     @staticmethod
@@ -359,10 +363,11 @@ class SinglePhList(APDataset):
 
     def loadData(self):
         print(f"Loading dataset from {self.dataset_params['path']}")
-        for file in tqdm( Path(self.dataset_params["path"]).iterdir() ):
-            self.data = pd.read_csv(file, sep=",")
-            self.singleFileDataShapes = self.data.shape
-            break
+        params = parse_params(self.dataset_params["path"])
+        for key, val in params.items():
+            self.dataset_params[key] = val
+        self.data = pd.read_csv(self.dataset_params['path'], sep=",")
+        self.singleFileDataShapes = self.data.shape
         self.filesLoaded = 1
         self.preprocessData()
 

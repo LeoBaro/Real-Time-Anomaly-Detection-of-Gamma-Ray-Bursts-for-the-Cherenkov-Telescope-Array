@@ -16,17 +16,17 @@
   roi: 2.5
 
 
-201:
-  id: 201
-  path: /data01/homes/baroncelli/phd/tests/test_data/ap_data/single
-  type: single
+1201:
+  id: 1201
+  path: /data01/homes/baroncelli/phd/tests/test_data/ap_data/single/runid_notemplate_trial_0000000002_simtype_bkg_onset_0_delay_0_offset_0.5_itype_te_itime_10_normalized_False.csv
   size: 1
-  simtype: bkg
-  onset: 0
-  integration_type: te
-  integration_time: 1
+  type: single
+  simtype: None
+  onset: None
+  integration_type: None
+  integration_time: None
   region_radius: 0.2
-  timeseries_lenght: 5
+  timeseries_lenght: None
   irf: North_z40_0.5h_LST
   emin: 0.03
   emax: 2

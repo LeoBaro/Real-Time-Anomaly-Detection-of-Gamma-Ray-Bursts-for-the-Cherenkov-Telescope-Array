@@ -2,6 +2,7 @@
 **.log
 **.pickle
 
+rtapipe/notebooks/lstm_models_*/**
 temp/**
 logs/**
 __pycache__

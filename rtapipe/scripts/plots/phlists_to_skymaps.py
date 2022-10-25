@@ -21,6 +21,9 @@ def main():
 
             rta.input = os.path.join(root, filename)
             rta.output = rta.input.replace(".fits",f"_sub_{rta.sky_subtraction}.skymap.fits")
+            # Add more parameters here
+            # ..
+
 
             print(f"Producing.. {rta.output}")
 

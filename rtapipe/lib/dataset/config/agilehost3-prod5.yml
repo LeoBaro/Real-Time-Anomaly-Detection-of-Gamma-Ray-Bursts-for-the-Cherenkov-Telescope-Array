@@ -34,6 +34,7 @@
   id: 101
   path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_1_TSL_5/backgrounds_prod5b_1K/integration_te_integration_time_1_region_radius_0.2_timeseries_lenght_5
   size: 1000
+  type: multiple
   simtype: bkg
   onset: 0
   integration_type: te
@@ -52,6 +53,7 @@
   id: 201
   path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_1_TSL_10/backgrounds_prod5b_1K/integration_te_integration_time_1_region_radius_0.2_timeseries_lenght_10
   size: 1000
+  type: multiple
   simtype: bkg
   onset: 0
   integration_type: te
@@ -72,6 +74,7 @@
   id: 301
   path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_5_TSL_5/backgrounds_prod5b_1K/integration_te_integration_time_5_region_radius_0.2_timeseries_lenght_5
   size: 1000
+  type: multiple
   simtype: bkg
   onset: 0
   integration_type: te
@@ -93,6 +96,7 @@
   id: 410
   path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_5_TSL_10/backgrounds_prod5b_1K/integration_te_integration_time_5_region_radius_0.2_timeseries_lenght_10
   size: 1000
+  type: multiple
   simtype: bkg
   onset: 0
   integration_type: te
@@ -113,6 +117,7 @@
     id: 501
     path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_10_TSL_5/backgrounds_prod5b_1K/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_5
     size: 1000
+    type: multiple
     simtype: bkg
     onset: 0
     integration_type: te
@@ -132,6 +137,7 @@
     id: 601
     path: /scratch/baroncelli/AP_DATA_PROD5/ap_data_bkg_T_10_TSL_10/backgrounds_prod5b_1K/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_10
     size: 861207
+    type: multiple
     simtype: bkg
     onset: 0
     integration_type: te
@@ -142,3 +148,125 @@
     emin: 0.03
     emax: 2
     roi: 2.5
+
+
+
+################################################################################
+# T=1
+################################################################################
+1101:
+  id: 1101
+  path: /data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/single_long_photon_list/training/ap_output/runid_notemplate_trial_0000000002_simtype_bkg_onset_0_delay_0_offset_0.5_itype_te_itime_1_normalized_True.csv
+  size: 1
+  type: single
+  simtype: None
+  onset: None
+  integration_type: None
+  integration_time: None
+  region_radius: 0.2
+  timeseries_lenght: None
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+
+################################################################################
+# T=5
+################################################################################
+1201:
+  id: 1201
+  path: /data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/single_long_photon_list/training/ap_output/runid_notemplate_trial_0000000002_simtype_bkg_onset_0_delay_0_offset_0.5_itype_te_itime_5_normalized_True.csv
+  size: 1
+  type: single
+  simtype: None
+  onset: None
+  integration_type: None
+  integration_time: None
+  region_radius: 0.2
+  timeseries_lenght: None
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+
+################################################################################
+# T=10
+################################################################################
+1301:
+  id: 1301
+  path: /data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/single_long_photon_list/training/ap_output/runid_notemplate_trial_0000000002_simtype_bkg_onset_0_delay_0_offset_0.5_itype_te_itime_10_normalized_True.csv
+  size: 1
+  type: single
+  simtype: None
+  onset: None
+  integration_type: None
+  integration_time: None
+  region_radius: 0.2
+  timeseries_lenght: None
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+
+
+
+################################################################################
+# T=1 not normalized
+################################################################################
+2101:
+  id: 2101
+  path: /data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/single_long_photon_list/training/ap_output/runid_notemplate_trial_0000000002_simtype_bkg_onset_0_delay_0_offset_0.5_itype_te_itime_1_normalized_False.csv
+  size: 1
+  type: single
+  simtype: None
+  onset: None
+  integration_type: None
+  integration_time: None
+  region_radius: 0.2
+  timeseries_lenght: None
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+  normalization: None
+
+################################################################################
+# T=5
+################################################################################
+2201:
+  id: 2201
+  path: /data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/single_long_photon_list/training/ap_output/runid_notemplate_trial_0000000002_simtype_bkg_onset_0_delay_0_offset_0.5_itype_te_itime_5_normalized_False.csv
+  size: 1
+  type: single
+  simtype: None
+  onset: None
+  integration_type: None
+  integration_time: None
+  region_radius: 0.2
+  timeseries_lenght: None
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+  normalization: None
+
+################################################################################
+# T=10
+################################################################################
+2301:
+  id: 2301
+  path: /data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/single_long_photon_list/training/ap_output/runid_notemplate_trial_0000000002_simtype_bkg_onset_0_delay_0_offset_0.5_itype_te_itime_10_normalized_False.csv
+  size: 1
+  type: single
+  simtype: None
+  onset: None
+  integration_type: None
+  integration_time: None
+  region_radius: 0.2
+  timeseries_lenght: None
+  irf: North_z40_0.5h_LST
+  emin: 0.03
+  emax: 2
+  roi: 2.5
+  normalization: None
+
