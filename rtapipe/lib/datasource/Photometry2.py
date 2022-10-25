@@ -1,6 +1,4 @@
 import os
-from unicodedata import normalize
-import numpy as np
 from pathlib import Path
 from functools import partial
 from os.path import expandvars
@@ -18,30 +16,38 @@ from rtapipe.lib.rtapipeutils.PhotometryUtils import PhotometryUtils
 
 class Photometry2:
     """
-        This class uses the astro library to integrate gamma like counts in time and energy.
+        This class integrates gamma-like counts in time and energy.
     """
     def __init__(self, configPath, dataDir, outputDir):
 
-        """
-            dataDir is the simulation directory and it must contain a config.yml file
-        """
         if "DATA" not in os.environ:
             raise EnvironmentError("Please, export $DATA")
+        if "CTOOLS" not in os.environ:
+            raise EnvironmentError("Please, export $CTOOLS")
 
         cfg = Config(Path(configPath))
-        irfPath = Path(expandvars('$CTOOLS')).joinpath(f"share/caldb/data/cta/{cfg.get('caldb')}/bcf/{cfg.get('irf')}")
-        irfFileName = os.listdir(irfPath).pop()
-        self.irfFile = irfPath.joinpath(irfFileName) 
-        template =  Path(os.environ["DATA"]).joinpath(f'templates/{cfg.get("runid")}.fits')
-        self.sourcePosition = get_pointing(template) # alias get_target
+
+        self.dataDir = dataDir
+
+        # irf
+        irfPath = Path(expandvars('$CTOOLS')).joinpath("share","caldb","data","cta",cfg.get('caldb'),"bcf",cfg.get('irf'))
+        self.irfFile = irfPath.joinpath(os.listdir(irfPath).pop())
+        print(f"irfFile: {self.irfFile}")
+
+        # template
+        template =  Path(os.environ["DATA"]).joinpath("templates",f"{cfg.get('runid')}.fits")
+
+        # "get_pointing" does not add the offset so it should be renamed in get_target, since it gives
+        # the source position
+        self.sourcePosition = get_pointing(template) 
+
+        # other parameters
         self.sim_type = cfg.get("simtype")
         self.sim_onset = cfg.get("onset")
         self.sim_emin = cfg.get("emin")
         self.sim_emax = cfg.get("emax")
         self.sim_tmin = cfg.get("delay")
         self.sim_tmax = cfg.get("tobs")
-
-        self.dataDir = dataDir
 
         # Output directories
         self.outputDir = Path(outputDir)
@@ -51,13 +57,13 @@ class Photometry2:
 
 
 
-    def computeRegion(self, regionRadius, regionOffset = 2):
+    def computeRegion(self, regionRadius, offset):
         """ Computes the region ra and dec, starting from the source position (== map center)
             and adding an offset.
         """
         # TODO: the offset should depend on the regionRadius
         return {
-            'ra': self.sourcePosition[0] + regionOffset,
+            'ra': self.sourcePosition[0] + offset,
             'dec': self.sourcePosition[1],
             'rad' : float(regionRadius)
         }
@@ -99,12 +105,13 @@ class Photometry2:
 
 
 
-    def integrateAll(self, integrationType, regionRadius, tWindows=None, eWindows=None, limit=None, parallel=False, procNumber=10, normalize=True, batchSize=1200):
+    def integrateAll(self, integrationType, regionRadius, offset, tWindows=None, eWindows=None, limit=None, parallel=False, procNumber=10, normalize=True, batchSize=1200):
         """
-            Integrate multiples input files in a directory
+            Integrate multiples input files in a directory. This method is optimized for the processing
+            of a large directory of small files (p-value analysis).
         """
 
-        region = self.computeRegion(regionRadius)
+        region = self.computeRegion(regionRadius, offset)
 
         if tWindows is None:
             tWindows = [(self.sim_tmin, self.sim_tmax)]

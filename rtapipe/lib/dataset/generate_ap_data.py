@@ -26,6 +26,7 @@ def main():
     parser.add_argument("-proc",  "--procnumber",        type=int,      required=True,  help="The number of processes to use for parallelization")
     parser.add_argument("-lim",   "--limit",             type=int,      required=False, default=None, help="The number of input files to use")
     parser.add_argument("-eb",   "--energybins",         type=int,      required=False, default=3, help="The number of the energy bins")
+    parser.add_argument("-off",   "--offset",            type=int,      required=False, default=0, help="The offset with respect to the source position")
 
     args = parser.parse_args()
 
@@ -75,7 +76,7 @@ def main():
     else:
         raise ValueError(f"Integration type {args.integrationtype} not supported")
 
-    outputFilesCounts, totalCounts = ph.integrateAll(integrationTypeEnum, args.regionradius, tWindows=tWindows, eWindows=eWindows, limit=args.limit, parallel=True, procNumber=args.procnumber, normalize=args.normalize)
+    outputFilesCounts, totalCounts = ph.integrateAll(integrationTypeEnum, args.regionradius, offset=args.offset, tWindows=tWindows, eWindows=eWindows, limit=args.limit, parallel=True, procNumber=args.procnumber, normalize=args.normalize)
 
 
     elapsed = round(time()-start, 2)

@@ -4,3 +4,4 @@
 * A bug in the simulation code has been spotted and fixed! 
 * The dataset config file now supports 'single' and 'multiple' dataset types
 * New 'single' datasets has been added to the agilehost3-prod5.yml
+* A bug in the photometry code has been spotted and fixed. The bug caused fixed region integrations.
