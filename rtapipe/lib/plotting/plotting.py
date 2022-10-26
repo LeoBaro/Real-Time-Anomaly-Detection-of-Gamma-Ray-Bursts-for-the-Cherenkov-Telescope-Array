@@ -4,11 +4,9 @@ from math import floor
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from sklearn.metrics import ConfusionMatrixDisplay
+from rtapipe.lib.plotting.PlotConfig import PlotConfig
 
 COLORS = list(mcolors.BASE_COLORS)
-plt.rcParams.update({'font.size': 18, 'lines.markersize': 0.5,'legend.markerscale': 3, 'lines.linewidth':1, 'lines.linestyle':'-'})
-FIG_SIZE = (15,7)
-DPI=300
 
 def confusionMatrixPlot(realLabels, predLabels, showFig=False, saveFig=True, outputDir="./", figName="confusion_matrix.png"):
     fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
@@ -76,89 +74,91 @@ def recoErrorDistributionPlot(losses, threshold=None, title="", showFig=False, s
         print(f"Plot {outputPath} created.")
     plt.close()
 
-def plotPredictions(samples, samplesLabels, c_threshold, recostructions, maeLossePerEnergyBin, mask, maxSamples=None, rows=5, cols=10, predictionsPerFigure=40, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
-    if maxSamples is not None:
-        samples = samples[:maxSamples]
-        samplesLabels = samplesLabels[:maxSamples]
-        recostructions = recostructions[:maxSamples]
-        mask = mask[:maxSamples]
+def plot_predictions_v2(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
 
-    # ylim = samples.max(axis=1).flatten().max()
-    ymax = 3
-    ymin = -3
-    print(f"Number of predictions: {len(samples)}. Sample shape: {samples.shape}")
+    pc = PlotConfig()
 
-    featureNum = samples.shape[2]
+    total_samples = samples.shape[0]
+    
+    max_samples = 5
+    features_num = samples.shape[2]
+    num_plots = total_samples // max_samples
 
-    realLabels = []
-    for lab in samplesLabels:
-        if lab:
-            realLabels.append("grb")
-        else:
-            realLabels.append("bkg")
+    mask = (mse_per_sample > c_threshold)
 
-    predLabels = []
-    for lab in mask:
-        if lab:
-            predLabels.append("grb")
-        else:
-            predLabels.append("bkg")
+    start = 0
+    for p in tqdm(range(num_plots)):
 
-    figsize_x = 20
-    figsize_y = rows*4
+        if p == max_plots:
+            print("Max plots reached")
+            break
 
-    numberOfFigures = floor(len(samples) / predictionsPerFigure)
-    if len(samples) % predictionsPerFigure > 0:
-        numberOfFigures += 1
+        current_samples = samples[start:start+max_samples, :, :]
+        current_samplesLabels = samplesLabels[start:start+max_samples]
+        current_recostructions = recostructions[start:start+max_samples, :, :]
+        current_mask = mask[start:start+max_samples]
+        
+        start += max_samples
 
-    # For each feature..
-    for f in tqdm(range(featureNum)):
+        ymax = 1.5 
+        ymin = 0
+        
+        print(f"Plot {p}. \nNumber of predictions: {len(current_samples)}. \nSample shape: {current_samples.shape} \n Number of features: {features_num}")
 
-        count = 0
-        for i in tqdm(range(numberOfFigures), leave=False):
+        real_labels = ["grb" if lab==1 else "bkg" for lab in current_samplesLabels ]
+        pred_labels = ["grb" if lab==1 else "bkg" for lab in current_mask          ]
 
-            fig, ax = plt.subplots(rows, cols, constrained_layout=True, figsize=(figsize_x, figsize_y))
-            fig.suptitle(f"Reconstructions. Feature={f} Threshold={round(c_threshold)}")
+        fig, ax = plt.subplots(features_num, max_samples, figsize=pc.fig_size)
+        fig.suptitle(f"Predictions (using threshold={round(c_threshold, 3)})")
 
-            for row in range(rows):
-                for col in range(cols):
-                    if count >= len(samples):
-                        break
+        # For each feature..
+        for f in range(features_num):
 
-                    # Chaning color for grb class
-                    color="blue"
-                    if realLabels[count] == "grb":
-                        color="red"
+            for i in range(max_samples):
 
+                # Get a sample and its recostruction
+                sample = current_samples[i][:,f]
+                recoSample = current_recostructions[i][:,f]
 
-                    # Get a sample and its recostruction
-                    sample = samples[count][:,f]
-                    recoSample = recostructions[count][:,f]
+                # And plot them                
+                ax[f, i].plot(recoSample, color='red',  marker='o', markersize=8, linestyle='dashed', label="reconstruction")
+                ax[f, i].plot(sample,     color="blue", marker='o', markersize=8, linestyle='dashed', label="ground truth")
+                ax[f, i].set_ylim(ymin, ymax)
 
-                    # And plot them
-                    ax[row, col].plot(recoSample, color='red', linestyle='dashed', label=f'mae={round(maeLossePerEnergyBin[count,f],2)}')
-                    ax[row, col].scatter(range(sample.shape[0]), sample, color=color, s=5)
-                    ax[row, col].set_ylim(ymin, ymax)
-                    ax[row, col].set_title(f"Real: {realLabels[count]} Pred: {predLabels[count]}")
-                    ax[row, col].legend(loc='upper left')
-                    ax[row, col].grid()
-                    if realLabels[count] != predLabels[count]:
-                        ax[row, col].set_facecolor('#e0e0eb')
-                    count += 1
+                if real_labels[i] != pred_labels[i]:
+                    ax[f, i].set_facecolor('#e6e6e6')
+                #else:
+                #    ax[f, i].set_facecolor('#a6f5aa')
 
-            if showFig:
-                plt.show()
+                if i == 0:
+                    ax[f, i].set_ylabel(f"Feature {f}")
+                
+                ax[f, i].set_xticks([])
+                ax[f, i].set_xlabel(f"mse={round(mse_per_sample_features[i,f],2)}")
 
-            if saveFig:
-                outputPath = outputDir.joinpath(f"{i}_feature_{f}_{figName}")
-                fig.savefig(outputPath, dpi=DPI/8)
+                if real_labels[i] == "grb" and real_labels[i] == pred_labels[i]:
+                    ax[f, i].set_title("TP")
+                elif real_labels[i] == "grb" and real_labels[i] != pred_labels[i]:
+                    ax[f, i].set_title("FN")
+                elif real_labels[i] == "bkg" and real_labels[i] == pred_labels[i]:  
+                    ax[f, i].set_title("TN")
+                elif real_labels[i] == "bkg" and real_labels[i] != pred_labels[i]:
+                    ax[f, i].set_title("FP")
 
-            plt.close()
+        handles, labels = ax[f, i].get_legend_handles_labels()
+        fig.legend(handles, labels, loc='upper left')
 
-        #print(f"Plot {outputPath} created.")
+        plt.tight_layout()
 
+        if showFig:
+            plt.show()
 
+        if saveFig:
+            outputDir.mkdir(parents=True, exist_ok=True)
+            outputPath = outputDir.joinpath(f"{p}_{figName}")
+            fig.savefig(outputPath, dpi=200)
 
+        plt.close()
 
 
 
