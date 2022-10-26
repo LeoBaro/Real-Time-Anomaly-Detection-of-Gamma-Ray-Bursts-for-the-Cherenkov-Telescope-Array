@@ -35,6 +35,8 @@ class PlotConfig:
         self.colors = ["#ff7f00", "#377eb8", "#4daf4a", "#984ea3", "#e41a1c"]
         self.markers = ["s", "^", "+", "x"]
 
+        self.dpi = 300
+
     def test(self):
         fig = plt.figure(figsize=(4, 3))
         ax = fig.add_subplot(1, 1, 1)

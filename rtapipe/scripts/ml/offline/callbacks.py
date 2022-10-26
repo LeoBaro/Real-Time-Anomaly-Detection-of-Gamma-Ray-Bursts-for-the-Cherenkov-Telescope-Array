@@ -74,7 +74,7 @@ class CustomLogCallback(keras.callbacks.Callback):
             self.model.save(out_dir.joinpath("lstm_trained_model"))
 
             # Compute the loss plot before loss data is overwritten
-            plotting.lossPlot(self.model.history.history["loss"], self.model.history.history["val_loss"], outputDir=out_dir, figName="train_val_loss.png", showFig=False)
+            plotting.loss_plot(self.model.history.history["loss"], self.model.history.history["val_loss"], outputDir=out_dir, figName="train_val_loss.png", showFig=False)
 
             recostructions = self.model.predict(self.validation_data, verbose=1)
 
@@ -91,11 +91,10 @@ class CustomLogCallback(keras.callbacks.Callback):
 
 
             # Plotting
-            plotting.recoErrorDistributionPlot(custom_mse.mse_per_sample_features, threshold=None, title=f"Reco errors on val set ({self.metadata})", outputDir=out_dir, figName="reco_errors_distr_per_features.png", showFig=False)
-            plotting.recoErrorDistributionPlot(custom_mse.mse_per_sample,          threshold=None, title=f"Reco errors on val set ({self.metadata})", outputDir=out_dir, figName="reco_errors_distr_per_sample.png", showFig=False)
-            mask = (custom_mse.mse_per_sample > c_threshold)
-            plotting.plot_predictions_v2(self.validation_data, self.validation_data_labels, c_threshold, recostructions, custom_mse.mse_per_sample_features.numpy(), mask, maxSamples=5, rows=2, cols=5, predictionsPerFigure=10, showFig=False, saveFig=True, outputDir=out_dir, figName="predictions.png")
-
+            plotting.reco_error_distribution_plot(custom_mse.mse_per_sample_features, threshold=None, title=f"Reco errors on val set ({self.metadata})", outputDir=out_dir, figName="reco_errors_distr_per_features.png", showFig=False)
+            plotting.reco_error_distribution_plot(custom_mse.mse_per_sample,          threshold=None, title=f"Reco errors on val set ({self.metadata})", outputDir=out_dir, figName="reco_errors_distr_per_sample.png", showFig=False)
+            plotting.plot_predictions(self.validation_data, self.validation_data_labels, c_threshold, recostructions, custom_mse.mse_per_sample.numpy(), custom_mse.mse_per_sample_features.numpy(), showFig=False, saveFig=True, outputDir=out_dir, figName="predictions.png")
+                                      
             # Logging to wandb
             if self.wandb_run is not None:
                 artifact = wandb.Artifact(f'run-{self.wandb_run.id}', type='result', metadata = {

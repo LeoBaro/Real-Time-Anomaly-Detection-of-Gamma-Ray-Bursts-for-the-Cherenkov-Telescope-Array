@@ -8,20 +8,22 @@ from rtapipe.lib.plotting.PlotConfig import PlotConfig
 
 COLORS = list(mcolors.BASE_COLORS)
 
-def confusionMatrixPlot(realLabels, predLabels, showFig=False, saveFig=True, outputDir="./", figName="confusion_matrix.png"):
-    fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
+def confusion_matrix_plot(realLabels, predLabels, showFig=False, saveFig=True, outputDir="./", figName="confusion_matrix.png"):
+    pc = PlotConfig()
+    fig, ax = plt.subplots(1,1, figsize=pc.fig_size)
     fig.suptitle("Confusion matrix")
     disp = ConfusionMatrixDisplay.from_predictions(realLabels, predLabels, display_labels=["bkg","grb"], ax=ax)
     if showFig:
         plt.show()
     if saveFig:
         outputPath = outputDir.joinpath(figName)
-        fig.savefig(outputPath, dpi=DPI)
+        fig.savefig(outputPath, dpi=pc.dpi)
         print(f"Plot {outputPath} created.")
     plt.close()
 
-def lossPlot(loss, val_loss, title="Training loss", ylim=None, showFig=False, saveFig=True, outputDir="./", figName="loss_plot.png"):
-    fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
+def loss_plot(loss, val_loss, title="Training loss", ylim=None, showFig=False, saveFig=True, outputDir="./", figName="loss_plot.png"):
+    pc = PlotConfig()
+    fig, ax = plt.subplots(1,1, figsize=pc.fig_size)
     fig.suptitle(title)
     ax.plot(loss, label="Training Loss")
     ax.plot(val_loss, label="Validation Loss")
@@ -35,12 +37,15 @@ def lossPlot(loss, val_loss, title="Training loss", ylim=None, showFig=False, sa
         plt.show()
     if saveFig:
         outputPath = outputDir.joinpath(figName)
-        fig.savefig(outputPath, dpi=DPI)
+        fig.savefig(outputPath, dpi=pc.dpi)
         print(f"Plot {outputPath} created.")
     plt.close()
 
-def recoErrorDistributionPlot(losses, threshold=None, title="", showFig=False, saveFig=True, outputDir="./", figName="reco_errors_distr"):
-    fig, ax = plt.subplots(1,1, figsize=FIG_SIZE)
+def reco_error_distribution_plot(losses, threshold=None, title="", showFig=False, saveFig=True, outputDir="./", figName="reco_errors_distr"):
+    
+    pc = PlotConfig()
+
+    fig, ax = plt.subplots(1,1, figsize=pc.fig_size)
     if title:
         fig.suptitle(title)
 
@@ -70,11 +75,11 @@ def recoErrorDistributionPlot(losses, threshold=None, title="", showFig=False, s
         plt.show()
     if saveFig:
         outputPath = outputDir.joinpath(figName)
-        fig.savefig(outputPath, dpi=DPI)
+        fig.savefig(outputPath, dpi=pc.dpi)
         print(f"Plot {outputPath} created.")
     plt.close()
 
-def plot_predictions_v2(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
+def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
 
     pc = PlotConfig()
 
@@ -103,7 +108,7 @@ def plot_predictions_v2(samples, samplesLabels, c_threshold, recostructions, mse
         ymax = 1.5 
         ymin = 0
         
-        print(f"Plot {p}. \nNumber of predictions: {len(current_samples)}. \nSample shape: {current_samples.shape} \n Number of features: {features_num}")
+        #print(f"Plot {p}. \nNumber of predictions: {len(current_samples)}. \nSample shape: {current_samples.shape} \n Number of features: {features_num}")
 
         real_labels = ["grb" if lab==1 else "bkg" for lab in current_samplesLabels ]
         pred_labels = ["grb" if lab==1 else "bkg" for lab in current_mask          ]
@@ -132,9 +137,9 @@ def plot_predictions_v2(samples, samplesLabels, c_threshold, recostructions, mse
 
                 if i == 0:
                     ax[f, i].set_ylabel(f"Feature {f}")
-                
+
                 ax[f, i].set_xticks([])
-                ax[f, i].set_xlabel(f"mse={round(mse_per_sample_features[i,f],2)}")
+                ax[f, i].set_xlabel("mse={:.4f}".format(mse_per_sample_features[i,f]))
 
                 if real_labels[i] == "grb" and real_labels[i] == pred_labels[i]:
                     ax[f, i].set_title("TP")
