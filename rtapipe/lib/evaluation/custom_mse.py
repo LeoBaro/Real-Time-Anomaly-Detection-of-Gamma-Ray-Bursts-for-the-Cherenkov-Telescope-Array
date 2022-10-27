@@ -5,23 +5,32 @@ from pathlib import Path
 class CustomMSE(tf.keras.losses.Loss):
     """This MSE will weight the importance of the errors based on the energy of the photons.    
     """
-    def __init__(self, n_features, name="custom_mse", output_dir="./"):
+    def __init__(self, n_features, name="custom_mse", weighted_average=True, output_dir="./"):
         super().__init__(name=name)
         self.mse_per_sample_features = None
         self.mse_per_sample = None
         self.output_dir = Path(output_dir)
         self.n_features = n_features
+        self.weighted_average = weighted_average
         
     def get_weights(self):
-        if self.n_features == 1:
+        if self.weighted_average and self.n_features == 1:
             return tf.constant([1.0], dtype=tf.float32)
-        elif self.n_features == 2:
+        elif self.weighted_average and self.n_features == 2:
             return tf.constant([2./3, 1./3], dtype=tf.float32)
-        elif self.n_features == 3:
+        elif self.weighted_average and self.n_features == 3:
             return tf.constant([1./2, 1./3, 1./6], dtype=tf.float32)
-        elif self.n_features == 4:
+        elif self.weighted_average and self.n_features == 4:
             return tf.constant([2./5, 3./10, 1./5, 1./10], dtype=tf.float32)
-        
+        elif not self.weighted_average and self.n_features == 1:
+            return tf.constant([1.0], dtype=tf.float32)
+        elif not self.weighted_average and self.n_features == 2:
+            return tf.constant([1.0, 1.0], dtype=tf.float32)
+        elif not self.weighted_average and self.n_features == 3:
+            return tf.constant([1.0, 1.0, 1.0], dtype=tf.float32)
+        elif not self.weighted_average and self.n_features == 4:
+            return tf.constant([1.0, 1.0, 1.0, 1.0], dtype=tf.float32)
+
     def call(self, y_true, y_pred):
         """
         np.average: https://numpy.org/doc/stable/reference/generated/numpy.average.html
