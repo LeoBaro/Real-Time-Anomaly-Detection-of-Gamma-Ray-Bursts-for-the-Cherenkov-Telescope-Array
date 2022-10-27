@@ -1,44 +1,42 @@
+from pathlib import Path
 from tensorflow import keras
 
 from rtapipe.lib.models.anomaly_detector_lstm import *
 from rtapipe.lib.models.anomaly_detector_rnn import *
 from rtapipe.lib.models.anomaly_detector_cnn import *
+from rtapipe.lib.evaluation.custom_mse import CustomMSE
 
 class AnomalyDetectorBuilder:
 
     @staticmethod
-    def getAnomalyDetector(name, timesteps, nfeatures, load_model=False, model_dir=None):
+    def getModelsName():
+        return [class_name for class_name in globals() if "AnomalyDetector_" in class_name ]
 
-        if name == "lstm-m1":
-            if load_model:
-                ad = AnomalyDetectorLSTM_m1(0, 0, True)
-                ad.model = keras.models.load_model(model_dir)
-                return ad
-            return AnomalyDetectorLSTM_m1(timesteps, nfeatures, load_model)
+    @staticmethod
+    def getAnomalyDetector(name, timesteps, nfeatures, load_model=False, training_epoch_dir=None, training=True):
+        
+        klass = globals()[name]
 
-        elif name == "lstm-m2":
-            if load_model:
-                ad = AnomalyDetectorLSTM_m2(0, 0, True)
-                ad.model = keras.models.load_model(model_dir)
-                return ad
-            return AnomalyDetectorLSTM_m2(timesteps, nfeatures, load_model)
+        if not Path(training_epoch_dir).exists():
+            raise Exception(f"Training epoch dir {training_epoch_dir} does not exist")
 
-        elif name == "lstm-m3":
-            if load_model:
-                ad = AnomalyDetectorLSTM_m3(0, 0, True)
-                ad.model = keras.models.load_model(model_dir)
-                return ad
-            return AnomalyDetectorLSTM_m3(timesteps, nfeatures, load_model)
+        model_dir = Path(training_epoch_dir).joinpath("trained_model")
+        if not model_dir.exists():
+            raise Exception(f"Model dir {model_dir} does not exist")
 
-        elif name == "lstm-m4":
-            if load_model:
-                ad = AnomalyDetectorLSTM_m4(0, 0, True)
-                ad.model = keras.models.load_model(model_dir)
-                return ad
-            return AnomalyDetectorLSTM_m4(timesteps, nfeatures, load_model)
+        threshold_file = Path(training_epoch_dir).joinpath("threshold.txt")
+        if not threshold_file.exists():
+            raise Exception(f"Threshold file {threshold_file} does not exist")
 
-        else:
-            raise ValueError("Model name not supported!")
+        with open(threshold_file, "r") as thf:
+            threshold = float(thf.read().rstrip().strip())
+
+        if load_model:
+            ad = klass(timesteps, nfeatures, loadModel=True, threshold=threshold)
+            ad.model = keras.models.load_model(model_dir, compile=training)
+            return ad
+
+        return klass(timesteps, nfeatures, False, None)
 
 
     @staticmethod
@@ -60,3 +58,4 @@ class AnomalyDetectorBuilder:
             }
         else:
             raise ValueError()
+

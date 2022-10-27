@@ -18,7 +18,7 @@ class TestPlotting:
         saveFig = True 
         outputDir = Path(__file__).parent.joinpath("test_plot_predictions_output")
         
-        plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, max_plots, showFig, saveFig, outputDir)
+        plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, max_plots=max_plots, epoch=1, showFig=showFig, saveFig=saveFig, outputDir=outputDir)
 
     def test_plot_sequences(self):
         samples = np.random.uniform(0, 1, size=(1, 5, 3))

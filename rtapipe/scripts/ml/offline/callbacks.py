@@ -47,7 +47,7 @@ class EarlyStoppingCallback(keras.callbacks.Callback):
 class CustomLogCallback(keras.callbacks.Callback):
     
     def __init__(self, trigger_after_epochs, validation_data, out_dir_root, metadata, wandb_run=None):
-        self.count = 0
+        self.count = 1
         self.trigger_after_epochs = trigger_after_epochs
         self.validation_data = validation_data[0]
         self.validation_data_labels = validation_data[1]
@@ -57,24 +57,22 @@ class CustomLogCallback(keras.callbacks.Callback):
 
 
 
-    def on_train_end(self, batch, logs=None, force=False):
-        print("--------------------- CustomLogCallback on_train_end:")
+    def on_epoch_end(self, batch, logs=None, force=False):
 
-        self.count += 1
         epoch = self.count
         
-        out_dir = self.out_dir_root.joinpath("epochs",f"epoch_{epoch}")
-        out_dir.mkdir(exist_ok=True, parents=True)
-
         if epoch in self.trigger_after_epochs or force:
             
-            print("Checkpoint! Saving data -----------------------------")
+            print(f"\n\n----------------- Checkpoint! Saving data at epoch {epoch} (Triggered by Early Stopping={force}) -----------------")
+
+            out_dir = self.out_dir_root.joinpath("epochs",f"epoch_{epoch}")
+            out_dir.mkdir(exist_ok=True, parents=True)
 
             # Saving the model
-            self.model.save(out_dir.joinpath("lstm_trained_model"))
+            self.model.save(out_dir.joinpath("trained_model"))
 
             # Compute the loss plot before loss data is overwritten
-            plotting.loss_plot(self.model.history.history["loss"], self.model.history.history["val_loss"], outputDir=out_dir, figName="train_val_loss.png", showFig=False)
+            # plotting.loss_plot(self.model.history.history["loss"], self.model.history.history["val_loss"], outputDir=out_dir, figName="train_val_loss.png", showFig=False)
 
             recostructions = self.model.predict(self.validation_data, verbose=1)
 
@@ -93,7 +91,7 @@ class CustomLogCallback(keras.callbacks.Callback):
             # Plotting
             plotting.reco_error_distribution_plot(custom_mse.mse_per_sample_features, threshold=None, title=f"Reco errors on val set ({self.metadata})", outputDir=out_dir, figName="reco_errors_distr_per_features.png", showFig=False)
             plotting.reco_error_distribution_plot(custom_mse.mse_per_sample,          threshold=None, title=f"Reco errors on val set ({self.metadata})", outputDir=out_dir, figName="reco_errors_distr_per_sample.png", showFig=False)
-            plotting.plot_predictions(self.validation_data, self.validation_data_labels, c_threshold, recostructions, custom_mse.mse_per_sample.numpy(), custom_mse.mse_per_sample_features.numpy(), showFig=False, saveFig=True, outputDir=out_dir, figName="predictions.png")
+            plotting.plot_predictions(self.validation_data, self.validation_data_labels, c_threshold, recostructions, custom_mse.mse_per_sample.numpy(), custom_mse.mse_per_sample_features.numpy(), max_plots=1, showFig=False, saveFig=True, outputDir=out_dir, figName="predictions.png")
                                       
             # Logging to wandb
             if self.wandb_run is not None:
@@ -108,4 +106,4 @@ class CustomLogCallback(keras.callbacks.Callback):
                 artifact.add_file(out_dir.parent.parent.joinpath("statistics.csv"))
                 self.wandb_run.log_artifact(artifact)
             
-            print("---------------Checkpoint ended! -----------------------------")
+        self.count += 1

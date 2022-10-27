@@ -2,6 +2,7 @@ import pytest
 from pathlib import Path
 
 from rtapipe.lib.dataset.dataset import APDataset
+from rtapipe.lib.plotting.plotting import plot_sequences
 
 class TestAPDataset:
 
@@ -25,13 +26,6 @@ class TestAPDataset:
         sample = ds.get_random_train_sample(True)
         assert sample.shape == (10, 4)
 
-        ds.plotRandomSample(howMany=10)
-        
-        assert Path("./test_multiple_phlist-out/random_sample_scaled_True.png").exists()
-
-        ds.plotRandomSample(howMany=10, scaled=False)
-
-        assert Path("./test_multiple_phlist-out/random_sample_scaled_False.png").exists()
 
     def test_single_phlist(self):
 
@@ -50,10 +44,19 @@ class TestAPDataset:
         assert train_x.shape == (90, 10, 3)
         assert val_x.shape == (90, 10, 3)
 
-        ds.plotRandomSample(howMany=10)
 
-        assert Path("./test_single_phlist-out/random_sample_scaled_True.png").exists()
+    def test_single_phlist_test_set(self):
+        
+        conf_file = Path(Path(__file__).resolve().parent).joinpath("conf/agilehost3-prod5-test.yml")
 
-        ds.plotRandomSample(howMany=10, scaled=False)
+        ds = APDataset.get_dataset(conf_file, 1201, out_dir="./test_single_phlist_test_set-out", scaler_type="mm")
 
-        assert Path("./test_single_phlist-out/random_sample_scaled_False.png").exists()
+        ds.loadData()
+
+        train_x, train_y, val_x, val_y = ds.train_val_split(tsl=10, split=50)
+        test_x, test_y = ds.get_test_set(tsl=10, stride=1)
+
+        plot_sequences(test_x[:5], scaled=True, features_names=[], labels=[], showFig=False, saveFig=True, outputDir="./test_single_phlist_test_set-out", figName="samples_0-5.png")
+        plot_sequences(test_x[46:51], scaled=True, features_names=[], labels=[], showFig=False, saveFig=True, outputDir="./test_single_phlist_test_set-out", figName="samples_46-51.png")
+        plot_sequences(test_x[50:55], scaled=True, features_names=[], labels=[], showFig=False, saveFig=True, outputDir="./test_single_phlist_test_set-out", figName="samples_50-55.png")
+        plot_sequences(test_x[60:65], scaled=True, features_names=[], labels=[], showFig=False, saveFig=True, outputDir="./test_single_phlist_test_set-out", figName="samples_60-65.png")

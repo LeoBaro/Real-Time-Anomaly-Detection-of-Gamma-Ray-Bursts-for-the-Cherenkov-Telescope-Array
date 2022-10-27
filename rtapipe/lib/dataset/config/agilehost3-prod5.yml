@@ -188,6 +188,7 @@
   emin: 0.03
   emax: 2
   roi: 2.5
+  test_path: /data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/single_long_photon_list/testing/ap_output/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5_itype_te_itime_5_normalized_True.csv
 
 ################################################################################
 # T=10

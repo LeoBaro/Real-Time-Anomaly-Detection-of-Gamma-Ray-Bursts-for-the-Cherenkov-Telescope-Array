@@ -27,6 +27,7 @@ def make_plot(file_path, points, outputdir, maxflux=None):
     applot = APPlot()
     applot.plot(file_path, params, lenght=points)
     applot.save(outputdir, f"{filename}")
+    print(f"Saved: {outputdir}/{filename}")
 
 def main():
 
@@ -39,15 +40,20 @@ def main():
 
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
 
-    # search all .csv inside the args.dir and its subdirectories
-    files = list(Path(args.dir).rglob("*.csv"))
+    if Path(args.dir).is_dir():
+        print("Processing directory")
+        # search all .csv inside the args.dir and its subdirectories
+        files = list(Path(args.dir).rglob("*.csv"))
+        print(f"Found {len(list(files))} files in {Path(args.dir)}")
 
-    print(f"Found {len(list(files))} files in {Path(args.dir)}")
+        func = partial(make_plot, points=args.length, outputdir=args.output_dir, maxflux=args.max_flux)
 
-    func = partial(make_plot, points=args.length, outputdir=args.output_dir, maxflux=args.max_flux)
+        with multiprocessing.Pool(20) as p:
+            p.map(func, files)
 
-    with multiprocessing.Pool(20) as p:
-        p.map(func, files)
+    if Path(args.dir).is_file():
+        print("Processing single file")
+        make_plot(Path(args.dir), args.length, args.output_dir, args.max_flux)
 
 if __name__=='__main__':
     main()

@@ -7,3 +7,6 @@
 * A bug in the photometry code has been spotted and fixed. The bug caused fixed region integrations.
 * Implementation of a custom loss using the Keras API.
 * Upgrade of the 'predictions' plot (plot_predictions_v2).
+* Implementation of RNN and CNN models and refactoring of the models classes.
+* Implementation of test set generation
+* Evaluation of the trained models with a jupyter notebook

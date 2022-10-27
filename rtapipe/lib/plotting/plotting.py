@@ -21,10 +21,10 @@ def confusion_matrix_plot(realLabels, predLabels, showFig=False, saveFig=True, o
         print(f"Plot {outputPath} created.")
     plt.close()
 
-def loss_plot(loss, val_loss, title="Training loss", ylim=None, showFig=False, saveFig=True, outputDir="./", figName="loss_plot.png"):
+def loss_plot(loss, val_loss, model_name="", title="Training loss", ylim=None, showFig=False, saveFig=True, outputDir="./", figName="loss_plot.png"):
     pc = PlotConfig()
     fig, ax = plt.subplots(1,1, figsize=pc.fig_size)
-    fig.suptitle(title)
+    fig.suptitle(title+" "+model_name)
     ax.plot(loss, label="Training Loss")
     ax.plot(val_loss, label="Validation Loss")
     ax.set_xlabel('Epochs')
@@ -36,7 +36,7 @@ def loss_plot(loss, val_loss, title="Training loss", ylim=None, showFig=False, s
     if showFig:
         plt.show()
     if saveFig:
-        outputPath = outputDir.joinpath(figName)
+        outputPath = outputDir.joinpath(model_name+"_"+figName)
         fig.savefig(outputPath, dpi=pc.dpi)
         print(f"Plot {outputPath} created.")
     plt.close()
@@ -111,14 +111,17 @@ def plot_sequences(sequences, scaled, features_names=[], labels=[], showFig=Fals
 
     plt.close()
 
-def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
+def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, features_names=[], epoch="", max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
 
     pc = PlotConfig()
 
     total_samples = samples.shape[0]
     
     max_samples = 5
-    features_num = samples.shape[2]
+    n_features = samples.shape[2]
+    if len(features_names) != n_features:
+        features_names = [f"Feature {i}" for i in range(n_features)]
+
     num_plots = total_samples // max_samples
 
     mask = (mse_per_sample > c_threshold)
@@ -135,23 +138,24 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
         current_recostructions = recostructions[start:start+max_samples, :, :]
         current_mask = mask[start:start+max_samples]
         current_mse_per_sample_features = mse_per_sample_features[start:start+max_samples]
+        current_mse_per_sample = mse_per_sample[start:start+max_samples]
 
-        print("current_samples:",current_samples)
-        print("current_mse_per_sample_features: ", current_mse_per_sample_features)
+        #print("current_samples:",current_samples)
+        #print("current_mse_per_sample_features: ", current_mse_per_sample_features)
         start += max_samples
 
         ymax, ymin = 1.5, 0
         
-        #print(f"Plot {p}. \nNumber of predictions: {len(current_samples)}. \nSample shape: {current_samples.shape} \n Number of features: {features_num}")
+        #print(f"Plot {p}. \nNumber of predictions: {len(current_samples)}. \nSample shape: {current_samples.shape} \n Number of features: {n_features}")
 
         real_labels = ["grb" if lab==1 else "bkg" for lab in current_samplesLabels ]
         pred_labels = ["grb" if lab==1 else "bkg" for lab in current_mask          ]
 
-        fig, ax = plt.subplots(features_num, max_samples, figsize=pc.fig_size)
+        fig, ax = plt.subplots(n_features, max_samples, figsize=pc.fig_size)
         fig.suptitle(f"Predictions (using threshold={round(c_threshold, 3)})")
 
         # For each feature..
-        for f in range(features_num):
+        for f in range(n_features):
 
             for i in range(max_samples):
 
@@ -166,23 +170,26 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
 
                 if real_labels[i] != pred_labels[i]:
                     ax[f, i].set_facecolor('#e6e6e6')
-                #else:
-                #    ax[f, i].set_facecolor('#a6f5aa')
 
+                # Only the first column will show the Y labels
                 if i == 0:
-                    ax[f, i].set_ylabel(f"Feature {f}")
+                    ax[f, i].set_ylabel(features_names[f])
 
                 ax[f, i].set_xticks([])
                 ax[f, i].set_xlabel("mse={:.6f}".format(current_mse_per_sample_features[i, f]))
 
-                if real_labels[i] == "grb" and real_labels[i] == pred_labels[i]:
-                    ax[f, i].set_title("TP")
-                elif real_labels[i] == "grb" and real_labels[i] != pred_labels[i]:
-                    ax[f, i].set_title("FN")
-                elif real_labels[i] == "bkg" and real_labels[i] == pred_labels[i]:  
-                    ax[f, i].set_title("TN")
-                elif real_labels[i] == "bkg" and real_labels[i] != pred_labels[i]:
-                    ax[f, i].set_title("FP")
+                # Only the first row will show the TN/FP/FN/TP labels and the averaged mse
+                if f == 0:
+                    title = "Sample {}\nW. avg mse={:.3f}\nClassification=".format(i, current_mse_per_sample[i])
+                    if real_labels[i] == "grb" and real_labels[i] == pred_labels[i]:
+                        title += "TP"
+                    elif real_labels[i] == "grb" and real_labels[i] != pred_labels[i]:
+                        title += "FN"
+                    elif real_labels[i] == "bkg" and real_labels[i] == pred_labels[i]:  
+                        title += "TN"
+                    elif real_labels[i] == "bkg" and real_labels[i] != pred_labels[i]:
+                        title += "FP"
+                    ax[f, i].set_title(title)
 
         handles, labels = ax[f, i].get_legend_handles_labels()
         fig.legend(handles, labels, loc='upper left')
@@ -193,8 +200,8 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
             plt.show()
 
         if saveFig:
-            outputDir.mkdir(parents=True, exist_ok=True)
-            outputPath = outputDir.joinpath(f"{p}_{figName}")
+            Path(outputDir).mkdir(parents=True, exist_ok=True)
+            outputPath = Path(outputDir).joinpath(f"epoch_{epoch}_plot_{p}_{figName}")
             fig.savefig(outputPath, dpi=200)
 
         plt.close()

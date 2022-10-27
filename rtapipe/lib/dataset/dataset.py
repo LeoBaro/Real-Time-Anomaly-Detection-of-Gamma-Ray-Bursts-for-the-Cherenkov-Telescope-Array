@@ -25,7 +25,7 @@ class APDataset(ABC):
         pass
 
     @abstractmethod
-    def getTestSet(self, windowSize, stride):
+    def get_test_set(self, sequences_lenght, stride):
         pass
 
     def get_random_train_sample(self, scaled, tsl=10):
@@ -64,6 +64,7 @@ class APDataset(ABC):
 
         # The data container
         self.data = None
+        self.test_data = None
 
         # Original shape informations
         self.filesLoaded = 0
@@ -71,6 +72,8 @@ class APDataset(ABC):
 
         # Dataset informations
         self.dataset_params = dataset_params
+        self.test_params = None
+
         self.featureCols = None
         self.featureColsNamesPattern = ["COUNT"]
         self.uselessColsNamesPattern = ['TMIN', 'TMAX', 'LABEL', 'ERROR']
@@ -138,6 +141,8 @@ class APDataset(ABC):
         uselessCols = self._findColumns(self.uselessColsNamesPattern)
         # dropping useless column
         self.data.drop(uselessCols, axis='columns', inplace=True)
+        if self.test_data is not None:
+            self.test_data.drop(uselessCols, axis='columns', inplace=True)
         if verbose:
             print(f"Dropped columns={uselessCols} from dataset")
             print(f"Dataframe shape: {self.data.shape}. Columns: {self.data.columns.values}")
@@ -236,46 +241,6 @@ class APDataset(ABC):
         return np.split(arr, [splitPoint1])
 
 
-
-
-    """
-    def plotSamples(self, samples, labels, showFig=False, saveFig=True):
-
-
-        numFeatures = samples[0].shape[1]
-        numSamples = samples.shape[0]
-
-        fig, axes = plt.subplots(nrows=numFeatures, ncols=numSamples, figsize=(15,10))
-        # print(numFeatures, numSamples, axes)
-
-        if numFeatures == 1:
-            axes = np.expand_dims(axes, axis=0)
-
-        ylim = samples.max(axis=1).flatten().max()
-        color=["blue","yellow","orange","red"]
-
-        for idx, sample in enumerate(samples):
-
-            for f in range(numFeatures):
-                x = range(sample.shape[0])
-                color="blue"
-                if "+" in labels[idx]:
-                    color="red"
-                axes[f][idx].scatter(x, sample[:,f], label=self.featureCols[f], color=color, s=5)
-                axes[f][idx].set_ylim(0,ylim)
-                axes[f][idx].set_title(labels[idx])
-                axes[f][0].legend()
-
-        if showFig:
-            plt.show()
-
-        if saveFig:
-            fig.savefig(self.outDir.joinpath(f"samples.png"), dpi=150)
-            print(self.outDir.joinpath(f"samples.png"))
-
-        plt.close()
-    """
-
     def fit_scaler(self, train_x):
 
         if self.scaler_type == "mm":
@@ -314,6 +279,11 @@ class APDataset(ABC):
         else:
             return self.train_x, self.train_y, self.val_x, self.val_y
 
+            
+
+
+
+
 class SinglePhList(APDataset):
 
     def __init__(self, dataset_params, outDir=None, scaler_type=None):
@@ -325,20 +295,32 @@ class SinglePhList(APDataset):
         for key, val in params.items():
             self.dataset_params[key] = val
         self.data = pd.read_csv(self.dataset_params['path'], sep=",")
+        if 'test_path' in self.dataset_params:
+            self.test_data = pd.read_csv(self.dataset_params['test_path'], sep=",")
+            self.test_params = parse_params(self.dataset_params["test_path"])
         self.singleFileDataShapes = self.data.shape
         self.filesLoaded = 1
         self.preprocessData()
 
     def train_val_split(self, tsl, split=70, scale=True, verbose=True):
-
         sequences = extract_sub_windows(self.data.values, 0, len(self.data), tsl, tsl)
-        
         return self.split_and_fit(sequences, split, scale, verbose)
 
-    def getTestSet(self, fitScaler=True, verbose=True):
-        return None
-
-
+    def get_test_set(self, tsl, stride):
+        if self.test_params is None:
+            raise Exception("Test set not loaded!")
+        pivot_idx = self.test_params["onset"] // self.test_params["itime"]
+        print("Pivot index: ", pivot_idx, self.test_data.shape)
+        windows_before_pivot, windows_after_pivot = extract_sub_windows_pivot(self.test_data.values, sub_window_size=tsl, stride_size=stride, pivot_idx=pivot_idx)
+        windows_before_pivot = self.scale(windows_before_pivot)
+        windows_after_pivot = self.scale(windows_after_pivot)
+        print("windows_before_pivot: ", windows_before_pivot.shape)
+        print("windows_after_pivot: ", windows_after_pivot.shape)
+        test_x = np.concatenate((windows_before_pivot, windows_after_pivot), axis=0)
+        print("test_x: ", test_x.shape)
+        labels = np.array([False for i in range(len(windows_before_pivot))]+[True for i in range(len(windows_after_pivot))])
+        print("labels: ", labels.shape)
+        return test_x, labels
 
 class MultiplePhList(APDataset):
     
@@ -376,8 +358,7 @@ class MultiplePhList(APDataset):
 
 
 
-    # TODO different types of test sets
-    def getTestSet(self, windowSize, stride):
+    def get_test_set(self, windowSize, stride):
         """
         At the moment it extracts subwindows from 1 GRB sample only
         """
