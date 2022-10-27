@@ -1,6 +1,6 @@
 import numpy as np
 from tqdm import tqdm
-from math import floor
+from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from sklearn.metrics import ConfusionMatrixDisplay
@@ -79,6 +79,38 @@ def reco_error_distribution_plot(losses, threshold=None, title="", showFig=False
         print(f"Plot {outputPath} created.")
     plt.close()
 
+def plot_sequences(sequences, scaled, features_names=[], labels=[], showFig=False, saveFig=True, outputDir="./", figName="sample.png"):
+    """
+    Shape of sequence: (n_samples, n_timesteps, n_features)
+    """
+    pc = PlotConfig()
+    ymax, ymin = 1.5, 0
+    n_samples = sequences.shape[0] 
+    n_features = sequences.shape[-1]
+    if len(labels) != n_samples:
+        labels = [None] * n_samples
+    if len(features_names) != n_features:
+        features_names = [f"Feature {i}" for i in range(n_features)]
+    fig, ax = plt.subplots(n_features, 1, figsize=pc.fig_size)
+    fig.suptitle(f"Sequence with {n_features} features")
+    for j in range(n_samples):
+        color = pc.colors[j]
+        for i in range(n_features):
+            ax[i].plot(sequences[j, :, i], color=color, marker='o', markersize=6, linestyle='dashed', label=labels[j])
+            ax[i].set_ylabel(features_names[i])
+            ax[i].set_xticks([])
+            if scaled: ax[i].set_ylim(ymin, ymax)
+    handles, labels = ax[i].get_legend_handles_labels()
+    fig.legend(handles, labels, loc='upper left')            
+    if showFig:
+        plt.show()
+    if saveFig:
+        Path(outputDir).mkdir(parents=True, exist_ok=True)
+        outputPath = Path(outputDir).joinpath(figName)
+        fig.savefig(outputPath, dpi=200)
+
+    plt.close()
+
 def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
 
     pc = PlotConfig()
@@ -102,11 +134,13 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
         current_samplesLabels = samplesLabels[start:start+max_samples]
         current_recostructions = recostructions[start:start+max_samples, :, :]
         current_mask = mask[start:start+max_samples]
-        
+        current_mse_per_sample_features = mse_per_sample_features[start:start+max_samples]
+
+        print("current_samples:",current_samples)
+        print("current_mse_per_sample_features: ", current_mse_per_sample_features)
         start += max_samples
 
-        ymax = 1.5 
-        ymin = 0
+        ymax, ymin = 1.5, 0
         
         #print(f"Plot {p}. \nNumber of predictions: {len(current_samples)}. \nSample shape: {current_samples.shape} \n Number of features: {features_num}")
 
@@ -126,8 +160,8 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
                 recoSample = current_recostructions[i][:,f]
 
                 # And plot them                
-                ax[f, i].plot(recoSample, color='red',  marker='o', markersize=8, linestyle='dashed', label="reconstruction")
-                ax[f, i].plot(sample,     color="blue", marker='o', markersize=8, linestyle='dashed', label="ground truth")
+                ax[f, i].plot(recoSample, color='red',  marker='o', markersize=6, linestyle='dashed', label="reconstruction")
+                ax[f, i].plot(sample,     color="blue", marker='o', markersize=6, linestyle='dashed', label="ground truth")
                 ax[f, i].set_ylim(ymin, ymax)
 
                 if real_labels[i] != pred_labels[i]:
@@ -139,7 +173,7 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
                     ax[f, i].set_ylabel(f"Feature {f}")
 
                 ax[f, i].set_xticks([])
-                ax[f, i].set_xlabel("mse={:.4f}".format(mse_per_sample_features[i,f]))
+                ax[f, i].set_xlabel("mse={:.6f}".format(current_mse_per_sample_features[i, f]))
 
                 if real_labels[i] == "grb" and real_labels[i] == pred_labels[i]:
                     ax[f, i].set_title("TP")
