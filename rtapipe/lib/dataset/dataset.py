@@ -215,48 +215,6 @@ class APDataset(ABC):
     """
 
 
-    def plotRandomSample(self, howMany=1, scaled=True, showFig=False, saveFig=True):
-
-        numFeatures = self.data.shape[1]
-
-        #print(len(self.data),(self.dataset_params["timeseries_lenght"] * self.filesLoaded) / self.dataset_params["integration_time"])
-        #assert len(self.data) == (self.dataset_params["timeseries_lenght"] * self.filesLoaded) / self.dataset_params["integrationTime"]
-
-        fig, ax = plt.subplots(numFeatures, 1, figsize=(15,10))
-
-        if numFeatures > 1:
-            ax = ax.flatten()
-        if numFeatures == 1:
-            ax = [ax]
-
-        x = range(1, self.get_random_train_sample(scaled).shape[0]+1) # or range(1, randomGrbSample.shape[0]+1)
-
-        for f in range(numFeatures):
-
-            for i in range(howMany):
-                ax[f].plot(x, self.get_random_train_sample(scaled)[:,f], marker='o', label=f"{self.dataset_params['simtype']} {self.featureCols[f]}")
-
-            if self.dataset_params["onset"] > 0:
-                ax[f].axvline(x=self.onset, color="red", label=f"Onset: {self.dataset_params['onset']}")
-
-            ax[f].set_title(self.featureCols[f])
-
-            if scaled:
-                ax[f].set_ylim(0,1)
-
-        plt.tight_layout()
-
-        if showFig:
-            plt.show()
-
-        if saveFig:
-            fig.savefig(self.outDir.joinpath(f"random_sample_scaled_{scaled}.png"), dpi=400)
-
-        plt.close()
-
-
-
-
     def _findColumns(self, patterns):
         """
         This method will search for columns names from the columns patterns passed as input.
