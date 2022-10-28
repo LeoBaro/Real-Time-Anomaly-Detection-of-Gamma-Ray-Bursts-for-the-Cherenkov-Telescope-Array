@@ -10,3 +10,4 @@
 * Implementation of RNN and CNN models and refactoring of the models classes.
 * Implementation of test set generation
 * Evaluation of the trained models with a jupyter notebook
+* Implemented new Photometry class. It can extract from multiple reflected regions in multiprocessing and return numpy array instead of csv files.

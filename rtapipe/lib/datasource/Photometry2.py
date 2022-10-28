@@ -25,29 +25,29 @@ class Photometry2:
         if "CTOOLS" not in os.environ:
             raise EnvironmentError("Please, export $CTOOLS")
 
-        cfg = Config(Path(configPath))
+        self.cfg = Config(Path(configPath))
 
         self.dataDir = dataDir
 
         # irf
-        irfPath = Path(expandvars('$CTOOLS')).joinpath("share","caldb","data","cta",cfg.get('caldb'),"bcf",cfg.get('irf'))
+        irfPath = Path(expandvars('$CTOOLS')).joinpath("share","caldb","data","cta",self.cfg.get('caldb'),"bcf",self.cfg.get('irf'))
         self.irfFile = irfPath.joinpath(os.listdir(irfPath).pop())
         print(f"irfFile: {self.irfFile}")
 
         # template
-        template =  Path(os.environ["DATA"]).joinpath("templates",f"{cfg.get('runid')}.fits")
+        template =  Path(os.environ["DATA"]).joinpath("templates",f"{self.cfg.get('runid')}.fits")
 
         # "get_pointing" does not add the offset so it should be renamed in get_target, since it gives
         # the source position
         self.sourcePosition = get_pointing(template) 
 
         # other parameters
-        self.sim_type = cfg.get("simtype")
-        self.sim_onset = cfg.get("onset")
-        self.sim_emin = cfg.get("emin")
-        self.sim_emax = cfg.get("emax")
-        self.sim_tmin = cfg.get("delay")
-        self.sim_tmax = cfg.get("tobs")
+        self.sim_type = self.cfg.get("simtype")
+        self.sim_onset = self.cfg.get("onset")
+        self.sim_emin = self.cfg.get("emin")
+        self.sim_emax = self.cfg.get("emax")
+        self.sim_tmin = self.cfg.get("delay")
+        self.sim_tmax = self.cfg.get("tobs")
 
         # Output directories
         self.outputDir = Path(outputDir)
