@@ -17,19 +17,20 @@ class AnomalyDetectorBuilder:
         
         klass = globals()[name]
 
-        if not Path(training_epoch_dir).exists():
+        if not training and not Path(training_epoch_dir).exists():
             raise Exception(f"Training epoch dir {training_epoch_dir} does not exist")
 
-        model_dir = Path(training_epoch_dir).joinpath("trained_model")
-        if not model_dir.exists():
-            raise Exception(f"Model dir {model_dir} does not exist")
+        if not training:
+            model_dir = Path(training_epoch_dir).joinpath("trained_model")
+            if not model_dir.exists():
+                raise Exception(f"Model dir {model_dir} does not exist")
 
-        threshold_file = Path(training_epoch_dir).joinpath("threshold.txt")
-        if not threshold_file.exists():
-            raise Exception(f"Threshold file {threshold_file} does not exist")
+            threshold_file = Path(training_epoch_dir).joinpath("threshold.txt")
+            if not threshold_file.exists():
+                raise Exception(f"Threshold file {threshold_file} does not exist")
 
-        with open(threshold_file, "r") as thf:
-            threshold = float(thf.read().rstrip().strip())
+            with open(threshold_file, "r") as thf:
+                threshold = float(thf.read().rstrip().strip())
 
         if load_model:
             ad = klass(timesteps, nfeatures, loadModel=True, threshold=threshold)

@@ -1,9 +1,6 @@
-[submodule "astro"]
-	path = astro
-	url = https://github.com/LeoBaro/astro.git
 [submodule "cta-sag-sci"]
 	path = cta-sag-sci
 	url = https://github.com/ambra-dipiano/cta-sag-sci
-[submodule "sagsci"]
-	path = sagsci
-	url = git@github.com:ASTRO-EDU/sagsci.git
+[submodule "sag-sci"]
+	path = sag-sci
+	url = git@gitlab.cta-observatory.org:cta-computing/acada/sag-sci.git

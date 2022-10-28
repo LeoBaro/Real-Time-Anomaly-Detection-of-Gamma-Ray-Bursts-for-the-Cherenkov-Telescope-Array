@@ -241,6 +241,16 @@ class APDataset(ABC):
         return np.split(arr, [splitPoint1])
 
 
+    def store_scaler(self, dest_path):
+        
+        if self.scaler is None:
+            raise ValueError("Scaler is None. Call fit_scaler() first.")
+        
+        Path(dest_path).mkdir(parents=True, exist_ok=True)
+        with open(Path(dest_path).joinpath('fitted_scaler.pickle'), 'wb') as handle:
+            pickle.dump(self.scaler, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
     def fit_scaler(self, train_x):
 
         if self.scaler_type == "mm":
