@@ -1,3 +1,4 @@
+import pickle
 from time import time
 from math import sqrt
 from pathlib import Path
@@ -22,8 +23,8 @@ class OnlinePhotometry(Photometry2):
 
     export CTOOLS=/data01/homes/baroncelli/.conda/envs/bphd
     """
-    def __init__(self, configPath, dataDir):
-        super().__init__(configPath, dataDir, "/tmp")
+    def __init__(self, configPath):
+        super().__init__(configPath, None, "/tmp")
 
 
     def get_time_windows(self, integration_time, max_points):
@@ -79,6 +80,8 @@ class OnlinePhotometry(Photometry2):
         regions_dict[offset]["regions"].append(target_region) 
         return regions_dict
 
+        
+
     def compute_reflected_regions(self, max_offset, e_windows, region_radius):
 
         aeff_eval_config = self.get_aeff_eval_config(e_windows)
@@ -115,9 +118,56 @@ class OnlinePhotometry(Photometry2):
 
             # increment offset to get next offset ring
             offset += region_radius*2
-
+        
         return regions_dict
 
+    def flat_region_dict(self, regions_dict, max_offset, e_windows):
+        # change the structure of the dictionary: list of tuple of region and aeff
+        # [( 
+        #    {'ra': 31.68167110956259, 'dec': -52.8402349288972, 'rad': 0.2}, {(0.04, 0.117): 584733789.0746386, (0.117, 0.342): 1568499319.2974534, (0.342, 1.0): 3159516976.6579475} 
+        # )]
+        t = time()
+        flattened_regions = []
+        for offset in regions_dict:
+            for region in regions_dict[offset]["regions"]:
+                flattened_regions.append((region, regions_dict[offset]["region_eff_resp"]))
+        print(f"Time to change the structure of the config dictionary: {time() - t}")
+        return flattened_regions
+
+
+    def create_photometry_configuration(self, region_radius, number_of_energy_bins, max_points, max_offset=2, reflection=True):
+        t = time()
+        e_windows = self.get_energy_windows(number_of_energy_bins)
+        regions_dict = self.compute_region(e_windows, region_radius)
+        if reflection:
+            regions_dict = self.compute_reflected_regions(max_offset, e_windows, region_radius)
+            regions_dict = self.flat_region_dict(regions_dict, max_offset, e_windows)
+        print(f"Time to compute regions: {time() - t}")
+        return regions_dict
+
+
+    def integrate(self, pht_list, regions_dict, region_radius, integration_time, number_of_energy_bins, max_points, normalize=True, threads=10):
+        t = time()
+        phm = Photometrics({ 'events_filename': pht_list })
+        print(f"Time to load Photometry class: {time() - t}")
+
+        t_windows = self.get_time_windows(integration_time, max_points)
+        e_windows = self.get_energy_windows(number_of_energy_bins)
+
+        func = partial(self.extract_sequence, phm, t_windows, e_windows, region_radius, normalize)
+
+        with Pool(threads) as p:
+            output = p.map(func, regions_dict)
+        
+        output = np.asarray(output)
+        print(output.shape)
+
+        data = output[:,0,:,:]
+        data_err = output[:,1,:,:]
+
+        return data, data_err
+
+       
     def extract_sequence(self, phm, t_windows, e_windows, region_radius, normalize, region_config):
         t = time()
         data = []
@@ -141,54 +191,3 @@ class OnlinePhotometry(Photometry2):
             data_err.append(counts_t_err)
         print(f"Time to extract sequence: {time() - t}")
         return np.asarray(data), np.asarray(data_err)                  
-
-
-    def integrate(self, pht_list, region_radius, integration_time, number_of_energy_bins, max_points, reflection=True, normalize=True, threads=10):
-        t = time()
-        phm = Photometrics({ 'events_filename': pht_list })
-        print(f"Time to load Photometry class: {time() - t}")
-
-        t_windows = self.get_time_windows(integration_time, max_points)
-
-        e_windows = self.get_energy_windows(number_of_energy_bins)
-
-        max_offset = 2
-
-        t = time()
-        if reflection:
-            regions = self.compute_reflected_regions(max_offset, e_windows, region_radius)
-        else:
-            regions = self.compute_region(e_windows, region_radius)
-        print(f"Time to compute regions: {time() - t}")
-
-        # change the structure of the dictionary: list of tuple of region and aeff
-        # [( 
-        #    {'ra': 31.68167110956259, 'dec': -52.8402349288972, 'rad': 0.2}, {(0.04, 0.117): 584733789.0746386, (0.117, 0.342): 1568499319.2974534, (0.342, 1.0): 3159516976.6579475} 
-        # )]
-        t = time()
-        flattened_regions = []
-        for offset in regions:
-            for region in regions[offset]["regions"]:
-                flattened_regions.append((region, regions[offset]["region_eff_resp"]))
-        print(f"Time to change the structure of the config dictionary: {time() - t}")
-
-        """
-        for key, val in regions.items():
-            print("Offset: ", key)
-            print(val["region_eff_resp"])
-            for r in val["regions"]:
-                print(r)
-        """
-
-        func = partial(self.extract_sequence, phm, t_windows, e_windows, region_radius, normalize)
-
-        with Pool(threads) as p:
-            output = p.map(func, flattened_regions)
-        
-        output = np.asarray(output)
-        print(output.shape)
-
-        data = output[:,0,:,:]
-        data_err = output[:,1,:,:]
-
-        return data, data_err

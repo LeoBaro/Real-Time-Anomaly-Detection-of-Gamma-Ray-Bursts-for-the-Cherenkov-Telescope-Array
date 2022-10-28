@@ -12,7 +12,7 @@ class TestPhotometry3:
         config_file = Path(data_dir).joinpath("config.yaml")
         photon_list = Path(data_dir).joinpath("runid_notemplate_trial_0001024120_simtype_bkg_onset_0_delay_0_offset_0.5.fits")
         
-        pht = OnlinePhotometry(config_file, data_dir)
+        pht = OnlinePhotometry(config_file)
 
         region_radius = 0.2
         integration_time = 5
@@ -23,7 +23,11 @@ class TestPhotometry3:
         threads = 10
 
         s = time()
-        data, data_err = pht.integrate(photon_list, region_radius, integration_time, number_of_energy_bins, max_points, reflection=reflection, normalize=normalize, threads=threads)
+        regions_dict = pht.create_photometry_configuration(region_radius, number_of_energy_bins, max_points, reflection=reflection)
+        print(f"Time to create the regions configuration: {time() - s} sec")
+
+        s = time()
+        data, data_err = pht.integrate(photon_list, regions_dict, region_radius, integration_time, number_of_energy_bins, max_points, normalize=normalize, threads=threads)
         print(f"Time to integrate: {time() - s} sec")
 
         assert data.shape == (56, 5, 3)
@@ -31,11 +35,13 @@ class TestPhotometry3:
 
         threads = 1
         s = time()
-        data, data_err = pht.integrate(photon_list, region_radius, integration_time, number_of_energy_bins, max_points, reflection=reflection, normalize=normalize, threads=threads)
+        data, data_err = pht.integrate(photon_list, regions_dict, region_radius, integration_time, number_of_energy_bins, max_points, normalize=normalize, threads=threads)
         print(f"Time to integrate: {time() - s} sec")
 
 
         normalize = False
         threads = 10
-        data, data_err = pht.integrate(photon_list, region_radius, integration_time, number_of_energy_bins, max_points, reflection=reflection, normalize=normalize, threads=threads)
+        s = time()
+        data, data_err = pht.integrate(photon_list, regions_dict, region_radius, integration_time, number_of_energy_bins, max_points, normalize=normalize, threads=threads)
         print(data[0])
+        print(f"Time to integrate: {time() - s} sec")
