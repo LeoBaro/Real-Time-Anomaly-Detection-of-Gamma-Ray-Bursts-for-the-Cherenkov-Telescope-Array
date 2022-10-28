@@ -2,6 +2,7 @@
 **.log
 **.pickle
 
+
 rtapipe/notebooks/run_*/*
 rtapipe/notebooks/lstm_models_*/**
 temp/**
@@ -34,3 +35,6 @@ wandb
 **/ebl*.fits
 **/sim_output/**
 **/slurm_out/**
+
+
+! tests/test_data/fits-prod5/**.fits

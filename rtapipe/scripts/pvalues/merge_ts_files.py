@@ -5,9 +5,7 @@ import pandas as pd
 from time import time
 from pathlib import Path
 
-from RTAscience.lib.RTAStats import *
-
-# python merge_ts_files.py -p /data01/homes/baroncelli/phd/rtapipe/analysis/training_output_10_epochs/datasetid_601-modelname_m4-trainingtype_heavy-timestamp_20220109-161654/epochs/epoch_10/pvalues/jobs 
+# python merge_ts_files.py -p /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221027-134533_T_5_TSL_5/model_AnomalyDetector_cnn_l2_u32_dataset_1201_tsl_5/epochs/epoch_117/pvalues/ts_values
 
 if __name__ == '__main__':
     
@@ -23,8 +21,6 @@ if __name__ == '__main__':
     for root, _, files in os.walk(p):
         for f in files:
             pfile = p.joinpath(root,f)
-            if f == "ts_for_pvalues.txt":
-                continue
             if str(pfile).endswith(".txt"):
                 print(pfile)
                 data.append(

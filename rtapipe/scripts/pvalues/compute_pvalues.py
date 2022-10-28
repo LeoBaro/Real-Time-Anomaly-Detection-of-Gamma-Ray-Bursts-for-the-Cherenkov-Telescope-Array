@@ -9,6 +9,12 @@ from RTAscience.lib.RTAStats import *
 
 # python compute_pvalues.py -p /data01/homes/baroncelli/phd/rtapipe/analysis/training_output_10_epochs/datasetid_601-modelname_m4-trainingtype_heavy-timestamp_20220109-161654/epochs/epoch_10/pvalues/merged_ts_for_pvalues.pickle.npy
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--input_path", type=str, required=True, help="")
+    args = parser.parse_args()
+    compute_pval(args.input_path)
+
 def compute_pval(input_path):
 
     data = np.load(input_path)
@@ -22,7 +28,7 @@ def compute_pval(input_path):
 
         print(f"Generating p-value plot: {output_pvalue_png}")
 
-        fig, ax = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0,0.3), title='Reconstruction errors distribution', overlay=False, filename=output_wilks_png)
+        fig, ax = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0, 0.15), title='Reconstruction errors distribution', overlay=False, filename=output_wilks_png)
         fig, ax = p_values([data], df=1, nbin=nbin, figsize=(7, 8), title='Reconstruction errors p-values', filename=output_pvalue_png, sigma5=True, write_data=True,  overlay=False, dpi=400, fmt='+', ecolor='red', markersize=0.5, elinewidth=0.5, alpha=0.8)
 
     #fig, ax = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0,0.5), title='Reconstruction errors distribution', usetex=False, filename=output_wilks_svg)
@@ -50,9 +56,5 @@ def compare_pval(input_paths, output_dir):
 
 
 if __name__ == '__main__':
-    
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-p", "--input_path", type=str, required=True, help="")
-    args = parser.parse_args()
-    compute_pval(args.input_path)
+    main()
 

@@ -135,7 +135,7 @@ class OnlinePhotometry(Photometry2):
         return flattened_regions
 
 
-    def create_photometry_configuration(self, region_radius, number_of_energy_bins, max_points, max_offset=2, reflection=True):
+    def create_photometry_configuration(self, region_radius, number_of_energy_bins, max_offset=2, reflection=True):
         t = time()
         e_windows = self.get_energy_windows(number_of_energy_bins)
         regions_dict = self.compute_region(e_windows, region_radius)
@@ -147,9 +147,9 @@ class OnlinePhotometry(Photometry2):
 
 
     def integrate(self, pht_list, regions_dict, region_radius, integration_time, number_of_energy_bins, max_points, normalize=True, threads=10):
-        t = time()
+        #t = time()
         phm = Photometrics({ 'events_filename': pht_list })
-        print(f"Time to load Photometry class: {time() - t}")
+        #print(f"Time to load Photometry class: {time() - t}")
 
         t_windows = self.get_time_windows(integration_time, max_points)
         e_windows = self.get_energy_windows(number_of_energy_bins)
@@ -160,7 +160,7 @@ class OnlinePhotometry(Photometry2):
             output = p.map(func, regions_dict)
         
         output = np.asarray(output)
-        print(output.shape)
+        # print(output.shape)
 
         data = output[:,0,:,:]
         data_err = output[:,1,:,:]
@@ -169,7 +169,7 @@ class OnlinePhotometry(Photometry2):
 
        
     def extract_sequence(self, phm, t_windows, e_windows, region_radius, normalize, region_config):
-        t = time()
+        #t = time()
         data = []
         data_err = []
         region = region_config[0]
@@ -189,5 +189,5 @@ class OnlinePhotometry(Photometry2):
                 counts_t_err.append(error)   
             data.append(counts_t)
             data_err.append(counts_t_err)
-        print(f"Time to extract sequence: {time() - t}")
+        #print(f"Time to extract sequence: {time() - t}")
         return np.asarray(data), np.asarray(data_err)                  

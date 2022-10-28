@@ -21,9 +21,10 @@ class TestPhotometry3:
         reflection = True
         normalize = True
         threads = 10
+        max_offset = 2
 
         s = time()
-        regions_dict = pht.create_photometry_configuration(region_radius, number_of_energy_bins, max_points, reflection=reflection)
+        regions_dict = pht.create_photometry_configuration(region_radius, number_of_energy_bins, max_offset=max_offset, reflection=reflection)
         print(f"Time to create the regions configuration: {time() - s} sec")
 
         s = time()

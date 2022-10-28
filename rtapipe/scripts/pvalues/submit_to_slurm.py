@@ -1,10 +1,13 @@
 import os
+import pickle
 import argparse
+import subprocess
 from time import sleep
 from pathlib import Path
 from shutil import rmtree
 
-PARTITION="deeplearning"
+PARTITION="large"
+CPU_PER_TASK = 1
 
 def setup_filesystem(args):
 
@@ -12,44 +15,42 @@ def setup_filesystem(args):
 
     jobsFileDir = pvalueFolder.joinpath("slurm", "jobs_file")
     jobsOutDir = pvalueFolder.joinpath("slurm", "jobs_out")
+    jobsInputDir = pvalueFolder.joinpath("slurm", "jobs_input")
 
     jobsFileDir.mkdir(parents=True, exist_ok=True)
     jobsOutDir.mkdir(parents=True, exist_ok=True)
+    jobsInputDir.mkdir(parents=True, exist_ok=True)
 
-    return pvalueFolder, jobsFileDir, jobsOutDir
+    return pvalueFolder, jobsFileDir, jobsOutDir, jobsInputDir
 
 
+def create_input_file_for_predictions(jobName, files, jobsInputDir):
+    input_pickle = jobsInputDir.joinpath(f"input_{jobName}.pickle")
+    with open(input_pickle, "wb") as ff:
+         pickle.dump(files, ff)
+    return input_pickle
 
-def create_job_file_for_predictions(jobName, args, jobsFileDir, jobsOutDir):
+def create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pickle, pvalue_dataset_path, trained_model_dir, epoch, pvalueFolder, batch_size):
 
     jobFile = jobsFileDir.joinpath(f"{jobName}.ll")
     jobOut = jobsOutDir.joinpath(f"{jobName}.out")
-
-    argsStr = ""
-    for key,val in args.items():
-        argsStr += f" --{key} {val}"
     
     with open(jobFile, "w") as jf:
-        jf.write("#!/bin/bash\n")
+        jf.write( "#!/bin/bash\n")
         jf.write(f"#SBATCH --job-name={jobName}\n")
         jf.write(f"#SBATCH --output={jobOut}\n")
-        jf.write("#SBATCH --cpus-per-task=1\n")
+        jf.write(f"#SBATCH --cpus-per-task={CPU_PER_TASK}\n")
         jf.write(f"#SBATCH --partition={PARTITION}\n")
-        jf.write(f"python {Path(__file__).parent}/predict_batch_id.py {argsStr}\n")
+        jf.write(f"predict_batch_id -jn {jobName} -plp {input_pickle} -dc {Path(pvalue_dataset_path).joinpath('config.yaml')} -tmd {trained_model_dir} -e {epoch} -od {pvalueFolder} -bs {batch_size} -v 0 \n")
 
-    import subprocess
-    stdoutdata = subprocess.getoutput(f"sbatch {jobFile}").split()
-    if len(stdoutdata) != 4:
-        print(f"Error submitting the job: {stdoutdata}")
-    else:
-        print(stdoutdata)
-    return stdoutdata[-1]
+    return jobFile
 
+"""
 def create_job_file_for_pvalue(jobIDs, pvalueFolder, jobsFileDir, jobsOutDir):
 
     script_path = Path(__file__).parent
 
-    tsDataPath = pvalueFolder.joinpath("jobs")
+    tsDataPath = pvalueFolder.joinpath("ts_values")
     tsMergedDataFilePath = pvalueFolder.joinpath("merged_ts_for_pvalues.pickle.npy")
 
     jobFile = jobsFileDir.joinpath(f"pvalue_job.ll")
@@ -61,34 +62,39 @@ def create_job_file_for_pvalue(jobIDs, pvalueFolder, jobsFileDir, jobsOutDir):
     dependencyStr = dependencyStr[:-1]
 
     with open(jobFile, "w") as jf:
-        jf.write("#!/bin/bash\n")
+        jf.write( "#!/bin/bash\n")
         jf.write(f"#SBATCH --job-name=pvalue_job\n")
         jf.write(f"#SBATCH --output={jobOut}\n")
-        jf.write("#SBATCH --cpus-per-task=1\n")
+        jf.write( "#SBATCH --cpus-per-task=1\n")
         jf.write(f"#SBATCH --partition={PARTITION}\n")
         jf.write(f"#SBATCH --dependency={dependencyStr}\n")
-        jf.write(f"python {Path(__file__).parent}/merge_ts_files.py -p {tsDataPath}\n")
-        jf.write(f"python {Path(__file__).parent}/compute_pvalues.py -p {tsMergedDataFilePath}")
+        jf.write(f"merge_ts_files -p {tsDataPath}\n")
+        jf.write(f"compute_pvalues -p {tsMergedDataFilePath}")
     
     os.system(f"sbatch {jobFile}")
-
-"""
-Choose:
-    * model
-    * epoch
-    * the corresponding dataset
-    * the corresponding filenames 
-
-python submit_to_slurm.py.py -tmd /data01/homes/baroncelli/phd/rtapipe/analysis/training_output_10_epochs/datasetid_601-modelname_m4-trainingtype_heavy-timestamp_20220109-161654 -e 10 -pdi 621 -pn bkg*_te_simtype_bkg_onset_0_normalized_True.csv
 """
 
-if __name__=='__main__':
+def main():
+    """
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221027-134533_T_5_TSL_5/model_AnomalyDetector_cnn_l2_u32_dataset_1201_tsl_5 -e 117 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 5000000 -nj 500
 
+    submit_to_slurm 
+        -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221027-134533_T_5_TSL_5/model_AnomalyDetector_cnn_l2_u32_dataset_1201_tsl_5 
+        -e 117 
+        -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds 
+        -nf 5000000 
+        -nj 500
+        -bs 1000
+        -s 1
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("-tmd", "--trained-model-dir", type=str, required=True, help="")
     parser.add_argument("-e", "--epoch", type=int, required=True, help="The epoch of the training")
-    parser.add_argument("-pdi", "--pvalue_dataset_id", type=int, required=True, help="The dataset to be used for the p-value computation")
-    parser.add_argument("-pn", "--pattern_name", type=str, required=True, help="")
+    parser.add_argument("-pvdp", "--pvalue_dataset_path", type=str, required=True, help="The dataset to be used for the p-value computation")
+    parser.add_argument("-nf", "--num_files", type=int, required=True, help="To limit the total number of input files")
+    parser.add_argument("-nj", "--num_jobs", type=int, required=True, help="The max number of jobs. The number of files per job is num_files/num_jobs")
+    parser.add_argument("-bs", "--batch_size", type=int, required=False, default=500, help="For each job, the number of files that will be processed with photometry then model predictions")
+    parser.add_argument("-s", "--submit", type=int, required=False, default=0, help="If 1, the jobs will be submitted to the cluster")
     args = parser.parse_args()
 
     arguments = vars(args)
@@ -99,31 +105,42 @@ if __name__=='__main__':
         rmtree(pvalueFolder)
 
     ## Create fresh directories
-    pvalueFolder, jobsFileDir, jobsOutDir = setup_filesystem(args)
+    pvalueFolder, jobsFileDir, jobsOutDir, jobsInputDir = setup_filesystem(args)
 
+    print("Loading files...")
+    files = [os.path.join(args.pvalue_dataset_path, f) for f in os.listdir(args.pvalue_dataset_path) if f.endswith(".fits")][:args.num_files]
 
-    ## Split 10 millions files in 10 batches for 10 jobs 
-    #njobs = 40
-    #totalSamplesPerJob = 1000000
-    #arguments["batch_size"] = 10000
+    ## Split 'num_files' files in 'X' batches for 'num_jobs' jobs 
+    njobs = args.num_jobs
+    total_files = len(files)
+    total_samples_per_job = total_files // njobs
 
-    njobs = 10
-    totalSamplesPerJob = 1000000
-    arguments["batch_size"] = 10000
+    print("Files to be processed: ", len(files))
+    print("njobs: ", njobs)
+    print("total_samples_per_job: ", total_samples_per_job)
 
     jobNames = [f"pred_job_{i}" for i in range(njobs)]
-    jobsIds = []
 
     startId = 1
+    jobFiles = []
     for jobName in jobNames:
-        arguments["from_id"] = startId
-        arguments["to_id"] = startId + totalSamplesPerJob
         arguments["output_dir"] = jobName
-        startId += totalSamplesPerJob
-        jobId = create_job_file_for_predictions(jobName, arguments, jobsFileDir, jobsOutDir)
-        jobsIds.append(jobId)
+        input_pickle = create_input_file_for_predictions(jobName, files[startId:startId+total_samples_per_job], jobsInputDir)
+        jobFiles.append(
+            create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pickle, args.pvalue_dataset_path, args.trained_model_dir, args.epoch, pvalueFolder, args.batch_size)
+        )
+        startId += total_samples_per_job
 
-    # Create job for pvalue
-    create_job_file_for_pvalue(jobsIds, pvalueFolder, jobsFileDir, jobsOutDir)
+    if args.submit:
+        for jobFile in jobFiles:
+            stdoutdata = subprocess.getoutput(f"sbatch {jobFile}").split()
+            if len(stdoutdata) != 4:
+                print(f"Error submitting the job: {stdoutdata}")
+            else:
+                print(stdoutdata)
 
 
+
+
+if __name__=='__main__':
+    main()
