@@ -12,3 +12,5 @@ dependencies:
   - tqdm
   - ipykernel
   - jupyter
+  - astropy
+  - regions==0.5.*
