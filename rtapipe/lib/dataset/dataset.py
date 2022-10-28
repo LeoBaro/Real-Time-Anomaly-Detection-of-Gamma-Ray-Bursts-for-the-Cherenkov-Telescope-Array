@@ -1,5 +1,6 @@
 import os
 import yaml
+import json
 import pickle
 import numpy as np
 import pandas as pd
@@ -122,16 +123,23 @@ class APDataset(ABC):
     def getFeaturesColsNames(self):
         return self.featureCols
 
-    def dumpDatasetParams(self, type):
+    def dumpDatasetParams(self, type, out_dir=None):
         if self.outDir is None:
             raise ValueError("self.outDir is None. Call setOutDir()")
+        if out_dir is not None:
+            out_dir = Path(out_dir)
+        else:
+            out_dir = self.outDir
         if type == "pickle":
-            with open(self.outDir.joinpath('dataset_params.pickle'), 'wb') as handle:
+            with open(out_dir.joinpath('dataset_params.pickle'), 'wb') as handle:
                 pickle.dump(self.dataset_params, handle, protocol=pickle.HIGHEST_PROTOCOL)
         elif type == "ini":
-            with open(self.outDir.joinpath('dataset_params.ini'), 'w') as handle:
+            with open(out_dir.joinpath('dataset_params.ini'), 'w') as handle:
                 for key, val in self.dataset_params.items():
                     handle.write(f"{key}={val}\n")
+        elif type == "json":
+            with open(out_dir.joinpath('dataset_params.json'), 'w') as handle:
+                json.dump(self.dataset_params, handle)
 
 
     def preprocessData(self, verbose=True):
