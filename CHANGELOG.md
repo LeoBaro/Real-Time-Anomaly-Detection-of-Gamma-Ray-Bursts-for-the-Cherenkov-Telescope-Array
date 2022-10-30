@@ -11,3 +11,5 @@
 * Implementation of test set generation
 * Evaluation of the trained models with a jupyter notebook
 * Implemented new Photometry class. It can extract from multiple reflected regions in multiprocessing and return numpy array instead of csv files.
+* The p-value analysis code has been refactored. The pipeline will apply both the photometry and model prediction starting from the DL3.  
+* Updated testing code. Load a named test-set composed by multiple timeseries.

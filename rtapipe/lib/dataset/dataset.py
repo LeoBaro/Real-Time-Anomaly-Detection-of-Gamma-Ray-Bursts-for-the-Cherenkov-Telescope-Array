@@ -78,6 +78,7 @@ class APDataset(ABC):
         self.featureCols = None
         self.featureColsNamesPattern = ["COUNT"]
         self.uselessColsNamesPattern = ['TMIN', 'TMAX', 'LABEL', 'ERROR']
+        self.uselessCols = None
 
         # Get filename of first file in the data dir
         dataDir = self.dataset_params["path"]
@@ -140,19 +141,17 @@ class APDataset(ABC):
         elif type == "json":
             with open(out_dir.joinpath('dataset_params.json'), 'w') as handle:
                 json.dump(self.dataset_params, handle)
-
+    
 
     def preprocessData(self, verbose=True):
         if verbose:
             print(f"Single csv file shape: {self.singleFileDataShapes}")
             print(f"Dataframe shape: {self.data.shape}. Columns: {self.data.columns.values}")
-        uselessCols = self._findColumns(self.uselessColsNamesPattern)
+        self.uselessCols = self._findColumns(self.uselessColsNamesPattern)
         # dropping useless column
-        self.data.drop(uselessCols, axis='columns', inplace=True)
-        if self.test_data is not None:
-            self.test_data.drop(uselessCols, axis='columns', inplace=True)
+        self.data.drop(self.uselessCols, axis='columns', inplace=True)
         if verbose:
-            print(f"Dropped columns={uselessCols} from dataset")
+            print(f"Dropped columns={self.uselessCols} from dataset")
             print(f"Dataframe shape: {self.data.shape}. Columns: {self.data.columns.values}")
         self.featureCols = self._findColumns(self.featureColsNamesPattern)
         if len(self.featureCols) > 1:
@@ -306,39 +305,79 @@ class SinglePhList(APDataset):
 
     def __init__(self, dataset_params, outDir=None, scaler_type=None):
         super().__init__(dataset_params, outDir, scaler_type)
+        self.train_tsl = None
 
     def loadData(self):
         print(f"Loading dataset from {self.dataset_params['path']}")
         params = parse_params(self.dataset_params["path"])
         for key, val in params.items():
             self.dataset_params[key] = val
+
         self.data = pd.read_csv(self.dataset_params['path'], sep=",")
-        if 'test_path' in self.dataset_params:
-            self.test_data = pd.read_csv(self.dataset_params['test_path'], sep=",")
-            self.test_params = parse_params(self.dataset_params["test_path"])
         self.singleFileDataShapes = self.data.shape
         self.filesLoaded = 1
         self.preprocessData()
 
     def train_val_split(self, tsl, stride, split=70, scale=True, verbose=True):
+        self.train_tsl = tsl
         sequences = extract_sub_windows(self.data.values, start=0, stop=len(self.data), sub_window_size=tsl, stride_size=stride)
         return self.split_and_fit(sequences, split, scale, verbose)
 
-    def get_test_set(self, tsl, stride):
+
+
+    def load_test_data(self, test_set_name):
+        if not 'test_path' in self.dataset_params:
+            raise ValueError("No test_path in dataset_params")
+        test_set_path = Path(self.dataset_params["test_path"]).joinpath(test_set_name)
+        if not test_set_path.exists():
+            raise ValueError(f"Test set {test_set_name} not found! Available test sets: {os.listdir(self.dataset_params['test_path'])}")
+        self.test_data = [test_set_path.joinpath(test_file) for test_file in os.listdir(test_set_path) if test_file.endswith(".csv")]
+        if len(self.test_data) == 0:
+            raise ValueError(f"Test set {test_set_name} is empty!")
+        print("Test set size:", len(self.test_data))
+        self.test_params = parse_params(self.test_data[0].name)
+
+
+    def get_test_set(self, stride):
+        if self.train_tsl is None:
+            raise ValueError("Train time series lenght is None. Call train_val_split() first.")
+
         if self.test_params is None:
             raise Exception("Test set not loaded!")
+        
         pivot_idx = self.test_params["onset"] // self.test_params["itime"]
-        print("Pivot index: ", pivot_idx, self.test_data.shape)
-        windows_before_pivot, windows_after_pivot = extract_sub_windows_pivot(self.test_data.values, sub_window_size=tsl, stride_size=stride, pivot_idx=pivot_idx)
-        windows_before_pivot = self.scale(windows_before_pivot)
-        windows_after_pivot = self.scale(windows_after_pivot)
-        print("windows_before_pivot: ", windows_before_pivot.shape)
-        print("windows_after_pivot: ", windows_after_pivot.shape)
-        test_x = np.concatenate((windows_before_pivot, windows_after_pivot), axis=0)
-        print("test_x: ", test_x.shape)
-        labels = np.array([False for i in range(len(windows_before_pivot))]+[True for i in range(len(windows_after_pivot))])
-        print("labels: ", labels.shape)
-        return test_x, labels
+        print("Pivot index: ", pivot_idx)
+
+        test_x_tot = None
+        labels_tot = None
+        for test_file in self.test_data:
+            test_file_df = pd.read_csv(test_file, sep=",")
+            test_file_df.drop(self.uselessCols, axis='columns', inplace=True)
+            windows_before_pivot, windows_after_pivot = extract_sub_windows_pivot(test_file_df.values, sub_window_size=self.train_tsl, stride_size=stride, pivot_idx=pivot_idx)
+            windows_before_pivot = self.scale(windows_before_pivot)
+            windows_after_pivot = self.scale(windows_after_pivot)
+            #print("windows_before_pivot: ", windows_before_pivot.shape)
+            #print("windows_after_pivot: ", windows_after_pivot.shape)
+            test_x = np.concatenate((windows_before_pivot, windows_after_pivot), axis=0)
+            #print("test_x: ", test_x.shape)
+            labels = np.array([False for i in range(len(windows_before_pivot))]+[True for i in range(len(windows_after_pivot))])
+            #print("labels: ", labels.shape)
+            if test_x_tot is None:
+                test_x_tot = test_x
+                labels_tot = labels
+            else:
+                test_x_tot = np.concatenate((test_x_tot, test_x), axis=0)
+                labels_tot = np.concatenate((labels_tot, labels), axis=0)
+
+        print(f"Loaded {len(self.test_data)} files. Single file shape: {test_x.shape}")
+        print("text_x shape:",test_x_tot.shape)
+        print("text_y shape:",labels_tot.shape)
+        
+        return test_x_tot, labels_tot
+
+
+
+
 
 class MultiplePhList(APDataset):
     
