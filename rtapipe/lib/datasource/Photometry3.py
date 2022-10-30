@@ -8,14 +8,11 @@ from multiprocessing import Pool
 from sagsci.tools.utils import *
 from sagsci.wrappers.rtaph.photometry import Photometrics, aeff_eval
 
+from rtapipe.lib.utils.misc import dotdict
 from rtapipe.lib.datasource.Photometry2 import Photometry2
 from rtapipe.lib.rtapipeutils.PhotometryUtils import PhotometryUtils
 
-class dotdict(dict):
-    """dot.notation access to dictionary attributes"""
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
+
 
 class OnlinePhotometry(Photometry2):
     """
