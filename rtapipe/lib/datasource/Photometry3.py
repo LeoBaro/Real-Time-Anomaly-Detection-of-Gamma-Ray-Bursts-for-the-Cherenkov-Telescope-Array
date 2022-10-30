@@ -143,6 +143,7 @@ class OnlinePhotometry(Photometry2):
             regions_dict = self.compute_reflected_regions(max_offset, e_windows, region_radius)
             regions_dict = self.flat_region_dict(regions_dict, max_offset, e_windows)
         print(f"Time to compute regions: {time() - t}")
+        print("Number of regions: ", len(regions_dict))
         return regions_dict
 
 

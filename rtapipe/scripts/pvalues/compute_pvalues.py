@@ -7,7 +7,10 @@ from pathlib import Path
 
 from RTAscience.lib.RTAStats import *
 
-# python compute_pvalues.py -p /data01/homes/baroncelli/phd/rtapipe/analysis/training_output_10_epochs/datasetid_601-modelname_m4-trainingtype_heavy-timestamp_20220109-161654/epochs/epoch_10/pvalues/merged_ts_for_pvalues.pickle.npy
+"""
+compute_pvalues -p /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221027-134533_T_5_TSL_5/model_AnomalyDetector_cnn_l2_u32_dataset_1201_tsl_5/epochs/epoch_117/pvalues/merged_ts_for_pvalues.pickle.npy
+compute_pvalues -p /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221027-134533_T_5_TSL_5/model_AnomalyDetector_rnn_l2_u32_dataset_1201_tsl_5/epochs/epoch_114/pvalues/merged_ts_for_pvalues.pickle.npy
+"""
 
 def main():
     parser = argparse.ArgumentParser()
@@ -28,8 +31,8 @@ def compute_pval(input_path):
 
         print(f"Generating p-value plot: {output_pvalue_png}")
 
-        fig, ax = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0, 0.15), title='Reconstruction errors distribution', overlay=False, filename=output_wilks_png)
-        fig, ax = p_values([data], df=1, nbin=nbin, figsize=(7, 8), title='Reconstruction errors p-values', filename=output_pvalue_png, sigma5=True, write_data=True,  overlay=False, dpi=400, fmt='+', ecolor='red', markersize=0.5, elinewidth=0.5, alpha=0.8)
+        fig, ax = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0, 0.15), title='TS distribution', xlabel="TS (reconstruction errors)", ylabel='Normalised counts', overlay=False, filename=output_wilks_png)
+        fig, ax = p_values([data], df=1, nbin=nbin, figsize=(7, 8), title='p-values', filename=output_pvalue_png, sigma5=True, write_data=True,  overlay=False, dpi=400, fmt='+', ecolor='red', markersize=0.5, elinewidth=0.5, alpha=0.8)
 
     #fig, ax = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0,0.5), title='Reconstruction errors distribution', usetex=False, filename=output_wilks_svg)
     #fig, ax = p_values([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0,0.5), title='Reconstruction errors p-values', usetex=False, filename=output_pvalue_svg, overlay=None, sigma5=True, write_data=True)

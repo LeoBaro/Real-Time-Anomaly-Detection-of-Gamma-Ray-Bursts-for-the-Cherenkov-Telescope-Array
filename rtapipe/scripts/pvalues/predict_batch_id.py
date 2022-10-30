@@ -4,7 +4,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import json
 import tqdm
 import pickle
-import shutil
 import argparse
 import numpy as np
 from time import time

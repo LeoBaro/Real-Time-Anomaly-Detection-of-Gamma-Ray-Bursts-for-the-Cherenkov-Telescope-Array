@@ -86,6 +86,17 @@ def main():
         -nj 500
         -bs 1000
         -s 1
+
+
+    submit_to_slurm 
+        -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221027-134533_T_5_TSL_5/model_AnomalyDetector_rnn_l2_u32_dataset_1201_tsl_5
+        -e 114 
+        -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds 
+        -nf 5000000 
+        -nj 500
+        -bs 1000
+        -s 1
+
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("-tmd", "--trained-model-dir", type=str, required=True, help="")
