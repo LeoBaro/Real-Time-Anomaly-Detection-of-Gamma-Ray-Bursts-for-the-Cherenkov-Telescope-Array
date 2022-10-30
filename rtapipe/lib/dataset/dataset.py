@@ -320,8 +320,8 @@ class SinglePhList(APDataset):
         self.filesLoaded = 1
         self.preprocessData()
 
-    def train_val_split(self, tsl, split=70, scale=True, verbose=True):
-        sequences = extract_sub_windows(self.data.values, 0, len(self.data), tsl, tsl)
+    def train_val_split(self, tsl, stride, split=70, scale=True, verbose=True):
+        sequences = extract_sub_windows(self.data.values, start=0, stop=len(self.data), sub_window_size=tsl, stride_size=stride)
         return self.split_and_fit(sequences, split, scale, verbose)
 
     def get_test_set(self, tsl, stride):
