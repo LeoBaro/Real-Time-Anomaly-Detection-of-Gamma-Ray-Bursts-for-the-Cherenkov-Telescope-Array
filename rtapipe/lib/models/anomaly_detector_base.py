@@ -46,6 +46,32 @@ class AnomalyDetectorBase:
             raise Exception("You need to call predict() first")
         return self.loss_f.mse_per_sample.numpy()
 
+    def detection_delay(self, y, y_pred, tsl, number_of_files):
+
+        samples_per_file = y.shape[0] // number_of_files
+        #print("samples_per_file", samples_per_file)
+
+        samples_index_start = [i for i in range(0, y.shape[0], samples_per_file)]
+        #print("samples_index_start", samples_index_start)
+
+        anomaly_index_start = []
+        for s in samples_index_start:
+            i = 0
+            while y[s + i] == 0:
+                i += 1
+            anomaly_index_start.append(s + i)
+        #print("anomaly_index_start", anomaly_index_start)
+        anomaly_detection_delay_avg = 0
+        for ais in anomaly_index_start:
+            #print(y_pred[ais:ais+10])
+            delay = 0
+            while not y_pred[ais + delay] and delay < samples_per_file:
+                delay += 1
+            anomaly_detection_delay_avg += delay
+            #print("anomaly_detection_delay_avg", anomaly_detection_delay_avg)
+        anomaly_detection_delay_avg /= len(anomaly_index_start)
+        #print("anomaly_detection_delay_avg", anomaly_detection_delay_avg)
+        return anomaly_detection_delay_avg
 
     def evaluate_predictions(self, y, y_pred):
         """
