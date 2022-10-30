@@ -42,7 +42,7 @@ class APPlot:
 
         totc=0
         for dc in data_col_names:
-            print(f"Counts in {dc}={df[dc].sum()}")
+            #print(f"Counts in {dc}={df[dc].sum()}")
             totc += df[dc].sum()
         print(f"Total counts: {totc}")
 

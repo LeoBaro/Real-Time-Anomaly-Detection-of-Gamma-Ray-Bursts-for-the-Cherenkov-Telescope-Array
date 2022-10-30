@@ -180,7 +180,7 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
 
                 # Only the first row will show the TN/FP/FN/TP labels and the averaged mse
                 if f == 0:
-                    title = "Sample {}\nW. avg mse={:.3f}\nClassification=".format(i, current_mse_per_sample[i])
+                    title = "Sample {}\nW. avg mse={:.3f}\nClassification=".format(start+i-max_samples, current_mse_per_sample[i])
                     if real_labels[i] == "grb" and real_labels[i] == pred_labels[i]:
                         title += "TP"
                     elif real_labels[i] == "grb" and real_labels[i] != pred_labels[i]:
