@@ -48,11 +48,31 @@ class AnomalyDetectorBase:
 
 
     def evaluate_predictions(self, y, y_pred):
+        """
+        # Sensitivity, hit rate, recall, or true positive rate
+        TPR = TP/(TP+FN)
+        # Specificity or true negative rate
+        TNR = TN/(TN+FP) 
+        # Precision or positive predictive value
+        PPV = TP/(TP+FP)
+        # Negative predictive value
+        NPV = TN/(TN+FN)
+        # Fall out or false positive rate
+        FPR = FP/(FP+TN)
+        # False negative rate
+        FNR = FN/(TP+FN)
+        # False discovery rate
+        FDR = FP/(TP+FP)
+        # Overall accuracy
+        ACC = (TP+TN)/(TP+FP+FN+TN)        
+        """
+        cm = confusion_matrix(y, y_pred)
         return {
             "accuracy" : accuracy_score(y, y_pred),
             "precision" : precision_score(y, y_pred),
             "recall" : recall_score(y, y_pred),
             "f1" : f1_score(y, y_pred),
             "roc_auc" : roc_auc_score(y, y_pred),
-            "confusion_matrix" : confusion_matrix(y, y_pred).tolist()
+            "confusion_matrix" : cm.tolist(),
+            "false_positive_rate" : cm[0][1] / (cm[0][1] + cm[1][1]),
         }
