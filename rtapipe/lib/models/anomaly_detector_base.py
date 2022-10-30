@@ -4,6 +4,7 @@ from pathlib import Path
 
 from rtapipe.lib.evaluation.custom_mse import CustomMSE
 from rtapipe.lib.plotting.plotting import plot_predictions
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 
 class AnomalyDetectorBase:
     
@@ -26,6 +27,10 @@ class AnomalyDetectorBase:
             self.predict(X)
         plot_predictions(X, y, self.threshold, self.reconstruct(X), self.loss_f.mse_per_sample.numpy(), self.loss_f.mse_per_sample_features.numpy(), features_names=features_names, max_plots=max_plots, epoch=epoch, showFig=showFig, saveFig=saveFig, outputDir=outputDir, figName=figName)
 
+    def evaluate(self, X, y):
+        y_pred = self.predict(X)
+        return self.evaluate_predictions(y, y_pred)
+
     def store_parameters(self, dest_path):
         Path(dest_path).mkdir(exist_ok=True, parents=True)
         params = {
@@ -40,3 +45,14 @@ class AnomalyDetectorBase:
         if self.loss_f.mse_per_sample is None:
             raise Exception("You need to call predict() first")
         return self.loss_f.mse_per_sample.numpy()
+
+
+    def evaluate_predictions(self, y, y_pred):
+        return {
+            "accuracy" : accuracy_score(y, y_pred),
+            "precision" : precision_score(y, y_pred),
+            "recall" : recall_score(y, y_pred),
+            "f1" : f1_score(y, y_pred),
+            "roc_auc" : roc_auc_score(y, y_pred),
+            "confusion_matrix" : confusion_matrix(y, y_pred).tolist()
+        }

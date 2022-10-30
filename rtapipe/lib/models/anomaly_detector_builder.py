@@ -9,12 +9,18 @@ from rtapipe.lib.evaluation.custom_mse import CustomMSE
 class AnomalyDetectorBuilder:
 
     @staticmethod
-    def getModelsName():
-        return [class_name for class_name in globals() if "AnomalyDetector_" in class_name ]
+    def getModelsName(model_type=None):
+        models = [class_name for class_name in globals() if "AnomalyDetector_" in class_name ]
+        if model_type is not None:
+            models = [model for model in models if model_type in model]
+        return models
 
     @staticmethod
     def getAnomalyDetector(name, timesteps, nfeatures, load_model=False, training_epoch_dir=None, training=True):
         
+        if timesteps is None or nfeatures is None:
+            raise Exception("timesteps and nfeatures are required")
+            
         klass = globals()[name]
 
         if not training and not Path(training_epoch_dir).exists():
