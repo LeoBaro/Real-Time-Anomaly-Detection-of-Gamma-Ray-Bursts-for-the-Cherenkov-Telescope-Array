@@ -314,7 +314,7 @@ class SinglePhList(APDataset):
             self.dataset_params[key] = val
 
         self.data = pd.read_csv(self.dataset_params['path'], sep=",")
-        self.singleFileDataShapes = self.data.shape
+        #self.singleFileDataShapes = self.data.shape
         self.filesLoaded = 1
         self.preprocessData()
 
@@ -369,7 +369,8 @@ class SinglePhList(APDataset):
                 test_x_tot = np.concatenate((test_x_tot, test_x), axis=0)
                 labels_tot = np.concatenate((labels_tot, labels), axis=0)
 
-        print(f"Loaded {len(self.test_data)} files. Single file shape: {test_x.shape}")
+        print(f"Loaded {len(self.test_data)} files.")
+        print(f"Single file shape before sub-windowing: {test_file_df.shape}. Single file shape after sub-windowing: {test_x.shape}")
         print("text_x shape:",test_x_tot.shape)
         print("text_y shape:",labels_tot.shape)
         

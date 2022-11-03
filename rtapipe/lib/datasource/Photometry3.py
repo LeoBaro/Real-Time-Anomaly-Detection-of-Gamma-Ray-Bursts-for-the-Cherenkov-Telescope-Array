@@ -1,4 +1,5 @@
 import pickle
+import numpy as np
 from time import time
 from math import sqrt
 from pathlib import Path
@@ -79,7 +80,7 @@ class OnlinePhotometry(Photometry2):
 
         
 
-    def compute_reflected_regions(self, max_offset, e_windows, region_radius):
+    def compute_reflected_regions(self, max_offset, e_windows, region_radius, rings_n=None, flatten=False):
 
         aeff_eval_config = self.get_aeff_eval_config(e_windows)
         offset = self.cfg.get("offset")
@@ -90,9 +91,13 @@ class OnlinePhotometry(Photometry2):
 
         regions_dict = {}
 
+        count_rings = 0
         # define the rings in FOV
         while offset <= max_offset:
             
+            if rings_n is not None and count_rings == rings_n:
+                break
+
             # define the starting (aka target not necessary source) region
             target_region = self.get_starting_region(offset, region_radius)
 
@@ -115,10 +120,14 @@ class OnlinePhotometry(Photometry2):
 
             # increment offset to get next offset ring
             offset += region_radius*2
+            count_rings += 1
         
+        if flatten:
+            return self.flat_region_dict(regions_dict)
+
         return regions_dict
 
-    def flat_region_dict(self, regions_dict, max_offset, e_windows):
+    def flat_region_dict(self, regions_dict):
         # change the structure of the dictionary: list of tuple of region and aeff
         # [( 
         #    {'ra': 31.68167110956259, 'dec': -52.8402349288972, 'rad': 0.2}, {(0.04, 0.117): 584733789.0746386, (0.117, 0.342): 1568499319.2974534, (0.342, 1.0): 3159516976.6579475} 
@@ -132,13 +141,12 @@ class OnlinePhotometry(Photometry2):
         return flattened_regions
 
 
-    def create_photometry_configuration(self, region_radius, number_of_energy_bins, max_offset=2, reflection=True):
+    def create_photometry_configuration(self, region_radius, number_of_energy_bins, max_offset=2, reflection=True, rings_n=None, flatten=True):
         t = time()
         e_windows = self.get_energy_windows(number_of_energy_bins)
         regions_dict = self.compute_region(e_windows, region_radius)
         if reflection:
-            regions_dict = self.compute_reflected_regions(max_offset, e_windows, region_radius)
-            regions_dict = self.flat_region_dict(regions_dict, max_offset, e_windows)
+            regions_dict = self.compute_reflected_regions(max_offset, e_windows, region_radius, rings_n, flatten)
         print(f"Time to compute regions: {time() - t}")
         print("Number of regions: ", len(regions_dict))
         return regions_dict

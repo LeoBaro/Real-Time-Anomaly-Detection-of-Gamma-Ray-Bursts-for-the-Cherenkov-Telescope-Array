@@ -31,11 +31,9 @@ def compute_pval(input_path):
 
         print(f"Generating p-value plot: {output_pvalue_png}")
 
-        fig, ax = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0, 0.15), title='TS distribution', xlabel="TS (reconstruction errors)", ylabel='Normalised counts', overlay=False, filename=output_wilks_png)
-        fig, ax = p_values([data], df=1, nbin=nbin, figsize=(7, 8), title='p-values', filename=output_pvalue_png, sigma5=True, write_data=True,  overlay=False, dpi=400, fmt='+', ecolor='red', markersize=0.5, elinewidth=0.5, alpha=0.8)
+        _, _ = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0, 0.15), title='TS distribution', xlabel="TS (reconstruction errors)", ylabel='Normalised counts', overlay=False, filename=output_wilks_png)
+        _, _ = p_values([data], df=1, nbin=nbin, figsize=(7, 8), title='p-values', filename=output_pvalue_png, sigma5=True, write_data=True,  overlay=False, dpi=400, fmt='+', ecolor='red', markersize=0.5, elinewidth=0.5, alpha=0.8)
 
-    #fig, ax = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0,0.5), title='Reconstruction errors distribution', usetex=False, filename=output_wilks_svg)
-    #fig, ax = p_values([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0,0.5), title='Reconstruction errors p-values', usetex=False, filename=output_pvalue_svg, overlay=None, sigma5=True, write_data=True)
 
 def compare_pval(input_paths, output_dir):
 
@@ -52,9 +50,7 @@ def compare_pval(input_paths, output_dir):
         print(f"slabel: {slabel}")
         data = np.stack([np.load(input_path) for input_path in input_paths])
 
-        print(len(slabel), data.shape)
-        #fig, ax = ts_wilks([data], slabel=[], df=1, nbin=nbin, figsize=(7, 8), xrange=(0,0.3), title='Reconstruction errors distribution', overlay=False, filename=output_wilks_png)
-        fig, ax = p_values(data, slabel=slabel, df=1, nbin=nbin, figsize=(7, 8), xrange=(0,0.3), title='Reconstruction errors p-values', filename=output_pvalue_png, sigma5=True, write_data=False,  overlay=False, dpi=400, fmt='+', ecolor='red', markersize=0.5, elinewidth=0.5, alpha=0.8, legendprop={"size":8}, legendloc=1)
+        _, _ = p_values(data, slabel=slabel, df=1, nbin=nbin, figsize=(7, 8), xrange=(0,0.15), title='p-values', filename=output_pvalue_png, sigma5=True, write_data=False,  overlay=False, dpi=400, fmt='+', ecolor='red', markersize=0.5, elinewidth=0.5, alpha=0.8, legendprop={"size":8}, legendloc=1)
 
 
 

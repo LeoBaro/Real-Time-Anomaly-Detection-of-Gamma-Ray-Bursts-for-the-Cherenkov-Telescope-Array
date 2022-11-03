@@ -80,9 +80,9 @@ class CustomLogCallback(keras.callbacks.Callback):
             loss = custom_mse.call(tf.constant(self.validation_data, dtype=tf.float32), tf.constant(recostructions, dtype=tf.float32))
             custom_mse.write_reconstruction_errors()
 
-            # The threshold is calculated as the 98% quantile of the mean absolute errors distribution for the normal examples of the training set,
+            # The threshold is calculated as the 98% quantile of the mean squared errors distribution for the normal examples of the validation set,
             # then classify future examples as anomalous if the reconstruction error is higher than one standard
-            # deviation from the training set.
+            # deviation from the validation set.
             c_threshold = np.percentile(custom_mse.mse_per_sample.numpy(), 98)
             with open(out_dir.joinpath("threshold.txt"), "w") as tfile:
                 tfile.write(f"{c_threshold}")

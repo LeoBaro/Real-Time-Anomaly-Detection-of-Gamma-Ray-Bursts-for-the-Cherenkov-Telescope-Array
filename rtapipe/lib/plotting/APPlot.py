@@ -32,10 +32,10 @@ class APPlot:
         self.ax.set_title(f"Template: {params['runid']}, Integration time: {params['itime']}, Type: {params['itype']}, Onset: {params['onset']}, Offset: {params['offset']}, Region rad: 0.2°")
         self.ax.legend(prop=self.pc.legend_kw, loc='upper left')
 
-    def plot(self, csv_file_path, params, lenght=None):
+    def plot(self, csv_file_path, params, start=0, lenght=None):
         df = self.read_data(csv_file_path)
         if lenght is not None and lenght > 0:
-            df = df.loc[0:lenght,:]
+            df = df.loc[start:start+lenght,:]
 
         data_col_names  = [col_name for col_name in df.columns if "COUNTS" in col_name]
         error_col_names = [col_name for col_name in df.columns if "ERROR"  in col_name]

@@ -4,3 +4,6 @@
 [submodule "sag-sci"]
 	path = sag-sci
 	url = git@gitlab.cta-observatory.org:cta-computing/acada/sag-sci.git
+[submodule "statistics"]
+	path = statistics
+	url = https://github.com/ambra-dipiano/statistics.git

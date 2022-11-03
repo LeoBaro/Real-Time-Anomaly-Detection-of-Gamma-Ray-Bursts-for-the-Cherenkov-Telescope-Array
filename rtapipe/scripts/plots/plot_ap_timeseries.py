@@ -8,7 +8,7 @@ from rtapipe.lib.rtapipeutils.FileSystemUtils import parse_params
 
 
 # python plot_ap_timeseries.py -f /data01/homes/baroncelli/AP_DATA_10000/ap_data_bkg_T_10_TSL_10/dataset_trials_10000_type_bkg_tobs_100/integration_te_integration_time_10_region_radius_0.2_timeseries_lenght_10/
-def make_plot(file_path, points, outputdir, maxflux=None):
+def make_plot(file_path, start, points, outputdir, maxflux=None):
     filename = file_path.name   
     print(f"Processing: {filename}")
     try:
@@ -25,7 +25,7 @@ def make_plot(file_path, points, outputdir, maxflux=None):
     params["maxflux"] = maxflux
     # extract the information from the file name: runid_run0406_ID000126_trial_00000002_simtype_grb_onset_25_delay_0_offset_0.5_itype_t_itime_1_normalized_False.csv
     applot = APPlot()
-    applot.plot(file_path, params, lenght=points)
+    applot.plot(file_path, params, start=start, lenght=points)
     applot.save(outputdir, f"{filename}")
     print(f"Saved: {outputdir}/{filename}")
 
@@ -33,6 +33,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dir", type=str, required=True)
+    parser.add_argument("-s", "--start", type=int, required=False, default=0)
     parser.add_argument("-l", "--length", type=int, required=False, default=None)
     parser.add_argument("-mf", "--max-flux", type=int, required=False, default=None)
     parser.add_argument("-o", "--output-dir", type=str, required=True)
@@ -46,7 +47,7 @@ def main():
         files = list(Path(args.dir).rglob("*.csv"))
         print(f"Found {len(list(files))} files in {Path(args.dir)}")
 
-        func = partial(make_plot, points=args.length, outputdir=args.output_dir, maxflux=args.max_flux)
+        func = partial(make_plot, start=args.start, points=args.length, outputdir=args.output_dir, maxflux=args.max_flux)
 
         with multiprocessing.Pool(20) as p:
             p.map(func, files)
