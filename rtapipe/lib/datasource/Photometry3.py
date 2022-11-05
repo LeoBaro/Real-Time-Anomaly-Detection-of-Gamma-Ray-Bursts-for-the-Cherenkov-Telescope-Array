@@ -1,158 +1,231 @@
-import pickle
+import os
 import numpy as np
 from time import time
 from math import sqrt
 from pathlib import Path
+from datetime import datetime 
 from functools import partial
 from multiprocessing import Pool
+from dataclasses import dataclass
+from astropy.io import fits
 
-from sagsci.tools.utils import *
+from RTAscience.cfg.Config import Config as RTAscienceConfig
+
+from sagsci.tools.plotting import SkyImage
+from sagsci.tools.utils import get_obs_pointing
 from sagsci.wrappers.rtaph.photometry import Photometrics, aeff_eval
 
 from rtapipe.lib.utils.misc import dotdict
-from rtapipe.lib.datasource.Photometry2 import Photometry2
 from rtapipe.lib.rtapipeutils.PhotometryUtils import PhotometryUtils
 
+@dataclass
+class SimulationParams:
+    runid   : str
+    onset   : float
+    emin    : float
+    emax    : float
+    tmin    : int
+    tobs    : int
+    offset  : float
+    irf     : str
+    roi     : float
+    caldb   : str
+
+    @staticmethod
+    def get_from_config(config : RTAscienceConfig):  
+        return SimulationParams(
+            runid   = config.get('runid'),
+            onset   = config.get('onset'),
+            emin    = config.get('emin'),
+            emax    = config.get('emax'),
+            delay    = config.get('delay'),
+            tobs    = config.get('tobs'),
+            offset  = config.get('offset'),
+            irf     = config.get('irf'),
+            roi     = config.get('roi'),
+            caldb   = config.get('caldb')
+        )
+"""
+class MetaRegion(type):
+    def __iter__(self):
+        for attr in dir(self):
+            if not attr.startswith("__"):
+                yield attr
+"""
+@dataclass
+class Region:
+    offset         : float
+    ra             : float
+    dec            : float
+    rad            : float
+    effective_area : float
+    def get_dict(self):
+        return {
+            "ra"             : self.ra,
+            "dec"            : self.dec,
+            "rad"            : self.rad,
+        }
+
+@dataclass
+class RegionsConfig:
+
+    def __init__(self, regions_radius, max_offset):
+        self.regions_radius = regions_radius
+        self.max_offset = max_offset
+        self.rings = {}
+
+    def compute_rings_regions(self, pointing, add_target_region=None, remove_overlapping_regions_with_target=False):
+
+        if pointing is None:
+            raise ValueError("Pointing is None")
+
+        offset = 2*self.regions_radius
+        while offset <= self.max_offset:
+            starting_region = self._add_offset_to_region(pointing, offset)
+            ring_regions = Photometrics.find_off_regions('reflection', starting_region.get_dict(), pointing, self.regions_radius)
+            self.rings[offset] = [starting_region] + [Region(offset, rr["ra"], rr["dec"], self.regions_radius, 0) for rr in ring_regions]
+            offset += 2*self.regions_radius
+            offset = round(offset, 2)
+
+        if add_target_region:
+            # TODO: compute OFFSET between target and pointing.
+            # FOR NOW, we assume that the offset is always fixed as 0.5 deg
+            target_region_offset = 0.5
+            target_region = Region(target_region_offset, add_target_region["ra"], add_target_region["dec"], self.regions_radius, 0)
+
+            if target_region_offset in self.rings:
+                self.rings[target_region_offset].append(target_region)
+            else:
+                self.rings[target_region_offset] = [target_region]
+
+            if remove_overlapping_regions_with_target:
+                #TODO
+                pass
 
 
-class OnlinePhotometry(Photometry2):
+    def compute_effective_area(self, irf, pointing, emin, emax):
+            args = dotdict({
+                'emin': emin,
+                'emax': emax,
+                'pixel_size': 0.05,
+                "power_law_index" : -2.1,
+                "irf_file" : irf
+            })
+            for regions in self.rings.values():
+                effective_area = aeff_eval(args, regions[0].get_dict(), pointing)
+                for r in regions:
+                    r.effective_area = effective_area
+
+    def _add_offset_to_region(self, pointing, offset):
+        return Region(offset, pointing["ra"], pointing["dec"] + offset, self.regions_radius, 0)
+
+    def get_flatten_configuration(self):
+        flatten_regions = []
+        for regions in self.rings.values():
+            flatten_regions += regions
+        return flatten_regions
+
+
+
+
+
+
+class OnlinePhotometry:
     """
-    This class only support TIME-ENERGY integration
-
     export CTOOLS=/data01/homes/baroncelli/.conda/envs/bphd
     """
-    def __init__(self, configPath):
-        super().__init__(configPath, None, "/tmp")
+    def __init__(self, simulation_params : SimulationParams, integration_time, tsl,  number_of_energy_bins):
 
+        if "DATA" not in os.environ:
+            raise EnvironmentError("Please, export $DATA")
+        
+        if "CTOOLS" not in os.environ:
+            raise EnvironmentError("Please, export $CTOOLS")
 
-    def get_time_windows(self, integration_time, max_points):
+        self.simulation_params = simulation_params
+        self.integration_time = integration_time
+        self.tsl = tsl
+        self.number_of_energy_bins = number_of_energy_bins
+        
+        self.time_windows = OnlinePhotometry.get_time_windows(simulation_params.tobs, self.integration_time, self.tsl)
+        self.energy_windows = PhotometryUtils.getLogWindows(simulation_params.emin, simulation_params.emax, self.number_of_energy_bins)
+        self.regions_config = None
+
+    @staticmethod
+    def get_target(fits_file):
+        with fits.open(fits_file) as hdul:
+            ra = abs(hdul[0].header['RA'])
+            dec = hdul[0].header['DEC']
+        return {"ra": ra, "dec": dec}
+
+    @staticmethod
+    def get_time_windows(tobs, integration_time, max_points=None):
         if max_points is not None:
             new_t_obs = max_points * integration_time
-            if new_t_obs > self.cfg.get("tobs"):
+            if new_t_obs > tobs:
                 raise ValueError(f"max_points * integrationtime ({tobs}) > tobs ({tobs})")
             tobs = new_t_obs
         return PhotometryUtils.getLinearWindows(0, tobs , int(integration_time), int(integration_time))
 
 
-    def get_energy_windows(self, number_of_energy_bins):
-        return PhotometryUtils.getLogWindows(self.cfg.get("emin"), self.cfg.get("emax"), number_of_energy_bins)
+    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, template=None, remove_overlapping_regions_with_target=False):
+        """
+        Compute the regions configuration and the effective area for each region.
+        """
+        self.regions_config = RegionsConfig(regions_radius, max_offset)
+        pointing = get_obs_pointing(example_fits)
 
+        if add_target_region and template is None:
+            raise ValueError("If you want to add the target region, you must provide a template")
 
-    def get_aeff_eval_config(self, e_windows):
-        aeff_eval_config = {}
-        for ew in e_windows:
-            aeff_eval_config[ew] = dotdict({
-                'emin': ew[0],
-                'emax': ew[1],
-                'pixel_size': 0.05,
-                "power_law_index" : -2.1,
-                "irf_file" : self.irfFile
-            })
-        return aeff_eval_config
+        target = None
+        if add_target_region:
+            template =  Path(os.environ["DATA"]).joinpath("templates",f"{self.simulation_params.runid}.fits")
+            target = OnlinePhotometry.get_target(template) 
+
+        self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
+
+        irf = Path(os.environ['CTOOLS']).joinpath("share","caldb","data","cta",self.simulation_params.caldb,"bcf",self.simulation_params.irf)
+        irf = irf.joinpath(os.listdir(irf).pop())
+        self.regions_config.compute_effective_area(irf, pointing, self.simulation_params.emin, self.simulation_params.emax)
         
-    def get_starting_region(self, offset, region_radius):
-        return {
-            'ra': self.sourcePosition[0] + offset, 
-            'dec': self.sourcePosition[1], 
-            'rad': region_radius
-        }
+        return self.regions_config
 
+    def generate_skymap_with_regions(self, pht_list, output_dir, template):
+        plot = SkyImage()
 
-    def compute_region(self, e_windows, region_radius):
+        if self.regions_config is None:
+            raise ValueError("You must call preconfigure_regions before")
 
-        aeff_eval_config = self.get_aeff_eval_config(e_windows)
-        offset = self.cfg.get("offset")
-        pointing_dict = {
-            'ra' : self.sourcePosition[0],
-            'dec' : self.sourcePosition[1]
-        }
-        regions_dict = {}
-        target_region = self.get_starting_region(offset, region_radius)
-        # Compute the effective response of the region (given offset and energy bins)
-        regions_dict[offset] = {
-            "region_eff_resp" : {},
-            "regions": []
-        }
-        for ew in e_windows:
-            regions_dict[offset]["region_eff_resp"][ew] = aeff_eval(aeff_eval_config[ew], target_region, pointing_dict)
-        regions_dict[offset]["regions"].append(target_region) 
-        return regions_dict
-
+        template =  Path(os.environ["DATA"]).joinpath("templates",f"{self.simulation_params.runid}.fits")
+        target = OnlinePhotometry.get_target(template)
+        plot.set_target(ra=target["ra"], dec=target["dec"])
         
+        pointing = get_obs_pointing(pht_list)
+        plot.set_pointing(ra=pointing["ra"], dec=pointing["dec"])
+        # add timestamp to filename
+        out = Path(pht_list.replace('.fits', f'_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'))
+        out = Path(output_dir).joinpath(out.name)
 
-    def compute_reflected_regions(self, max_offset, e_windows, region_radius, rings_n=None, flatten=False):
+        regions = [region.get_dict() for region in self.regions_config.get_flatten_configuration()]
 
-        aeff_eval_config = self.get_aeff_eval_config(e_windows)
-        offset = self.cfg.get("offset")
-        pointing_dict = {
-            'ra' : self.sourcePosition[0],
-            'dec' : self.sourcePosition[1]
-        }
-
-        regions_dict = {}
-
-        count_rings = 0
-        # define the rings in FOV
-        while offset <= max_offset:
-            
-            if rings_n is not None and count_rings == rings_n:
-                break
-
-            # define the starting (aka target not necessary source) region
-            target_region = self.get_starting_region(offset, region_radius)
-
-            # Compute the effective response of the region (given offset and energy bins)
-            regions_dict[offset] = {
-                "region_eff_resp" : {},
-                "regions": []
-            }
-            for ew in e_windows:
-                regions_dict[offset]["region_eff_resp"][ew] = aeff_eval(aeff_eval_config[ew], target_region, pointing_dict)
-           
-            # get ring of regions from starting position
-            ring_regions = Photometrics.find_off_regions('reflection', target_region, pointing_dict, region_radius)
-
-            # add starting position region to dictionary 
-            ring_regions += [target_region]
-
-            # for each region in ring count events and get flux
-            regions_dict[offset]["regions"] = ring_regions
-
-            # increment offset to get next offset ring
-            offset += region_radius*2
-            count_rings += 1
-        
-        if flatten:
-            return self.flat_region_dict(regions_dict)
-
-        return regions_dict
-
-    def flat_region_dict(self, regions_dict):
-        # change the structure of the dictionary: list of tuple of region and aeff
-        # [( 
-        #    {'ra': 31.68167110956259, 'dec': -52.8402349288972, 'rad': 0.2}, {(0.04, 0.117): 584733789.0746386, (0.117, 0.342): 1568499319.2974534, (0.342, 1.0): 3159516976.6579475} 
-        # )]
-        t = time()
-        flattened_regions = []
-        for offset in regions_dict:
-            for region in regions_dict[offset]["regions"]:
-                flattened_regions.append((region, regions_dict[offset]["region_eff_resp"]))
-        print(f"Time to change the structure of the config dictionary: {time() - t}")
-        return flattened_regions
+        print(f"Producing.. {out}")
+        plot.counts_map_with_regions(
+                pht_list, 
+                regions, 
+                trange=None, 
+                erange=[self.simulation_params.emin, self.simulation_params.emax],
+                roi=self.simulation_params.roi,
+                name=out, 
+                title="Skymap"
+        )
+        del plot
+    
 
 
-    def create_photometry_configuration(self, region_radius, number_of_energy_bins, max_offset=2, reflection=True, rings_n=None, flatten=True):
-        t = time()
-        e_windows = self.get_energy_windows(number_of_energy_bins)
-        regions_dict = self.compute_region(e_windows, region_radius)
-        if reflection:
-            regions_dict = self.compute_reflected_regions(max_offset, e_windows, region_radius, rings_n, flatten)
-        print(f"Time to compute regions: {time() - t}")
-        print("Number of regions: ", len(regions_dict))
-        return regions_dict
 
 
-    def integrate(self, pht_list, regions_dict, region_radius, integration_time, number_of_energy_bins, max_points, normalize=True, threads=10):
+    def integrate(self, pht_list, regions_dict, region_radius, integration_time, number_of_energy_bins, max_points=None, normalize=True, threads=10):
         #t = time()
         phm = Photometrics({ 'events_filename': pht_list })
         #print(f"Time to load Photometry class: {time() - t}")
