@@ -6,7 +6,6 @@ entry_points = {
 	'console_scripts': [
 		'plot_ap_timeseries = rtapipe.scripts.plots.plot_ap_timeseries:main',
           'generate_ap_data = rtapipe.lib.dataset.generate_ap_data:main',
-          'phlists_to_skymaps = rtapipe.scripts.plots.phlists_to_skymaps:main',
           'get_dataset_config_path = rtapipe.lib.dataset.config.get_dataset_config_path:main',
           'predict_batch_id = rtapipe.scripts.pvalues.predict_batch_id:main',
           'submit_to_slurm = rtapipe.scripts.pvalues.submit_to_slurm:main',
