@@ -74,6 +74,10 @@ class RegionsConfig:
         self.max_offset = max_offset
         self.rings = {}
 
+    def is_overlapping(self, r1, r2):
+        d = sqrt((r1.ra - r2.ra)**2 + (r1.dec - r2.dec)**2)
+        return d < r1.rad + r2.rad
+
     def compute_rings_regions(self, pointing, add_target_region=None, remove_overlapping_regions_with_target=False):
 
         if pointing is None:
@@ -99,8 +103,15 @@ class RegionsConfig:
                 self.rings[target_region_offset] = [target_region]
 
             if remove_overlapping_regions_with_target:
-                #TODO
-                pass
+                offsets = list(self.rings.keys())
+                for ii, offset in enumerate(offsets):
+                    if offset < target_region_offset:
+                        continue
+                    else:
+                        break
+                # overlaps with ii and ii-1 
+                self.rings[offsets[ii-1]] = [x for x in self.rings[offsets[ii-1]] if not self.is_overlapping(x, target_region)]
+                self.rings[offsets[ii]] = [x for x in self.rings[offsets[ii]] if not self.is_overlapping(x, target_region)]
 
 
     def compute_effective_area(self, irf, pointing, emin, emax):
