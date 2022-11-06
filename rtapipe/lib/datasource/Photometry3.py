@@ -58,7 +58,8 @@ class Region:
     ra             : float
     dec            : float
     rad            : float
-    effective_area : float
+    effective_area : dict
+    is_target      : bool
     def get_dict(self):
         return {
             "ra"             : self.ra,
@@ -73,6 +74,12 @@ class RegionsConfig:
         self.regions_radius = regions_radius
         self.max_offset = max_offset
         self.rings = {}
+        self.flatten_rings = []
+
+        # Target region is separated from the rest of the regions
+        self.target_region = None
+        self.target_region_offset = None
+        self.target_region_effective_area = {}
 
     def is_overlapping(self, r1, r2):
         d = sqrt((r1.ra - r2.ra)**2 + (r1.dec - r2.dec)**2)
@@ -87,7 +94,7 @@ class RegionsConfig:
         while offset <= self.max_offset:
             starting_region = self._add_offset_to_region(pointing, offset)
             ring_regions = Photometrics.find_off_regions('reflection', starting_region.get_dict(), pointing, self.regions_radius)
-            self.rings[offset] = [starting_region] + [Region(offset, rr["ra"], rr["dec"], self.regions_radius, 0) for rr in ring_regions]
+            self.rings[offset] = [starting_region] + [Region(offset, rr["ra"], rr["dec"], self.regions_radius, {}, False) for rr in ring_regions]
             offset += 2*self.regions_radius
             offset = round(offset, 2)
 
@@ -95,12 +102,8 @@ class RegionsConfig:
             # TODO: compute OFFSET between target and pointing.
             # FOR NOW, we assume that the offset is always fixed as 0.5 deg
             target_region_offset = 0.5
-            target_region = Region(target_region_offset, add_target_region["ra"], add_target_region["dec"], self.regions_radius, 0)
-
-            if target_region_offset in self.rings:
-                self.rings[target_region_offset].append(target_region)
-            else:
-                self.rings[target_region_offset] = [target_region]
+            self.target_region = Region(target_region_offset, add_target_region["ra"], add_target_region["dec"], self.regions_radius, {}, True)
+            self.target_region_offset = target_region_offset
 
             if remove_overlapping_regions_with_target:
                 offsets = list(self.rings.keys())
@@ -110,31 +113,40 @@ class RegionsConfig:
                     else:
                         break
                 # overlaps with ii and ii-1 
-                self.rings[offsets[ii-1]] = [x for x in self.rings[offsets[ii-1]] if not self.is_overlapping(x, target_region)]
-                self.rings[offsets[ii]] = [x for x in self.rings[offsets[ii]] if not self.is_overlapping(x, target_region)]
+                self.rings[offsets[ii-1]] = [x for x in self.rings[offsets[ii-1]] if not self.is_overlapping(x, self.target_region)]
+                self.rings[offsets[ii]] = [x for x in self.rings[offsets[ii]] if not self.is_overlapping(x, self.target_region)]
 
-
-    def compute_effective_area(self, irf, pointing, emin, emax):
+    # add energy bins!
+    def compute_effective_area(self, irf, pointing, energy_windows):
             args = dotdict({
-                'emin': emin,
-                'emax': emax,
+                'emin': None,
+                'emax': None,
                 'pixel_size': 0.05,
                 "power_law_index" : -2.1,
                 "irf_file" : irf
             })
-            for regions in self.rings.values():
-                effective_area = aeff_eval(args, regions[0].get_dict(), pointing)
-                for r in regions:
-                    r.effective_area = effective_area
+            for e_window in energy_windows:
 
-    def _add_offset_to_region(self, pointing, offset):
-        return Region(offset, pointing["ra"], pointing["dec"] + offset, self.regions_radius, 0)
+                args.emin = e_window[0]
+                args.emax = e_window[1]
+
+                if self.target_region is not None:
+                    self.target_region_effective_area[e_window] = aeff_eval(args, self.target_region.get_dict(), pointing)
+                
+                for regions in self.rings.values():
+                    effective_area = aeff_eval(args, regions[0].get_dict(), pointing)
+                    for r in regions:
+                        r.effective_area[e_window] = effective_area
+
+    def _add_offset_to_region(self, pointing, offset, is_target=False):
+        return Region(offset, pointing["ra"], pointing["dec"] + offset, self.regions_radius, {}, is_target)
 
     def get_flatten_configuration(self):
-        flatten_regions = []
+        if len(self.flatten_rings) > 0:
+            return self.flatten_rings
         for regions in self.rings.values():
-            flatten_regions += regions
-        return flatten_regions
+            self.flatten_rings += regions
+        return self.flatten_rings
 
 
 
@@ -145,7 +157,7 @@ class OnlinePhotometry:
     """
     export CTOOLS=/data01/homes/baroncelli/.conda/envs/bphd
     """
-    def __init__(self, simulation_params : SimulationParams, integration_time, tsl,  number_of_energy_bins):
+    def __init__(self, simulation_params : SimulationParams, integration_time, tsl, number_of_energy_bins):
 
         if "DATA" not in os.environ:
             raise EnvironmentError("Please, export $DATA")
@@ -179,7 +191,7 @@ class OnlinePhotometry:
         return PhotometryUtils.getLinearWindows(0, tobs , int(integration_time), int(integration_time))
 
 
-    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, template=None, remove_overlapping_regions_with_target=False):
+    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, template=None, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=True):
         """
         Compute the regions configuration and the effective area for each region.
         """
@@ -196,9 +208,10 @@ class OnlinePhotometry:
 
         self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
 
-        irf = Path(os.environ['CTOOLS']).joinpath("share","caldb","data","cta",self.simulation_params.caldb,"bcf",self.simulation_params.irf)
-        irf = irf.joinpath(os.listdir(irf).pop())
-        self.regions_config.compute_effective_area(irf, pointing, self.simulation_params.emin, self.simulation_params.emax)
+        if compute_effective_area_for_normalization:
+            irf = Path(os.environ['CTOOLS']).joinpath("share","caldb","data","cta",self.simulation_params.caldb,"bcf",self.simulation_params.irf)
+            irf = irf.joinpath(os.listdir(irf).pop())
+            self.regions_config.compute_effective_area(irf, pointing, self.energy_windows)
         
         return self.regions_config
 
@@ -232,38 +245,42 @@ class OnlinePhotometry:
         )
         del plot
     
+    
 
-
-
-
-    def integrate(self, pht_list, regions_dict, region_radius, integration_time, number_of_energy_bins, max_points=None, normalize=True, threads=10):
-        #t = time()
+    def integrate(self, pht_list, normalize=True, threads=10, with_metadata=False, regions_radius=None, max_offset=None, example_fits=None, add_target_region=None, template=None, remove_overlapping_regions_with_target=None):
+        t = time()
         phm = Photometrics({ 'events_filename': pht_list })
-        #print(f"Time to load Photometry class: {time() - t}")
 
-        t_windows = self.get_time_windows(integration_time, max_points)
-        e_windows = self.get_energy_windows(number_of_energy_bins)
+        if self.regions_config is None:
+            self.preconfigure_regions(regions_radius, max_offset, example_fits, add_target_region, template, remove_overlapping_regions_with_target, compute_effective_area_for_normalization=normalize)
 
-        func = partial(self.extract_sequence, phm, t_windows, e_windows, region_radius, normalize)
+        func = partial(self.extract_sequence, phm, self.regions_config.regions_radius, self.time_windows, self.energy_windows, normalize)
 
+        regions = self.regions_config.get_flatten_configuration()
         with Pool(threads) as p:
-            output = p.map(func, regions_dict)
+            output = p.map(func, regions)
         
         output = np.asarray(output)
-        # print(output.shape)
 
         data = output[:,0,:,:]
         data_err = output[:,1,:,:]
 
-        return data, data_err
+        if with_metadata:
+            metadata = {
+                "number_of_regions": len(regions),
+                "normalize": normalize,
+                "elapsed_time" : time() - t
+            }
+            return data, data_err, metadata
+
+        return data, data_err, None
 
        
-    def extract_sequence(self, phm, t_windows, e_windows, region_radius, normalize, region_config):
-        #t = time()
+    def extract_sequence(self, phm, region_radius, t_windows, e_windows, normalize, region: Region):
         data = []
         data_err = []
-        region = region_config[0]
-        aeff_area = region_config[1]
+        region = region
+        aeff_area = region.effective_area
         livetime = t_windows[0][1] - t_windows[0][0]
         for twin in t_windows:
             counts_t = []
@@ -279,5 +296,4 @@ class OnlinePhotometry:
                 counts_t_err.append(error)   
             data.append(counts_t)
             data_err.append(counts_t_err)
-        #print(f"Time to extract sequence: {time() - t}")
         return np.asarray(data), np.asarray(data_err)                  
