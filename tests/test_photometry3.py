@@ -124,27 +124,24 @@ class TestPhotometry3:
 
     def test_online_photometry_preconfigured_no_target(self, online_photometry, output_dir):
         add_target_region = False
-        template = False
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         compute_effective_area_for_normalization=False
-        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, template=template, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
+        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
 
     def test_online_photometry_preconfigured_with_target(self, online_photometry, output_dir):
         add_target_region = True
-        template = "run0406_ID000126"
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         compute_effective_area_for_normalization=False
-        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, template=template, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
-        online_photometry.generate_skymap_with_regions(test_fits, output_dir, template)
+        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
+        online_photometry.generate_skymap_with_regions(test_fits, output_dir)
 
     def test_online_photometry_preconfigured_with_target_remove_overlapping(self, online_photometry, output_dir):
         add_target_region = True
         remove_overlapping_regions_with_target = True        
-        template = "run0406_ID000126"
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         compute_effective_area_for_normalization=False
-        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, template=template, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
-        online_photometry.generate_skymap_with_regions(test_fits, output_dir, template)
+        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
+        online_photometry.generate_skymap_with_regions(test_fits, output_dir)
     
     
     def test_integrate_with_preconfigured_regions_normalized(self, online_photometry):
@@ -152,9 +149,8 @@ class TestPhotometry3:
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
-        template = "run0406_ID000126"
         compute_effective_area_for_normalization = True
-        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, template=template, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
+        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
         normalize = True
         with_metadata = True
         data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata)
@@ -170,10 +166,9 @@ class TestPhotometry3:
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
-        template = "run0406_ID000126"
         normalize = True
         with_metadata = True
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, template=template, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
+        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
 
         assert data.shape == (86, 5, 3)
         assert data_err.shape == (86, 5, 3)
@@ -186,9 +181,8 @@ class TestPhotometry3:
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
-        template = "run0406_ID000126"
         compute_effective_area_for_normalization = False
-        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, template=template, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
+        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
         normalize = False
         with_metadata = True
         data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata)
@@ -205,10 +199,9 @@ class TestPhotometry3:
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
-        template = "run0406_ID000126"
         normalize = False
         with_metadata = True
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, template=template, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
+        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
 
         assert data.shape == (86, 5, 3)
         assert data_err.shape == (86, 5, 3)

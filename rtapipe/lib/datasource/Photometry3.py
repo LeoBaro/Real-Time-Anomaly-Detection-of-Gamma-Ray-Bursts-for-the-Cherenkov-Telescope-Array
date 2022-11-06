@@ -32,7 +32,8 @@ class SimulationParams:
     caldb   : str
 
     @staticmethod
-    def get_from_config(config : RTAscienceConfig):  
+    def get_from_rta_science_yaml_config(config_path):
+        config = RTAscienceConfig(Path(config_path))
         return SimulationParams(
             runid   = config.get('runid'),
             onset   = config.get('onset'),
@@ -191,20 +192,17 @@ class OnlinePhotometry:
         return PhotometryUtils.getLinearWindows(0, tobs , int(integration_time), int(integration_time))
 
 
-    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, template=None, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=True):
+    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=True):
         """
         Compute the regions configuration and the effective area for each region.
         """
         self.regions_config = RegionsConfig(regions_radius, max_offset)
         pointing = get_obs_pointing(example_fits)
 
-        if add_target_region and template is None:
-            raise ValueError("If you want to add the target region, you must provide a template")
-
         target = None
         if add_target_region:
             template =  Path(os.environ["DATA"]).joinpath("templates",f"{self.simulation_params.runid}.fits")
-            target = OnlinePhotometry.get_target(template) 
+            target = OnlinePhotometry.get_target(template)
 
         self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
 
@@ -215,7 +213,7 @@ class OnlinePhotometry:
         
         return self.regions_config
 
-    def generate_skymap_with_regions(self, pht_list, output_dir, template):
+    def generate_skymap_with_regions(self, pht_list, output_dir):
         plot = SkyImage()
 
         if self.regions_config is None:
@@ -247,12 +245,12 @@ class OnlinePhotometry:
     
     
 
-    def integrate(self, pht_list, normalize=True, threads=10, with_metadata=False, regions_radius=None, max_offset=None, example_fits=None, add_target_region=None, template=None, remove_overlapping_regions_with_target=None):
+    def integrate(self, pht_list, normalize=True, threads=10, with_metadata=False, regions_radius=None, max_offset=None, example_fits=None, add_target_region=None, remove_overlapping_regions_with_target=None):
         t = time()
         phm = Photometrics({ 'events_filename': pht_list })
 
         if self.regions_config is None:
-            self.preconfigure_regions(regions_radius, max_offset, example_fits, add_target_region, template, remove_overlapping_regions_with_target, compute_effective_area_for_normalization=normalize)
+            self.preconfigure_regions(regions_radius, max_offset, example_fits, add_target_region, remove_overlapping_regions_with_target, compute_effective_area_for_normalization=normalize)
 
         func = partial(self.extract_sequence, phm, self.regions_config.regions_radius, self.time_windows, self.energy_windows, normalize)
 
