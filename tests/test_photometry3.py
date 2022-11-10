@@ -21,14 +21,18 @@ class TestPhotometry3:
         
         assert len(rc.rings.keys()) == 5 
         assert list(rc.rings.keys()) == [0.4, 0.8, 1.2, 1.6, 2.0]
-        assert len(rc.rings[0.4]) == 6
-        assert len(rc.rings[0.8]) == 12
-        assert len(rc.rings[1.2]) == 18
-        assert len(rc.rings[1.6]) == 24
-        assert len(rc.rings[2.0]) == 30
-        
-        regions = rc.get_flatten_configuration()
-        assert len(regions) == 6+12+18+24+30
+        assert len(rc.rings[0.4]) == 5
+        assert len(rc.rings[0.8]) == 11
+        assert len(rc.rings[1.2]) == 17
+        assert len(rc.rings[1.6]) == 23
+        assert len(rc.rings[2.0]) == 29
+
+        regions = rc.get_flatten_configuration(regions_type="src")
+        assert len(regions) == 0
+        regions = rc.get_flatten_configuration(regions_type="bkg")
+        assert len(regions) == 5+11+17+23+29       
+        regions = rc.get_flatten_configuration(regions_type="all")
+        assert len(regions) == 5+11+17+23+29
 
         energy_windows = PhotometryUtils.getLogWindows(0.04, 1, 3)
 
@@ -50,20 +54,27 @@ class TestPhotometry3:
         
         assert len(rc.rings.keys()) == 5
         assert list(rc.rings.keys()) == [0.4, 0.8, 1.2, 1.6, 2.0]
-        assert len(rc.rings[0.4]) == 6
-        assert len(rc.rings[0.8]) == 12
-        assert len(rc.rings[1.2]) == 18
-        assert len(rc.rings[1.6]) == 24
-        assert len(rc.rings[2.0]) == 30
+        assert len(rc.rings[0.4]) == 5
+        assert len(rc.rings[0.8]) == 11
+        assert len(rc.rings[1.2]) == 17
+        assert len(rc.rings[1.6]) == 23
+        assert len(rc.rings[2.0]) == 29
 
-        regions = rc.get_flatten_configuration()
-        assert len(regions) == 6+12+18+24+30
+        regions = rc.get_flatten_configuration(regions_type="src")
+        assert len(regions) == 1
+
+        regions = rc.get_flatten_configuration(regions_type="bkg")
+        assert len(regions) == 5+11+17+23+29       
+
+        regions = rc.get_flatten_configuration(regions_type="all")
+        assert len(regions) == 5+11+17+23+29+1  
 
         assert rc.target_region is not None
 
         energy_windows = PhotometryUtils.getLogWindows(0.04, 1, 3)
 
         rc.compute_effective_area(irf, {"ra":20.0, "dec": -50.0}, energy_windows)        
+        
         for regions in rc.rings.values():
             for region in regions:
                 assert len(region.effective_area.keys()) == 3
@@ -72,7 +83,7 @@ class TestPhotometry3:
                     assert region.effective_area[energy_windows[i]] > 0
 
         for i in range(3):
-            assert list(rc.target_region_effective_area.keys())[i] == energy_windows[i]
+            assert list(rc.target_region.effective_area.keys())[i] == energy_windows[i]
 
 
 
@@ -84,14 +95,18 @@ class TestPhotometry3:
         
         assert len(rc.rings.keys()) == 5
         assert list(rc.rings.keys()) == [0.4, 0.8, 1.2, 1.6, 2.0]
-        assert len(rc.rings[0.4]) == 5
-        assert len(rc.rings[0.8]) == 11
-        assert len(rc.rings[1.2]) == 18
-        assert len(rc.rings[1.6]) == 24
-        assert len(rc.rings[2.0]) == 30
+        assert len(rc.rings[0.4]) == 4
+        assert len(rc.rings[0.8]) == 10
+        assert len(rc.rings[1.2]) == 17
+        assert len(rc.rings[1.6]) == 23
+        assert len(rc.rings[2.0]) == 29
 
-        regions = rc.get_flatten_configuration()
-        assert len(regions) == 5+11+18+24+30
+        regions = rc.get_flatten_configuration(regions_type="src")
+        assert len(regions) == 1
+        regions = rc.get_flatten_configuration(regions_type="bkg")
+        assert len(regions) == 4+10+17+23+29
+        regions = rc.get_flatten_configuration(regions_type="all")
+        assert len(regions) == 4+10+17+23+29+1
 
         energy_windows = PhotometryUtils.getLogWindows(0.04, 1, 3)
 
@@ -104,7 +119,7 @@ class TestPhotometry3:
                     assert region.effective_area[energy_windows[i]] > 0
 
         for i in range(3):
-            assert list(rc.target_region_effective_area.keys())[i] == energy_windows[i]
+            assert list(rc.target_region.effective_area.keys())[i] == energy_windows[i]
 
 
 
@@ -144,7 +159,7 @@ class TestPhotometry3:
         online_photometry.generate_skymap_with_regions(test_fits, output_dir)
     
     
-    def test_integrate_with_preconfigured_regions_normalized(self, online_photometry):
+    def test_integrate_bkg_regions_with_preconfigured_regions_normalized(self, online_photometry):
         
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
@@ -153,30 +168,32 @@ class TestPhotometry3:
         online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
         normalize = True
         with_metadata = True
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata)
+        integrate_from_regions = "bkg"
+        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (86, 5, 3)
-        assert data_err.shape == (86, 5, 3)
-        assert metadata["number_of_regions"] == 86
+        assert data.shape == (83, 5, 3)
+        assert data_err.shape == (83, 5, 3)
+        assert metadata["number_of_regions"] == 83
         print("integration elapsed time: ", metadata["elapsed_time"])
 
 
-    def test_integrate_with_no_preconfigured_regions_normalized(self, online_photometry):
+    def test_integrate_bkg_regions_with_no_preconfigured_regions_normalized(self, online_photometry):
         
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
         normalize = True
         with_metadata = True
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
+        integrate_from_regions = "bkg"
+        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (86, 5, 3)
-        assert data_err.shape == (86, 5, 3)
-        assert metadata["number_of_regions"] == 86
+        assert data.shape == (83, 5, 3)
+        assert data_err.shape == (83, 5, 3)
+        assert metadata["number_of_regions"] == 83
         print("integration elapsed time: ", metadata["elapsed_time"])
 
 
-    def test_integrate_with_preconfigured_regions_not_normalized(self, online_photometry):
+    def test_integrate_bkg_regions_with_preconfigured_regions_not_normalized(self, online_photometry):
         
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
@@ -185,26 +202,103 @@ class TestPhotometry3:
         online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
         normalize = False
         with_metadata = True
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata)
+        integrate_from_regions = "bkg"
+        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (86, 5, 3)
-        assert data_err.shape == (86, 5, 3)
-        assert metadata["number_of_regions"] == 86
+        assert data.shape == (83, 5, 3)
+        assert data_err.shape == (83, 5, 3)
+        assert metadata["number_of_regions"] == 83
         print("integration elapsed time: ", metadata["elapsed_time"])
 
 
 
-    def test_integrate_with_no_preconfigured_regions_not_normalized(self, online_photometry):
+    def test_integrate_bkg_regions_with_no_preconfigured_regions_not_normalized(self, online_photometry):
         
         test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
         normalize = False
         with_metadata = True
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
+        integrate_from_regions = "bkg"
+        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (86, 5, 3)
-        assert data_err.shape == (86, 5, 3)
-        assert metadata["number_of_regions"] == 86
+        assert data.shape == (83, 5, 3)
+        assert data_err.shape == (83, 5, 3)
+        assert metadata["number_of_regions"] == 83
+        print("integration elapsed time: ", metadata["elapsed_time"])
+
+
+
+
+
+
+
+
+    def test_integrate_src_regions_with_preconfigured_regions_normalized(self, online_photometry):
+        
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        add_target_region = True
+        remove_overlapping_regions_with_target = True  
+        compute_effective_area_for_normalization = True
+        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
+        normalize = True
+        with_metadata = True
+        integrate_from_regions = "src"
+        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
+
+        assert data.shape == (1, 5, 3)
+        assert data_err.shape == (1, 5, 3)
+        assert metadata["number_of_regions"] == 1
+        print("integration elapsed time: ", metadata["elapsed_time"])
+
+
+    def test_integrate_src_regions_with_no_preconfigured_regions_normalized(self, online_photometry):
+        
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        add_target_region = True
+        remove_overlapping_regions_with_target = True  
+        normalize = True
+        with_metadata = True
+        integrate_from_regions = "src"
+        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
+
+        assert data.shape == (1, 5, 3)
+        assert data_err.shape == (1, 5, 3)
+        assert metadata["number_of_regions"] == 1
+        print("integration elapsed time: ", metadata["elapsed_time"])
+
+
+    def test_integrate_src_regions_with_preconfigured_regions_not_normalized(self, online_photometry):
+        
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        add_target_region = True
+        remove_overlapping_regions_with_target = True  
+        compute_effective_area_for_normalization = False
+        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
+        normalize = False
+        with_metadata = True
+        integrate_from_regions = "src"
+        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
+
+        assert data.shape == (1, 5, 3)
+        assert data_err.shape == (1, 5, 3)
+        assert metadata["number_of_regions"] == 1
+        print("integration elapsed time: ", metadata["elapsed_time"])
+
+
+
+    def test_integrate_src_regions_with_no_preconfigured_regions_not_normalized(self, online_photometry):
+        
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        add_target_region = True
+        remove_overlapping_regions_with_target = True  
+        normalize = False
+        with_metadata = True
+        integrate_from_regions = "src"
+        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
+
+        assert data.shape == (1, 5, 3)
+        assert data_err.shape == (1, 5, 3)
+        assert metadata["number_of_regions"] == 1
         print("integration elapsed time: ", metadata["elapsed_time"])
 

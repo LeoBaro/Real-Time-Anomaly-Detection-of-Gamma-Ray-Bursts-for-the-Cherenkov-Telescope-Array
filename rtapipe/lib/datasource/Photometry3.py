@@ -30,6 +30,7 @@ class SimulationParams:
     irf     : str
     roi     : float
     caldb   : str
+    simtype : str
 
     @staticmethod
     def get_from_rta_science_yaml_config(config_path):
@@ -44,7 +45,8 @@ class SimulationParams:
             offset  = config.get('offset'),
             irf     = config.get('irf'),
             roi     = config.get('roi'),
-            caldb   = config.get('caldb')
+            caldb   = config.get('caldb'),
+            simtype   = config.get('simtype')
         )
 """
 class MetaRegion(type):
@@ -75,12 +77,10 @@ class RegionsConfig:
         self.regions_radius = regions_radius
         self.max_offset = max_offset
         self.rings = {}
-        self.flatten_rings = []
 
         # Target region is separated from the rest of the regions
         self.target_region = None
         self.target_region_offset = None
-        self.target_region_effective_area = {}
 
     def is_overlapping(self, r1, r2):
         d = sqrt((r1.ra - r2.ra)**2 + (r1.dec - r2.dec)**2)
@@ -95,7 +95,7 @@ class RegionsConfig:
         while offset <= self.max_offset:
             starting_region = self._add_offset_to_region(pointing, offset)
             ring_regions = Photometrics.find_off_regions('reflection', starting_region.get_dict(), pointing, self.regions_radius)
-            self.rings[offset] = [starting_region] + [Region(offset, rr["ra"], rr["dec"], self.regions_radius, {}, False) for rr in ring_regions]
+            self.rings[offset] = [Region(offset, rr["ra"], rr["dec"], self.regions_radius, {}, False) for rr in ring_regions]
             offset += 2*self.regions_radius
             offset = round(offset, 2)
 
@@ -116,6 +116,7 @@ class RegionsConfig:
                 # overlaps with ii and ii-1 
                 self.rings[offsets[ii-1]] = [x for x in self.rings[offsets[ii-1]] if not self.is_overlapping(x, self.target_region)]
                 self.rings[offsets[ii]] = [x for x in self.rings[offsets[ii]] if not self.is_overlapping(x, self.target_region)]
+        
 
     # add energy bins!
     def compute_effective_area(self, irf, pointing, energy_windows):
@@ -132,7 +133,7 @@ class RegionsConfig:
                 args.emax = e_window[1]
 
                 if self.target_region is not None:
-                    self.target_region_effective_area[e_window] = aeff_eval(args, self.target_region.get_dict(), pointing)
+                    self.target_region.effective_area[e_window] = aeff_eval(args, self.target_region.get_dict(), pointing)
                 
                 for regions in self.rings.values():
                     effective_area = aeff_eval(args, regions[0].get_dict(), pointing)
@@ -142,12 +143,26 @@ class RegionsConfig:
     def _add_offset_to_region(self, pointing, offset, is_target=False):
         return Region(offset, pointing["ra"], pointing["dec"] + offset, self.regions_radius, {}, is_target)
 
-    def get_flatten_configuration(self):
-        if len(self.flatten_rings) > 0:
-            return self.flatten_rings
-        for regions in self.rings.values():
-            self.flatten_rings += regions
-        return self.flatten_rings
+    def get_flatten_configuration(self, regions_type="bkg"):
+        flatten_rings = []
+
+        if regions_type == "src":
+            if self.target_region is not None:
+                flatten_rings.append(self.target_region)
+
+        elif regions_type == "bkg":
+            for regions in self.rings.values():
+                    flatten_rings += [r for r in regions]
+
+        elif regions_type == "all":
+            for regions in self.rings.values():
+                    flatten_rings += [r for r in regions]
+            if self.target_region is not None:
+                flatten_rings.append(self.target_region)
+        else:
+            raise ValueError(f"regions_type {regions_type} is not valid. Valid values are: src, bkg, all")
+
+        return flatten_rings
 
 
 
@@ -191,6 +206,8 @@ class OnlinePhotometry:
             tobs = new_t_obs
         return PhotometryUtils.getLinearWindows(0, tobs , int(integration_time), int(integration_time))
 
+    def get_number_of_regions(self, regions_type="all"):
+        return len(self.regions_config.get_flatten_configuration(regions_type=regions_type))
 
     def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=True):
         """
@@ -201,7 +218,7 @@ class OnlinePhotometry:
 
         target = None
         if add_target_region:
-            template =  Path(os.environ["DATA"]).joinpath("templates",f"{self.simulation_params.runid}.fits")
+            template =  Path(os.environ["DATA"]).joinpath("templates", "grb_afterglow", "GammaCatalogV1.0", f"{self.simulation_params.runid}.fits")
             target = OnlinePhotometry.get_target(template)
 
         self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
@@ -219,7 +236,7 @@ class OnlinePhotometry:
         if self.regions_config is None:
             raise ValueError("You must call preconfigure_regions before")
 
-        template =  Path(os.environ["DATA"]).joinpath("templates",f"{self.simulation_params.runid}.fits")
+        template =  Path(os.environ["DATA"]).joinpath("templates", "grb_afterglow", "GammaCatalogV1.0", f"{self.simulation_params.runid}.fits")
         target = OnlinePhotometry.get_target(template)
         plot.set_target(ra=target["ra"], dec=target["dec"])
         
@@ -229,7 +246,7 @@ class OnlinePhotometry:
         out = Path(pht_list.replace('.fits', f'_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'))
         out = Path(output_dir).joinpath(out.name)
 
-        regions = [region.get_dict() for region in self.regions_config.get_flatten_configuration()]
+        regions = [region.get_dict() for region in self.regions_config.get_flatten_configuration(regions_type="all")]
 
         print(f"Producing.. {out}")
         plot.counts_map_with_regions(
@@ -245,7 +262,10 @@ class OnlinePhotometry:
     
     
 
-    def integrate(self, pht_list, normalize=True, threads=10, with_metadata=False, regions_radius=None, max_offset=None, example_fits=None, add_target_region=None, remove_overlapping_regions_with_target=None):
+    def integrate(self, pht_list, normalize=True, threads=10, with_metadata=False, regions_radius=None, max_offset=None, example_fits=None, add_target_region=False, remove_overlapping_regions_with_target=None, integrate_from_regions="bkg"):
+        """
+        TODO: integrate from the source region!!!
+        """
         t = time()
         phm = Photometrics({ 'events_filename': pht_list })
 
@@ -254,7 +274,15 @@ class OnlinePhotometry:
 
         func = partial(self.extract_sequence, phm, self.regions_config.regions_radius, self.time_windows, self.energy_windows, normalize)
 
-        regions = self.regions_config.get_flatten_configuration()
+        if integrate_from_regions not in ["bkg", "src"]:
+            raise ValueError(f"integrate_from_regions {integrate_from_regions} must be 'bkg' or 'src'")
+
+        if integrate_from_regions == "src" and add_target_region is False and self.regions_config.target_region is None:
+            raise ValueError("If you want to integrate from the source region you must add the target region")
+
+        regions = self.regions_config.get_flatten_configuration(regions_type=integrate_from_regions)
+
+        print("")
         with Pool(threads) as p:
             output = p.map(func, regions)
         
