@@ -14,3 +14,5 @@
 * The p-value analysis code has been refactored. The pipeline will apply both the photometry and model prediction starting from the DL3.  
 * Updated testing code. Load a named test-set composed by multiple timeseries.
 * Major refactoring of OnlinePhotometry.
+* Add a new DataManager class to generate train set e test set. 
+* Spotted a bug that duplicate a region of each ring.
