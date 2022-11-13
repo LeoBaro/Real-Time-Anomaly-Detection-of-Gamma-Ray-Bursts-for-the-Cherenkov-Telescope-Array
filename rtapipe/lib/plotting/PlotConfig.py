@@ -13,6 +13,7 @@ class PlotConfig:
         # defaults change, your plot will not.
         self.fig_size = (15, 8)
         self.fig_suptitle_size = 20
+        self.fig_title_size = 15
 
         # Choose the font family (‘serif’ or ‘sans-serif’ to match the paper, 
         # most of the time, ‘serif’ is best):
@@ -36,6 +37,9 @@ class PlotConfig:
         self.markers = ["s", "^", "+", "x"]
 
         self.dpi = 300
+
+    def get_histogram_colors(self):
+        return {"color" : "grey", "ec" : "black"}
 
     def test(self):
         fig = plt.figure(figsize=(4, 3))

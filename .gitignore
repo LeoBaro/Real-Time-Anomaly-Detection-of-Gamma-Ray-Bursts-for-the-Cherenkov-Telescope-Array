@@ -35,6 +35,7 @@ wandb
 **/ebl*.fits
 **/sim_output/**
 **/slurm_out/**
+**/integration_logs/**
 
 
 ! tests/test_data/fits-prod5/**.fits

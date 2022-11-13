@@ -107,6 +107,7 @@ def plot_sequences(sequences, scaled, features_names=[], labels=[], showFig=Fals
     if saveFig:
         Path(outputDir).mkdir(parents=True, exist_ok=True)
         outputPath = Path(outputDir).joinpath(figName)
+        print(f"Saving {outputPath}")
         fig.savefig(outputPath, dpi=200)
 
     plt.close()
@@ -144,7 +145,7 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
         #print("current_mse_per_sample_features: ", current_mse_per_sample_features)
         start += max_samples
 
-        ymax, ymin = 1.5, 0
+        ymax, ymin = 1, 0
         
         #print(f"Plot {p}. \nNumber of predictions: {len(current_samples)}. \nSample shape: {current_samples.shape} \n Number of features: {n_features}")
 
