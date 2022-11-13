@@ -58,8 +58,16 @@ class DataManager:
         self.data[template] = np.load(self.output_dir.joinpath(f"{template}_it_{integration_time}_tsl_{tsl}.npy"))
         print(f"[{datetime.now()}] Loaded data from {self.output_dir}")
 
+    def store_scaler(self, dest_path):
+        if self.scaler is None:
+            raise ValueError("Scaler is None. Call fit_scaler() first.")
+        Path(dest_path).mkdir(parents=True, exist_ok=True)
+        with open(Path(dest_path).joinpath('fitted_scaler.pickle'), 'wb') as handle:
+            pickle.dump(self.scaler, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-
+    def load_scaler(self, scaler_path):
+        with open(scaler_path, 'rb') as handle:
+            self.scaler = pickle.load(handle)
 
     def transform_to_timeseries(self, fits_files: list, sim_params: SimulationParams, add_target_region: bool, integration_time: int, tsl: int, number_of_energy_bins: int, normalize: bool, threads: int, multiple_templates: bool):
         """
@@ -72,7 +80,6 @@ class DataManager:
         multiple_templates: if True the dataset is composed by multiple templates, otherwise it is composed by a single template. 
                             The single template case will allow photometry optimizations.
         """
-        online_photometry = OnlinePhotometry(sim_params, integration_time=integration_time, tsl=tsl, number_of_energy_bins=number_of_energy_bins)
         normalize = True
         with_metadata = False
 
@@ -82,16 +89,18 @@ class DataManager:
             integrate_from_regions = "bkg"
 
         if not multiple_templates:
-            print(f"[{datetime.now()}] Preconfiguring regions. Normalization: {normalize}")
+            online_photometry = OnlinePhotometry(sim_params, integration_time=integration_time, tsl=tsl, number_of_energy_bins=number_of_energy_bins)
+            runid = DataManager.extract_runid_from_name(fits_files[0])
+            print(f"[{datetime.now()}] Preconfiguring regions. Normalization: {normalize} - Template: {runid}")
+            online_photometry.set_template(runid)
             online_photometry.preconfigure_regions(regions_radius=DataManager.REGION_RADIUS, max_offset=DataManager.MAX_OFFSET, example_fits=fits_files[0], add_target_region=add_target_region, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=normalize)
             print(f"[{datetime.now()}] Found {online_photometry.get_number_of_regions('bkg')} regions and {online_photometry.get_number_of_regions('src')} target regions")
 
 
         for photon_list in tqdm(fits_files):
-
+            online_photometry = OnlinePhotometry(sim_params, integration_time=integration_time, tsl=tsl, number_of_energy_bins=number_of_energy_bins)
             runid = DataManager.extract_runid_from_name(photon_list)
-            
-            online_photometry.simulation_params.runid = runid
+            online_photometry.set_template(runid)
 
             data, _, _ = online_photometry.integrate(
                                                 photon_list, 
@@ -201,8 +210,8 @@ class DataManager:
 
         print(f"[{datetime.now()}] Loaded {len(self.data[template])} timeseries from template {template}.")
         print(f"Single file shape before sub-windowing: {self.data[template][0].shape}. Single file shape after sub-windowing: {test_x.shape}")
-        print(f"[{datetime.now()}] text_x shape:", test_x_tot.shape)
-        print(f"[{datetime.now()}] text_y shape:", labels_tot.shape)
+        print(f"[{datetime.now()}] test_x shape:", test_x_tot.shape)
+        print(f"[{datetime.now()}] test_y shape:", labels_tot.shape)
 
         #test_x_tot = DataManager.scale(self.scaler, test_x_tot)
             

@@ -190,10 +190,15 @@ class OnlinePhotometry:
         self.energy_windows = PhotometryUtils.getLogWindows(simulation_params.emin, simulation_params.emax, self.number_of_energy_bins)
         self.regions_config = None
 
+    def set_template(self, template):
+        # print("Set template: ", template)
+        self.simulation_params.runid = template
+
     @staticmethod
     def get_target(fits_file):
+        # print("Get target from template: ", fits_file)
         with fits.open(fits_file) as hdul:
-            ra = abs(hdul[0].header['RA'])
+            ra  = abs(hdul[0].header['RA'])
             dec = hdul[0].header['DEC']
         return {"ra": ra, "dec": dec}
 
@@ -220,6 +225,9 @@ class OnlinePhotometry:
         if add_target_region:
             template =  Path(os.environ["DATA"]).joinpath("templates", "grb_afterglow", "GammaCatalogV1.0", f"{self.simulation_params.runid}.fits")
             target = OnlinePhotometry.get_target(template)
+        
+        #print("Target: ", target)
+        #print("Pointing: ", pointing)
 
         self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
 
@@ -263,9 +271,7 @@ class OnlinePhotometry:
     
 
     def integrate(self, pht_list, normalize=True, threads=10, with_metadata=False, regions_radius=None, max_offset=None, example_fits=None, add_target_region=False, remove_overlapping_regions_with_target=None, integrate_from_regions="bkg"):
-        """
-        TODO: integrate from the source region!!!
-        """
+
         t = time()
         phm = Photometrics({ 'events_filename': pht_list })
 
@@ -282,7 +288,8 @@ class OnlinePhotometry:
 
         regions = self.regions_config.get_flatten_configuration(regions_type=integrate_from_regions)
 
-        print("")
+        Path("./integration_logs").mkdir(parents=True, exist_ok=True)
+
         with Pool(threads) as p:
             output = p.map(func, regions)
         
@@ -308,7 +315,7 @@ class OnlinePhotometry:
         region = region
         aeff_area = region.effective_area
         livetime = t_windows[0][1] - t_windows[0][0]
-        for twin in t_windows:
+        for ii, twin in enumerate(t_windows):
             counts_t = []
             counts_t_err = []
             for ewin in e_windows:
@@ -322,4 +329,6 @@ class OnlinePhotometry:
                 counts_t_err.append(error)   
             data.append(counts_t)
             data_err.append(counts_t_err)
+            #with open(f"./integration_logs/region_ra_{round(region.ra, 3)}_dec_{round(region.dec, 3)}.txt", "w") as f:
+            #    f.write(f"{ii}/{len(t_windows)}")
         return np.asarray(data), np.asarray(data_err)                  

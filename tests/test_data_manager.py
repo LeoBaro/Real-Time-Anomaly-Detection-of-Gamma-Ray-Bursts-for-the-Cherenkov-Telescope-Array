@@ -61,10 +61,10 @@ class TestDataManager:
         dataset_folder = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_c/fits_data"
         multiple_templates = True
         add_target_region = True
-        fits_files = DataManager.load_fits_data(dataset_folder, limit=10)
+        fits_files = DataManager.load_fits_data(dataset_folder, limit=50)
         sim_params = SimulationParams(runid=None, onset=250, emin=0.04, emax=1, tmin=0, tobs=500, offset=0.5, irf="North_z40_5h_LST", roi=2.5, caldb="prod5-v0.1", simtype="grb")
         data_manager.transform_to_timeseries(fits_files, sim_params, add_target_region, integration_time=5, number_of_energy_bins=3, tsl=100, normalize=True, threads=20, multiple_templates=multiple_templates)
-        assert len(list(data_manager.data.keys())) == 10
+        assert len(list(data_manager.data.keys())) == 50
         for template_name, data in data_manager.data.items():
             print("template_name", template_name)
             assert data.shape == (1, 100, 3) # (1 trial * 1 region, 100 points, 3 features)
@@ -88,9 +88,9 @@ class TestDataManager:
         - a MinMaxScaler is applied to the data     
         then:
         - new fits files are loaded (test set)
-        - 5 trial of different templates (bkg+grb) with tobs 500 seconds and onset=250
+        - 5 trials of different templates (bkg+grb) with tobs 500 seconds and onset=250
         - the trials are integrated in 5 seconds => 100 points
-        - the trials are integrated using data from 90 regions of interest => 90 samples * 5 = 450 samples
+        - the trials are integrated using data from 1 region of interest => 1 samples * 5 = 5 samples
         - from the first template are then extracted subsequences of 5 points with stride 1 => ( (100-5)/1 + 1 ) * 90 = 8640 samples   
         - a the MinMaxScaler fitted on the training set, is applied to the subsequences
         """
@@ -99,8 +99,8 @@ class TestDataManager:
         sim_params = SimulationParams(runid=None, onset=0, emin=0.04, emax=1, tmin=0, tobs=500, offset=0.5, irf="North_z40_5h_LST", roi=2.5, caldb="prod5-v0.1", simtype="bkg")
         multiple_templates = False
         add_target_region = False
-        #data_manager.transform_to_timeseries(fits_files, sim_params, add_target_region, integration_time=5, number_of_energy_bins=3, tsl=100, normalize=True, threads=30, multiple_templates=multiple_templates)
-        data_manager.load_saved_data("notemplate", 5, 100)
+        data_manager.transform_to_timeseries(fits_files, sim_params, add_target_region, integration_time=5, number_of_energy_bins=3, tsl=100, normalize=True, threads=30, multiple_templates=multiple_templates)
+        #data_manager.load_saved_data("notemplate", 5, 100)
         assert data_manager.data["notemplate"].shape == (425, 100, 3)
         
         train_x, train_y , val_x, val_y = data_manager.get_train_set("notemplate", sub_window_size=5, stride=5, validation_split=50)
