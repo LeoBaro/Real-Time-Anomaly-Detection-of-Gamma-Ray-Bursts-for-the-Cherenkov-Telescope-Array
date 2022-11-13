@@ -30,7 +30,7 @@ def create_input_file_for_predictions(jobName, files, jobsInputDir):
          pickle.dump(files, ff)
     return input_pickle
 
-def create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pickle, pvalue_dataset_path, trained_model_dir, epoch, pvalueFolder, batch_size):
+def create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pickle, trained_model_dir, epoch, pvalueFolder, batch_size):
 
     jobFile = jobsFileDir.joinpath(f"{jobName}.ll")
     jobOut = jobsOutDir.joinpath(f"{jobName}.out")
@@ -41,61 +41,22 @@ def create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pick
         jf.write(f"#SBATCH --output={jobOut}\n")
         jf.write(f"#SBATCH --cpus-per-task={CPU_PER_TASK}\n")
         jf.write(f"#SBATCH --partition={PARTITION}\n")
-        jf.write(f"predict_batch_id -jn {jobName} -plp {input_pickle} -dc {Path(pvalue_dataset_path).joinpath('config.yaml')} -tmd {trained_model_dir} -e {epoch} -od {pvalueFolder} -bs {batch_size} -v 0 \n")
+        jf.write(f"predict_batch_id -jn {jobName} -plp {input_pickle} -tmd {trained_model_dir} -e {epoch} -od {pvalueFolder} -bs {batch_size} -v 0 \n")
 
     return jobFile
 
-"""
-def create_job_file_for_pvalue(jobIDs, pvalueFolder, jobsFileDir, jobsOutDir):
-
-    script_path = Path(__file__).parent
-
-    tsDataPath = pvalueFolder.joinpath("ts_values")
-    tsMergedDataFilePath = pvalueFolder.joinpath("merged_ts_for_pvalues.pickle.npy")
-
-    jobFile = jobsFileDir.joinpath(f"pvalue_job.ll")
-    jobOut = jobsOutDir.joinpath(f"pvalue_job.out")
-
-    dependencyStr = "afterok:"
-    for jobId in jobIDs:
-        dependencyStr += jobId+":"
-    dependencyStr = dependencyStr[:-1]
-
-    with open(jobFile, "w") as jf:
-        jf.write( "#!/bin/bash\n")
-        jf.write(f"#SBATCH --job-name=pvalue_job\n")
-        jf.write(f"#SBATCH --output={jobOut}\n")
-        jf.write( "#SBATCH --cpus-per-task=1\n")
-        jf.write(f"#SBATCH --partition={PARTITION}\n")
-        jf.write(f"#SBATCH --dependency={dependencyStr}\n")
-        jf.write(f"merge_ts_files -p {tsDataPath}\n")
-        jf.write(f"compute_pvalues -p {tsMergedDataFilePath}")
-    
-    os.system(f"sbatch {jobFile}")
-"""
 
 def main():
     """
-    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221027-134533_T_5_TSL_5/model_AnomalyDetector_cnn_l2_u32_dataset_1201_tsl_5 -e 117 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 5000000 -nj 500
+    export CTOOLS=/data01/homes/baroncelli/.conda/envs/bphd
+    export PYTHONPATH=/data01/homes/baroncelli/phd/cta-sag-sci
 
-    submit_to_slurm 
-        -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221027-134533_T_5_TSL_5/model_AnomalyDetector_cnn_l2_u32_dataset_1201_tsl_5 
-        -e 117 
-        -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds 
-        -nf 5000000 
-        -nj 500
-        -bs 1000
-        -s 1
+    cnn
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600 -e 39 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 5000000 -nj 500
+ 
+    rnn
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600 -e 15 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 5000000 -nj 500
 
-
-    submit_to_slurm 
-        -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221027-134533_T_5_TSL_5/model_AnomalyDetector_rnn_l2_u32_dataset_1201_tsl_5
-        -e 114 
-        -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds 
-        -nf 5000000 
-        -nj 500
-        -bs 1000
-        -s 1
 
     """
     parser = argparse.ArgumentParser()
@@ -138,7 +99,7 @@ def main():
         arguments["output_dir"] = jobName
         input_pickle = create_input_file_for_predictions(jobName, files[startId:startId+total_samples_per_job], jobsInputDir)
         jobFiles.append(
-            create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pickle, args.pvalue_dataset_path, args.trained_model_dir, args.epoch, pvalueFolder, args.batch_size)
+            create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pickle, args.trained_model_dir, args.epoch, pvalueFolder, args.batch_size)
         )
         startId += total_samples_per_job
 

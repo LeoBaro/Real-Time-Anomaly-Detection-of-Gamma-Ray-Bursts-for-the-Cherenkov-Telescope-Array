@@ -10,7 +10,7 @@ from time import time
 from pathlib import Path
 from datetime import datetime
 
-from rtapipe.lib.datasource.Photometry3 import OnlinePhotometry
+from rtapipe.lib.datasource.Photometry3 import OnlinePhotometry, SimulationParams
 from rtapipe.lib.models.anomaly_detector_builder import AnomalyDetectorBuilder
 
 
@@ -42,15 +42,14 @@ REGION_RADIUS=0.2
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-jn", "--job_name", type=str, required=True, help="")
+    parser.add_argument("-jn",  "--job_name", type=str, required=True, help="")
     parser.add_argument("-plp", "--photon_lists_pickled", type=str, required=True, help="")
-    parser.add_argument("-dc", "--dataset_config", type=str, required=True, help="The yaml configuration file")
     parser.add_argument("-tmd", "--trained_model_dir", type=str, required=True, help="")
-    parser.add_argument("-e", "--epoch", type=int, required=True, help="The epoch of the training")
-    parser.add_argument("-od", "--output_dir", type=str, required=True, help="If this is not None or empty, the files containing the reconstruction errors will be placed into this folder.")
-    parser.add_argument("-bs", "--batch_size", type=int, required=False, default=0, help="The input photons lists will be divided in batches. Photometry and models predictions will be applied per-batch")
-    parser.add_argument("-l", "--limit", type=int, required=False, default=0, help="")
-    parser.add_argument("-v", "--verbose", type=int, required=False, default=1, help="")
+    parser.add_argument("-e",   "--epoch", type=int, required=True, help="The epoch of the training")
+    parser.add_argument("-od",  "--output_dir", type=str, required=True, help="If this is not None or empty, the files containing the reconstruction errors will be placed into this folder.")
+    parser.add_argument("-bs",  "--batch_size", type=int, required=False, default=0, help="The input photons lists will be divided in batches. Photometry and models predictions will be applied per-batch")
+    parser.add_argument("-l",   "--limit", type=int, required=False, default=0, help="")
+    parser.add_argument("-v",   "--verbose", type=int, required=False, default=1, help="")
     args = parser.parse_args()
 
     now = datetime.now()
@@ -80,12 +79,9 @@ def main():
     outputDir.mkdir(parents=True, exist_ok=True)
 
     # The class that will be used to do photometry
-    o_phm = OnlinePhotometry(Path(args.dataset_config))
+    sim_params = SimulationParams(runid="notemplate", onset=0, emin=0.04, emax=1, tmin=0, tobs=500, offset=0.5, irf="North_z40_5h_LST", roi=2.5, caldb="prod5-v0.1", simtype="bkg")
+    o_phm = OnlinePhotometry(sim_params, integration_time=5, tsl=5, number_of_energy_bins=3)
 
-    # Create the regions configuration for the photometry
-    MAX_OFFSET = 2
-    REFLECTION = True
-    regions_dict = o_phm.create_photometry_configuration(REGION_RADIUS, model_params["nfeatures"], max_offset=MAX_OFFSET, reflection=True)
     
     # Load pickled input
     with open(Path(args.photon_lists_pickled), "rb") as f:
@@ -94,6 +90,12 @@ def main():
             photon_lists = photon_lists[:args.limit]
 
     print("Number of photon lists:", len(photon_lists))
+
+    # Create the regions configuration for the photometry
+    MAX_OFFSET = 2
+    add_target_region = False
+    compute_effective_area_for_normalization = True
+    o_phm.preconfigure_regions(regions_radius=REGION_RADIUS, max_offset=MAX_OFFSET, example_fits=photon_lists[0], add_target_region=add_target_region, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
 
     # Create the batches
     if args.batch_size == 0:
@@ -112,23 +114,21 @@ def main():
     # TODO: in principle it could be parallelized
     start = time()
     for i, b in enumerate(batches):
-        process_batch(i, b, o_phm, regions_dict, scaler, ad, dataset_params, model_params, outputDir, args.verbose, args.job_name)
+        process_batch(i, b, o_phm, scaler, ad, outputDir, args.verbose, args.job_name)
 
     print(f"Total time: {time()-start} seconds.")
 
 
-def process_batch(batch_index, batch, o_phm, regions_dict, scaler, ad, dataset_params, model_params, outputDir, verbose, job_name):
+def process_batch(batch_index, batch, o_phm, scaler, ad, outputDir, verbose, job_name):
 
     start = time()
-
+    print(f"[{start}] Processing batch {batch_index}...")
     data = []
     for pht_list in tqdm.tqdm(batch, disable=bool(verbose==0)):           
             
         # Apply photometry with normalization (need to now T and TSL) --> get the object not the csv file!!
         #s = time()
-        flux, flux_err = o_phm.integrate(
-            pht_list, regions_dict, REGION_RADIUS, dataset_params["itime"], model_params["nfeatures"], model_params["timesteps"], normalize=True, threads=10
-        ) 
+        flux, flux_err, _ = o_phm.integrate(pht_list, normalize=True, threads=20, with_metadata=False) 
         #print(f"Photometry took {time()-s} seconds.")
         data.append(flux)
 
