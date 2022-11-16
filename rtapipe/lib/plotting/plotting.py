@@ -112,6 +112,18 @@ def plot_sequences(sequences, scaled, features_names=[], labels=[], showFig=Fals
 
     plt.close()
 
+def plot_recostruction_errors_distribution(recostructions, output_dir):
+    pc = PlotConfig()
+    fig, ax = plt.subplots(1,1,figsize=pc.fig_size)
+    ax.hist(recostructions, bins=50, **pc.get_histogram_colors())  
+    fig.suptitle("Distribution of the reconstruction erros", fontsize=pc.fig_suptitle_size)
+    ax.set_title("Test set", fontsize=pc.fig_title_size)
+    ax.set_xlabel("Recostruction errors")
+    ax.set_ylabel("Counts (log)")
+    ax.set_yscale('log')
+    fig.savefig(Path(output_dir).joinpath("reco_distributions.png"))
+
+
 def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, features_names=[], epoch="", max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
 
     pc = PlotConfig()
@@ -202,7 +214,7 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
 
         if saveFig:
             Path(outputDir).mkdir(parents=True, exist_ok=True)
-            outputPath = Path(outputDir).joinpath(f"epoch_{epoch}_plot_{p}_{figName}")
+            outputPath = Path(outputDir).joinpath(f"{figName}_epoch_{epoch}_plot_{p}.png")
             fig.savefig(outputPath, dpi=200)
 
         plt.close()

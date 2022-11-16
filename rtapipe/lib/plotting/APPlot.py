@@ -32,11 +32,14 @@ class APPlot:
         self.ax.set_title(f"Template: {params['runid']}, Integration time: {params['itime']}, Type: {params['itype']}, Onset: {params['onset']}, Offset: {params['offset']}, Region rad: 0.2°")
         self.ax.legend(prop=self.pc.legend_kw, loc='upper left')
 
-    def plot_from_numpy(self, data, params):
+    def plot_from_numpy(self, data, params, labels=[]):
         self.fig, self.ax = plt.subplots(nrows=1, ncols=1, figsize=self.pc.fig_size)
         self.pc.colors
         for i in range(data.shape[1]):
-            label = f"Feature {i}"   
+            if len(labels) > 0:
+                label = labels[i]
+            else:
+                label = f"Feature {i}"   
             error_bar_kwargs = {
                 "ls": "none",
                 "marker": 'o',
