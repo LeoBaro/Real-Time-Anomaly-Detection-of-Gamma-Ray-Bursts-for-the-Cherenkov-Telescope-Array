@@ -1,0 +1,34 @@
+# array of structures
+models:
+
+  - patience: 10
+    timesteps: 5
+    nfeatures: 3
+    name: "AnomalyDetector_cnn_l2_u32"
+    path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_39"
+    epoch: 39
+    pval_path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_39/pvalues/pval_20221113-102939/pvalue_bins_100_0.numpy.txt"
+
+  - patience: 10
+    timesteps: 5
+    nfeatures: 3
+    name: "AnomalyDetector_rnn_l2_u32"
+    path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_15"
+    epoch: 15
+    pval_path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_15/pvalues/pval_20221116-111059/pvalue_bins_100_0.numpy.txt"
+
+  - patience: 5
+    timesteps: 5
+    nfeatures: 3
+    name: "AnomalyDetector_cnn_l2_u32"
+    path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221116-101109_mr_patience_5/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_19"
+    epoch: 19
+    pval_path: null
+
+  - patience: 5
+    timesteps: 5
+    nfeatures: 3
+    name: "AnomalyDetector_rnn_l2_u32"
+    path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221116-101109_mr_patience_5/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_10"
+    epoch: 10
+    pval_path: null
