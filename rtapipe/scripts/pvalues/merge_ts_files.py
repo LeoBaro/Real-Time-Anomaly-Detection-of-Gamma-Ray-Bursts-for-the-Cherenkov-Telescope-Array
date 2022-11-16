@@ -30,7 +30,7 @@ def main():
                 c += 1
     print("Merging..")
     merge = pd.concat(data, axis=0, ignore_index=True)
-    merge.to_csv(p.parent.joinpath("merged_ts_for_pvalues.csv"), index=False, header=False)
+    #merge.to_csv(p.parent.joinpath("merged_ts_for_pvalues.csv"), index=False, header=False)
     output_file = p.parent.joinpath("merged_ts_for_pvalues.pickle")
     np.save(output_file, merge.values[:,0])
     print(f"Merged {c} files for a total of {len(merge)} values. Took {time()-s} seconds. File saved at {output_file}")

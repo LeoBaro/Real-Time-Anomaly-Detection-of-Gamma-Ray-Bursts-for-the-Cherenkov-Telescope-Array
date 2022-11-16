@@ -2,6 +2,7 @@ import os
 import pickle
 import argparse
 import subprocess
+from tqdm import tqdm
 from time import sleep
 from pathlib import Path
 from shutil import rmtree
@@ -51,12 +52,18 @@ def main():
     export CTOOLS=/data01/homes/baroncelli/.conda/envs/bphd
     export PYTHONPATH=/data01/homes/baroncelli/phd/cta-sag-sci
 
-    cnn
-    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600 -e 39 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 5000000 -nj 500
+    cnn - patience 10
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600 -e 39 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
  
-    rnn
-    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600 -e 15 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 5000000 -nj 500
+    rnn - patience 10
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600 -e 15 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
 
+
+    cnn - patience 5
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221116-101109_mr_patience_5/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600 -e 19 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
+
+    rnn - patience 5
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221116-101109_mr_patience_5/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600 -e 10 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
 
     """
     parser = argparse.ArgumentParser()
@@ -80,7 +87,7 @@ def main():
     pvalueFolder, jobsFileDir, jobsOutDir, jobsInputDir = setup_filesystem(args)
 
     print("Loading files...")
-    files = [os.path.join(args.pvalue_dataset_path, f) for f in os.listdir(args.pvalue_dataset_path) if f.endswith(".fits")][:args.num_files]
+    files = [os.path.join(args.pvalue_dataset_path, f) for f in tqdm(os.listdir(args.pvalue_dataset_path)) if f.endswith(".fits")][:args.num_files]
 
     ## Split 'num_files' files in 'X' batches for 'num_jobs' jobs 
     njobs = args.num_jobs

@@ -79,7 +79,7 @@ def main():
     outputDir.mkdir(parents=True, exist_ok=True)
 
     # The class that will be used to do photometry
-    sim_params = SimulationParams(runid="notemplate", onset=0, emin=0.04, emax=1, tmin=0, tobs=500, offset=0.5, irf="North_z40_5h_LST", roi=2.5, caldb="prod5-v0.1", simtype="bkg")
+    sim_params = SimulationParams(runid=dataset_params["runid"], onset=0, emin=0.04, emax=1, tmin=0, tobs=500, offset=0.5, irf="North_z40_5h_LST", roi=2.5, caldb="prod5-v0.1", simtype="bkg")
     o_phm = OnlinePhotometry(sim_params, integration_time=5, tsl=5, number_of_energy_bins=3)
 
     
@@ -93,7 +93,7 @@ def main():
 
     # Create the regions configuration for the photometry
     MAX_OFFSET = 2
-    add_target_region = False
+    add_target_region = True
     compute_effective_area_for_normalization = True
     o_phm.preconfigure_regions(regions_radius=REGION_RADIUS, max_offset=MAX_OFFSET, example_fits=photon_lists[0], add_target_region=add_target_region, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
 
@@ -122,13 +122,13 @@ def main():
 def process_batch(batch_index, batch, o_phm, scaler, ad, outputDir, verbose, job_name):
 
     start = time()
-    print(f"[{start}] Processing batch {batch_index}...")
+    print(f"[{datetime.now()}] Processing batch {batch_index}...")
     data = []
     for pht_list in tqdm.tqdm(batch, disable=bool(verbose==0)):           
             
         # Apply photometry with normalization (need to now T and TSL) --> get the object not the csv file!!
         #s = time()
-        flux, flux_err, _ = o_phm.integrate(pht_list, normalize=True, threads=20, with_metadata=False) 
+        _, _, flux, _, _ = o_phm.integrate(pht_list, normalize=True, threads=1, with_metadata=False, integrate_from_regions="src") 
         #print(f"Photometry took {time()-s} seconds.")
         data.append(flux)
 
@@ -138,7 +138,7 @@ def process_batch(batch_index, batch, o_phm, scaler, ad, outputDir, verbose, job
 
     # Apply the scaler
     s = time()
-    data = scaler.transform(data.reshape(-1, data.shape[-1])).reshape(data.shape)
+    data = scaler.transform(data.reshape(-1, data.shape[-1])).reshape(data.shape) # use copy=False?
     if verbose:
         print(f"Scaler took {time()-s} seconds.")
 
@@ -158,7 +158,7 @@ def process_batch(batch_index, batch, o_phm, scaler, ad, outputDir, verbose, job
 
     end_time_batch = time() - start
 
-    print(f"Total time for batch {end_time_batch} seconds.")
+    print(f"Total time for batch {end_time_batch} seconds.", flush=True)
 
 if __name__=='__main__':
     main()
