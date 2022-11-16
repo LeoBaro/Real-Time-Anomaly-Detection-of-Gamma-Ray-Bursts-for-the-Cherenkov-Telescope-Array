@@ -184,10 +184,12 @@ class TestPhotometry3:
         normalize = True
         with_metadata = True
         integrate_from_regions = "bkg"
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
+        counts_data, counts_data_err, flux_data, flux_data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (83, 5, 3)
-        assert data_err.shape == (83, 5, 3)
+        assert counts_data.shape == (83, 5, 3)
+        assert counts_data_err.shape == (83, 5, 3)
+        assert flux_data.shape == (83, 5, 3)
+        assert flux_data_err.shape == (83, 5, 3)
         assert metadata["number_of_regions"] == 83
         print("integration elapsed time: ", metadata["elapsed_time"])
 
@@ -200,10 +202,12 @@ class TestPhotometry3:
         normalize = True
         with_metadata = True
         integrate_from_regions = "bkg"
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
+        counts_data, counts_data_err, flux_data, flux_data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (83, 5, 3)
-        assert data_err.shape == (83, 5, 3)
+        assert counts_data.shape == (83, 5, 3)
+        assert counts_data_err.shape == (83, 5, 3)
+        assert flux_data.shape == (83, 5, 3)
+        assert flux_data_err.shape == (83, 5, 3)        
         assert metadata["number_of_regions"] == 83
         print("integration elapsed time: ", metadata["elapsed_time"])
 
@@ -218,10 +222,12 @@ class TestPhotometry3:
         normalize = False
         with_metadata = True
         integrate_from_regions = "bkg"
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
-
-        assert data.shape == (83, 5, 3)
-        assert data_err.shape == (83, 5, 3)
+        counts_data, counts_data_err, flux_data, flux_data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
+        
+        assert counts_data.shape == (83, 5, 3)
+        assert counts_data_err.shape == (83, 5, 3)
+        assert flux_data == None
+        assert flux_data_err == None
         assert metadata["number_of_regions"] == 83
         print("integration elapsed time: ", metadata["elapsed_time"])
 
@@ -235,10 +241,12 @@ class TestPhotometry3:
         normalize = False
         with_metadata = True
         integrate_from_regions = "bkg"
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
+        counts_data, counts_data_err, flux_data, flux_data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (83, 5, 3)
-        assert data_err.shape == (83, 5, 3)
+        assert counts_data.shape == (83, 5, 3)
+        assert counts_data_err.shape == (83, 5, 3)
+        assert flux_data == None
+        assert flux_data_err == None
         assert metadata["number_of_regions"] == 83
         print("integration elapsed time: ", metadata["elapsed_time"])
 
@@ -259,10 +267,12 @@ class TestPhotometry3:
         normalize = True
         with_metadata = True
         integrate_from_regions = "src"
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
+        counts_data, counts_data_err, flux_data, flux_data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (1, 5, 3)
-        assert data_err.shape == (1, 5, 3)
+        assert counts_data.shape == (1, 5, 3)
+        assert counts_data_err.shape == (1, 5, 3)
+        assert flux_data.shape == (1, 5, 3)
+        assert flux_data_err.shape == (1, 5, 3)
         assert metadata["number_of_regions"] == 1
         print("integration elapsed time: ", metadata["elapsed_time"])
 
@@ -275,10 +285,12 @@ class TestPhotometry3:
         normalize = True
         with_metadata = True
         integrate_from_regions = "src"
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
+        counts_data, counts_data_err, flux_data, flux_data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (1, 5, 3)
-        assert data_err.shape == (1, 5, 3)
+        assert counts_data.shape == (1, 5, 3)
+        assert counts_data_err.shape == (1, 5, 3)
+        assert flux_data.shape == (1, 5, 3)
+        assert flux_data_err.shape == (1, 5, 3)
         assert metadata["number_of_regions"] == 1
         print("integration elapsed time: ", metadata["elapsed_time"])
 
@@ -293,10 +305,12 @@ class TestPhotometry3:
         normalize = False
         with_metadata = True
         integrate_from_regions = "src"
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
+        counts_data, counts_data_err, flux_data, flux_data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (1, 5, 3)
-        assert data_err.shape == (1, 5, 3)
+        assert counts_data.shape == (1, 5, 3)
+        assert counts_data_err.shape == (1, 5, 3)
+        assert flux_data == None
+        assert flux_data_err == None
         assert metadata["number_of_regions"] == 1
         print("integration elapsed time: ", metadata["elapsed_time"])
 
@@ -310,10 +324,12 @@ class TestPhotometry3:
         normalize = False
         with_metadata = True
         integrate_from_regions = "src"
-        data, data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
+        counts_data, counts_data_err, flux_data, flux_data_err, metadata = online_photometry.integrate(test_fits, normalize, 10, with_metadata, regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, integrate_from_regions=integrate_from_regions)
 
-        assert data.shape == (1, 5, 3)
-        assert data_err.shape == (1, 5, 3)
+        assert counts_data.shape == (1, 5, 3)
+        assert counts_data_err.shape == (1, 5, 3)
+        assert flux_data == None
+        assert flux_data_err == None
         assert metadata["number_of_regions"] == 1
         print("integration elapsed time: ", metadata["elapsed_time"])
 

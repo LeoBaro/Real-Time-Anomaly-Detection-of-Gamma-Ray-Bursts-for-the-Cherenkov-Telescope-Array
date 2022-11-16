@@ -295,8 +295,17 @@ class OnlinePhotometry:
         
         output = np.asarray(output)
 
-        data = output[:,0,:,:]
-        data_err = output[:,1,:,:]
+        counts_data = output[:,0,:,:]
+        counts_data_err = output[:,1,:,:]
+        flux_data = output[:,2,:,:]
+        flux_data_err = output[:,3,:,:]
+
+        # check if flux_data contains only nan
+        if np.isnan(flux_data).all():
+            flux_data = None
+            flux_data_err = None
+
+        metadata = None
 
         if with_metadata:
             metadata = {
@@ -304,31 +313,47 @@ class OnlinePhotometry:
                 "normalize": normalize,
                 "elapsed_time" : time() - t
             }
-            return data, data_err, metadata
 
-        return data, data_err, None
+        return counts_data, counts_data_err, flux_data, flux_data_err, metadata
 
        
     def extract_sequence(self, phm, region_radius, t_windows, e_windows, normalize, region: Region):
-        data = []
-        data_err = []
+        
+        counts_data = []
+        counts_data_err = []
+        flux_data = []
+        flux_data_err = []
+
         region = region
         aeff_area = region.effective_area
         livetime = t_windows[0][1] - t_windows[0][0]
-        for ii, twin in enumerate(t_windows):
+        
+        for _, twin in enumerate(t_windows):
+        
             counts_t = []
             counts_t_err = []
+            fluxes_t = []
+            fluxes_t_err = []
+        
             for ewin in e_windows:
                 counts = phm.region_counter(region, region_radius, tmin=twin[0], tmax=twin[1], emin=ewin[0], emax=ewin[1])
-                if normalize:                    
-                    counts = counts / aeff_area[ewin] / livetime
-                    error = 0 # TODO: compute error on FLUX
-                else:
-                    error = sqrt(counts)                 
+
                 counts_t.append(counts)
-                counts_t_err.append(error)   
-            data.append(counts_t)
-            data_err.append(counts_t_err)
+                counts_t_err.append(sqrt(counts)) 
+
+                if normalize:                    
+                    fluxes_t.append(counts / aeff_area[ewin] / livetime)
+                    fluxes_t_err.append(sqrt(counts) / aeff_area[ewin] / livetime) # TOP 
+                else:
+                    fluxes_t.append(np.nan)
+                    fluxes_t_err.append(np.nan)
+
+            counts_data.append(counts_t)
+            counts_data_err.append(counts_t_err)
+            flux_data.append(fluxes_t)
+            flux_data_err.append(fluxes_t_err)
+
             #with open(f"./integration_logs/region_ra_{round(region.ra, 3)}_dec_{round(region.dec, 3)}.txt", "w") as f:
             #    f.write(f"{ii}/{len(t_windows)}")
-        return np.asarray(data), np.asarray(data_err)                  
+
+        return np.asarray(counts_data), np.asarray(counts_data_err), np.asarray(flux_data), np.asarray(flux_data_err)

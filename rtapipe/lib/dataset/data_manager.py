@@ -102,23 +102,23 @@ class DataManager:
             runid = DataManager.extract_runid_from_name(photon_list)
             online_photometry.set_template(runid)
 
-            data, _, _ = online_photometry.integrate(
-                                                photon_list, 
-                                                normalize, 
-                                                threads, 
-                                                with_metadata, 
-                                                regions_radius=DataManager.REGION_RADIUS, 
-                                                max_offset=DataManager.MAX_OFFSET, 
-                                                example_fits=photon_list, 
-                                                add_target_region=add_target_region, 
-                                                remove_overlapping_regions_with_target=False, 
-                                                integrate_from_regions=integrate_from_regions
-                                    )
+            cd, cd_err, fd, fd_err, metadata = online_photometry.integrate(
+                                                                    photon_list, 
+                                                                    normalize, 
+                                                                    threads, 
+                                                                    with_metadata, 
+                                                                    regions_radius=DataManager.REGION_RADIUS, 
+                                                                    max_offset=DataManager.MAX_OFFSET, 
+                                                                    example_fits=photon_list, 
+                                                                    add_target_region=add_target_region, 
+                                                                    remove_overlapping_regions_with_target=False, 
+                                                                    integrate_from_regions=integrate_from_regions
+                                                        )
 
             if runid not in self.data:
-                self.data[runid] = data
+                self.data[runid] = fd
             else:
-                self.data[runid] = np.append(self.data[runid], data, axis=0)
+                self.data[runid] = np.append(self.data[runid], fd, axis=0)
 
         # save data as binary array
         if not self.output_dir.exists():
@@ -220,7 +220,7 @@ class DataManager:
 
 
     @staticmethod
-    def plot_timeseries(template_name, data, trials, sim_params, output_dir, max_flux=None):
+    def plot_timeseries(template_name, data, trials, sim_params, output_dir, max_flux=None, labels=[]):
         """
         data has the shape (trials, timepoints, channels)
         """
@@ -238,7 +238,7 @@ class DataManager:
         }        
         applot = APPlot()
         for i in range(trials):
-            applot.plot_from_numpy(data[i], params)
+            applot.plot_from_numpy(data[i], params, labels)
             name = f"template_{template_name}_trial_{i}_{datetime.now()}.png"
             applot.save(output_dir, name)
             print(f"Saved: {output_dir}/{name}")
