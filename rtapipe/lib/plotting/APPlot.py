@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
+from matplotlib import animation
 
 from rtapipe.lib.plotting.PlotConfig import PlotConfig
 
@@ -54,8 +55,44 @@ class APPlot:
             self.ax.axvline(x = pivot_idx, color = "purple", linestyle = 'dashed', label = "GRB start")
 
         self.set_layout(params)
+    
+    def plot_sliding_window(self, data, tsl, stride, params, labels=[]):
+        self.fig, self.ax = plt.subplots(nrows=1, ncols=1, figsize=self.pc.fig_size)
+        self.ax = plt.axes(xlim=(0, data.shape[0]), ylim=(0, 1))
+        lines = []
+        for i in range(data.shape[1]):
+            label = f"Feature {i}" 
+            if len(labels) > 0:
+                label = labels[i]
+                line, = self.ax.plot([], [], color=self.pc.colors[i], marker='o', markersize=6, linestyle='dashed', label=label)
+                lines.append(
+                    line
+                )
+        self.set_layout(params)
+
+        def init():
+            for i in range(data.shape[1]):
+                lines[i].set_data([], [])
+            return lines    
+
+        def animate(i):
+            print(i)
+            if i > data.shape[0]-tsl:
+                anim.event_source.stop()
+            else:
+                x = list(range(i,i+tsl))
+                #print(x)
+                for j in range(data.shape[1]):
+                    y = data[i:i+tsl,j]
+                    #print(y)
+                    lines[j].set_data(x,y)
+
+            return lines
         
-        
+        anim = animation.FuncAnimation(self.fig, animate, init_func=init, frames=data.shape[0]-tsl, interval=500, blit=True, repeat=False)
+        anim.save('basic_animation.gif', fps=30)
+
+
     def plot(self, csv_file_path, params, start=0, lenght=None):
         df = self.read_data(csv_file_path)
         if lenght is not None and lenght > 0:
@@ -102,3 +139,12 @@ class APPlot:
             print(f"Produced: {outputFilePath}")
             return str(outputFilePath)
         print("No plot has been generated yet!")
+
+
+if __name__=='__main__':
+    import numpy as np
+    samples = np.random.uniform(0, 1, size=(1, 100, 3))
+    ap = APPlot()
+    tsl = 5
+    stride = 1
+    ap.plot_sliding_window(samples[0], tsl, stride, params={"runid": "test", "itime": 5, "itype": "test", "onset": 0, "offset": 0, "maxflux": None, "normalized": False}, labels=["EB_1", "EB_2", "EB_3"])
