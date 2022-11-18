@@ -54,9 +54,19 @@ class DataManager:
         print("Loaded {} files".format(len(fits_files)))
         return fits_files    
 
-    def load_saved_data(self, template, integration_time, tsl):
-        self.data[template] = np.load(self.output_dir.joinpath(f"{template}_it_{integration_time}_tsl_{tsl}.npy"))
-        print(f"[{datetime.now()}] Loaded data from {self.output_dir}")
+    @staticmethod
+    def get_fits_from_template(fits_files, template):
+        return [file for file in fits_files if template in file].pop()
+
+    def load_saved_data(self, integration_time, tsl):
+        cache_dir = self.output_dir.joinpath("data_cache")
+        for file in os.listdir(cache_dir):
+            if file.endswith(".npy"):
+                if "it_"+str(integration_time) in file and "tsl_"+str(tsl) in file:
+                    print(f"Loading cached data from {file}")
+                    template = file.split("_it_")[0]
+                    self.data[template] = np.load(cache_dir.joinpath(file))
+        print(f"[{datetime.now()}] Loaded data from {cache_dir}")
 
     def store_scaler(self, dest_path):
         if self.scaler is None:
@@ -121,11 +131,12 @@ class DataManager:
                 self.data[runid] = np.append(self.data[runid], fd, axis=0)
 
         # save data as binary array
-        if not self.output_dir.exists():
-            self.output_dir.mkdir(parents=True)
+        cache_dir = self.output_dir.joinpath("data_cache")
+        if not cache_dir.exists():
+            cache_dir.mkdir(parents=True)
         for runid, data in self.data.items():
-            np.save(self.output_dir.joinpath(f"{runid}_it_{integration_time}_tsl_{tsl}.npy"), data)
-        print(f"[{datetime.now()}] Saved data to {self.output_dir}")
+            np.save(cache_dir.joinpath(f"{runid}_it_{integration_time}_tsl_{tsl}.npy"), data)
+        print(f"[{datetime.now()}] Saved data to {cache_dir}")
 
 
 
@@ -175,8 +186,7 @@ class DataManager:
 
         return DataManager.scale(self.scaler, train_x), train_y, DataManager.scale(self.scaler, val_x), val_y
 
-    # TODO: customize based on the scientific usecase
-    def get_test_set(self, template, onset, integration_time, sub_window_size, stride):
+    def get_test_set(self, template, onset, integration_time, sub_window_size, stride, verbose=False):
         """
         This method:
         """
@@ -186,8 +196,9 @@ class DataManager:
         if self.scaler is None:
             raise ValueError("Scaler not found")
 
-        pivot_idx = onset // integration_time
-        print("Pivot index: ", pivot_idx)
+        pivot_idx = onset//integration_time + 1 
+        if verbose:
+            print("Pivot index: ", pivot_idx)
 
         test_x_tot = None
         labels_tot = None
@@ -195,8 +206,9 @@ class DataManager:
             windows_before_pivot, windows_after_pivot = extract_sub_windows_pivot(ts, sub_window_size=sub_window_size, stride_size=stride, pivot_idx=pivot_idx)
             windows_before_pivot = DataManager.scale(self.scaler, windows_before_pivot)
             windows_after_pivot = DataManager.scale(self.scaler, windows_after_pivot)
-            #print("windows_before_pivot: ", windows_before_pivot.shape)
-            #print("windows_after_pivot: ", windows_after_pivot.shape)
+            if verbose:
+                print("windows_before_pivot: ", windows_before_pivot.shape)
+                print("windows_after_pivot: ", windows_after_pivot.shape)
             test_x = np.concatenate((windows_before_pivot, windows_after_pivot), axis=0)
             #print("test_x: ", test_x.shape)
             labels = np.array([False for i in range(len(windows_before_pivot))]+[True for i in range(len(windows_after_pivot))])
@@ -208,10 +220,11 @@ class DataManager:
                 test_x_tot = np.concatenate((test_x_tot, test_x), axis=0)
                 labels_tot = np.concatenate((labels_tot, labels), axis=0)
 
-        print(f"[{datetime.now()}] Loaded {len(self.data[template])} timeseries from template {template}.")
-        print(f"Single file shape before sub-windowing: {self.data[template][0].shape}. Single file shape after sub-windowing: {test_x.shape}")
-        print(f"[{datetime.now()}] test_x shape:", test_x_tot.shape)
-        print(f"[{datetime.now()}] test_y shape:", labels_tot.shape)
+        if verbose:
+            print(f"[{datetime.now()}] Loaded {len(self.data[template])} timeseries from template {template}.")
+            print(f"Single file shape before sub-windowing: {self.data[template][0].shape}. Single file shape after sub-windowing: {test_x.shape}")
+            print(f"[{datetime.now()}] test_x shape:", test_x_tot.shape)
+            print(f"[{datetime.now()}] test_y shape:", labels_tot.shape)
 
         #test_x_tot = DataManager.scale(self.scaler, test_x_tot)
             

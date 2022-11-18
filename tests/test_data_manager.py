@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 from pathlib import Path
 from rtapipe.lib.dataset.data_manager import DataManager
 from rtapipe.lib.datasource.Photometry3 import SimulationParams
@@ -55,16 +56,13 @@ class TestDataManager:
         DataManager.plot_timeseries(template, data_manager.data[template], 10, sim_params, output_dir)
 
     def test_transform_to_timeseries_multiple_templates_with_src(self, data_manager, output_dir):
-        """
-        BUG DEI TEMPLATES!!
-        """
         dataset_folder = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_c/fits_data"
         multiple_templates = True
         add_target_region = True
-        fits_files = DataManager.load_fits_data(dataset_folder, limit=50)
+        fits_files = DataManager.load_fits_data(dataset_folder, limit=5)
         sim_params = SimulationParams(runid=None, onset=250, emin=0.04, emax=1, tmin=0, tobs=500, offset=0.5, irf="North_z40_5h_LST", roi=2.5, caldb="prod5-v0.1", simtype="grb")
         data_manager.transform_to_timeseries(fits_files, sim_params, add_target_region, integration_time=5, number_of_energy_bins=3, tsl=100, normalize=True, threads=20, multiple_templates=multiple_templates)
-        assert len(list(data_manager.data.keys())) == 50
+        assert len(list(data_manager.data.keys())) == 5
         for template_name, data in data_manager.data.items():
             print("template_name", template_name)
             assert data.shape == (1, 100, 3) # (1 trial * 1 region, 100 points, 3 features)
@@ -99,8 +97,8 @@ class TestDataManager:
         sim_params = SimulationParams(runid=None, onset=0, emin=0.04, emax=1, tmin=0, tobs=500, offset=0.5, irf="North_z40_5h_LST", roi=2.5, caldb="prod5-v0.1", simtype="bkg")
         multiple_templates = False
         add_target_region = False
-        data_manager.transform_to_timeseries(fits_files, sim_params, add_target_region, integration_time=5, number_of_energy_bins=3, tsl=100, normalize=True, threads=30, multiple_templates=multiple_templates)
-        #data_manager.load_saved_data("notemplate", 5, 100)
+        #data_manager.transform_to_timeseries(fits_files, sim_params, add_target_region, integration_time=5, number_of_energy_bins=3, tsl=100, normalize=True, threads=30, multiple_templates=multiple_templates)
+        data_manager.load_saved_data(5, 100)
         assert data_manager.data["notemplate"].shape == (425, 100, 3)
         
         train_x, train_y , val_x, val_y = data_manager.get_train_set("notemplate", sub_window_size=5, stride=5, validation_split=50)
@@ -123,17 +121,21 @@ class TestDataManager:
         multiple_templates = True
         add_target_region = True
         sim_params = SimulationParams(runid=None, onset=250, emin=0.04, emax=1, tmin=0, tobs=500, offset=0.5, irf="North_z40_5h_LST", roi=2.5, caldb="prod5-v0.1", simtype="grb")
-        data_manager.transform_to_timeseries(fits_files, sim_params, add_target_region, integration_time=5, number_of_energy_bins=3, tsl=100, normalize=True, threads=20, multiple_templates=multiple_templates)
-        #data_manager.load_saved_data("run0001_ID000001", 5, 100)
-        
-        assert data_manager.data["run0001_ID000001"].shape == (1, 100, 3)
+        #data_manager.transform_to_timeseries(fits_files, sim_params, add_target_region, integration_time=5, number_of_energy_bins=3, tsl=100, normalize=True, threads=20, multiple_templates=multiple_templates)
+        data_manager.load_saved_data(5, 100)
 
-        test_x, test_y = data_manager.get_test_set(template="run0001_ID000001", onset=250, integration_time=5, sub_window_size=5, stride=5)
+        assert data_manager.data["run0002_ID000044"].shape == (1, 100, 3)
 
-        assert test_x.shape == (20, 5, 3)
-        assert test_y.shape == (20,)
+        test_x, test_y = data_manager.get_test_set(template="run0002_ID000044", onset=250, integration_time=5, sub_window_size=5, stride=1, verbose=True)
 
+        assert test_x.shape == (96, 5, 3)
+        assert test_y.shape == (96,)
+        last_normal_sample = 250//5 - 5
+
+        # check if numpy array contains all false
+        assert np.all(test_y[0:last_normal_sample] == False)        
+ 
         assert test_x[0].min() >= 0
         assert test_x[0].max() <= 1.0
 
-        DataManager.plot_timeseries("run0001_ID000001", test_x, 20, sim_params, output_dir, max_flux=1.5)
+        # DataManager.plot_timeseries("run0002_ID000044", test_x, 20, sim_params, output_dir, max_flux=1.5)
