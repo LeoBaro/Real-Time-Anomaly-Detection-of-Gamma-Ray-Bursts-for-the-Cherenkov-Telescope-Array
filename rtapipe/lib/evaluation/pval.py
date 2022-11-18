@@ -33,4 +33,4 @@ def get_pval_table(pvalues_path, gt_sigma, show=True):
     return pvalues_table
 
 def get_threshold_for_sigma(pval_table, min_sigma):
-    return pval_table[pval_table["sigma"]>5].iloc[0,:]["threshold"]
+    return pval_table[pval_table["sigma"]>min_sigma].iloc[0,:]["threshold"]

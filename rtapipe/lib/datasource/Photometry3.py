@@ -40,13 +40,13 @@ class SimulationParams:
             onset   = config.get('onset'),
             emin    = config.get('emin'),
             emax    = config.get('emax'),
-            delay    = config.get('delay'),
+            delay   = config.get('delay'),
             tobs    = config.get('tobs'),
             offset  = config.get('offset'),
             irf     = config.get('irf'),
             roi     = config.get('roi'),
             caldb   = config.get('caldb'),
-            simtype   = config.get('simtype')
+            simtype = config.get('simtype')
         )
 """
 class MetaRegion(type):
