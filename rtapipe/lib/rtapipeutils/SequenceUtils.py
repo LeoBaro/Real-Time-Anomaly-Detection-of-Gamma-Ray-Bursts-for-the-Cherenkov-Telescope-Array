@@ -45,7 +45,7 @@ def crop_sequence_around_center(array, center, offset):
 
 def extract_sub_windows(array, start, stop, sub_window_size, stride_size):
     """This method will extract subwindows from the axis=0 of a numpy array. 
-    Check test_WindowsExtractor.py for examples.
+    Check test_sequence_utils.py for examples.
 
     :param array: the input array, it can have different kind of shapes: [1,2,3], [[1],[2],[3]], [[1,1],[2,2],[3,3]]
     :type array: numpy.ndarray, required
@@ -89,7 +89,7 @@ def extract_sub_windows_pivot(array, sub_window_size, stride_size, pivot_idx, de
     :type sub_window_size: int, required
     :param stride_size: each subwindows will be distant from the previous one by 'stride_size' 
     :type stride_size: int, required
-    :param pivot_idx: The index of the pivot element.
+    :param pivot_idx: The index of the pivot element. The subwindows containing the pivot index will be part of the "windows_before_pivot" array.
     :type pivot_idx: int, required
     :param delta: The number of subwindows to extract before and after the pivot (total=2*delta)
     :type delta: tuple(int,int), required
@@ -99,7 +99,6 @@ def extract_sub_windows_pivot(array, sub_window_size, stride_size, pivot_idx, de
     """
     #num_subwindows_before_pivot = pivot_idx - sub_window_size # 0 1 2 3 4 5   pivot=4 sws=2 => num=2
     #num_subwindows_after_pivot = stop - pivot_idx + 1
-
     windows_before_pivot = extract_sub_windows(array, 0, pivot_idx, sub_window_size, stride_size)
     windows_after_pivot = extract_sub_windows(array, pivot_idx-sub_window_size+1, array.shape[0], sub_window_size, stride_size)        
 
