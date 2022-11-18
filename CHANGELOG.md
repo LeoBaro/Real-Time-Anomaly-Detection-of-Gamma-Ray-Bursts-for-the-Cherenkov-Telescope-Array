@@ -16,3 +16,7 @@
 * Major refactoring of OnlinePhotometry.
 * Add a new DataManager class to generate train set e test set. 
 * Spotted a bug that duplicate a region of each ring.
+* Added module to extract p-values, thresholds and significance levels.
+* P-value analysis using independent samples. 
+* Spotted a bug in the generation of the pivot to separate normal samples to anomalous ones.
+* Li&Ma vs AnomalyDetection notebook.
