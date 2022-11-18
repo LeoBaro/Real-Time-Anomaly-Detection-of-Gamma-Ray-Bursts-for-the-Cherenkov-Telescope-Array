@@ -1,7 +1,7 @@
 **.png
 **.log
 **.pickle
-
+**.npy
 
 rtapipe/notebooks/run_*/*
 rtapipe/notebooks/lstm_models_*/**
