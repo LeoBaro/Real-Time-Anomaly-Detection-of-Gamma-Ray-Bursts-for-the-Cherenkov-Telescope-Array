@@ -3,11 +3,13 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import json
 import tqdm
+import shutil
 import pickle
 import argparse
 import numpy as np
 from time import time
 from pathlib import Path
+from astropy.io import fits
 from datetime import datetime
 
 from rtapipe.lib.datasource.Photometry3 import OnlinePhotometry, SimulationParams
@@ -88,6 +90,11 @@ def main():
         photon_lists = pickle.load(f)
         if args.limit != 0:
             photon_lists = photon_lists[:args.limit]
+    
+    # get file name of the args.photon_lists_pickled
+    photon_lists_pickled_name = Path(args.photon_lists_pickled).name.split(".")[0]
+    
+    # remove extension
 
     print("Number of photon lists:", len(photon_lists))
 
@@ -122,19 +129,39 @@ def main():
 def process_batch(batch_index, batch, o_phm, scaler, ad, outputDir, verbose, job_name):
 
     start = time()
+    print(f"[{datetime.now()}] Loading batch {batch_index} into memory...")
+    ram_tmp = Path("/mnt/tmpfs").joinpath(job_name)
+    ram_tmp.mkdir(parents=True, exist_ok=True)
+    
+    pht_lists_data = []
+    for filename in batch:
+        # copy the file in /mnt/tmpfs/
+        tmp_filename = ram_tmp.joinpath(Path(filename).name)
+        shutil.copy(filename, tmp_filename)
+
+        with fits.open(tmp_filename, mode='readonly') as hdul:
+            pht_lists_data.append(
+                hdul['EVENTS'].data
+            )
+    if verbose:
+        print(f"Data loading took {time()-start} seconds.")
+    
+    s = time()
     print(f"[{datetime.now()}] Processing batch {batch_index}...")
     data = []
     for pht_list in tqdm.tqdm(batch, disable=bool(verbose==0)):           
             
         # Apply photometry with normalization (need to now T and TSL) --> get the object not the csv file!!
-        #s = time()
-        _, _, flux, _, _ = o_phm.integrate(pht_list, normalize=True, threads=1, with_metadata=False, integrate_from_regions="src") 
-        #print(f"Photometry took {time()-s} seconds.")
+        s = time()
+        _, _, flux, _, _ = o_phm.integrate(pht_list, pht_list_data=pht_lists_data, normalize=True, threads=1, with_metadata=False, integrate_from_regions="src") 
+        #if verbose:
+        #    print(f"Photometry took {time()-start} seconds.")
+
         data.append(flux)
 
     data = np.concatenate(data, axis=0)
     if verbose:
-        print(f"Photometry took {time()-start} seconds.")
+        print(f"Photometry took {time()-s} seconds.")
 
     # Apply the scaler
     s = time()
@@ -159,6 +186,8 @@ def process_batch(batch_index, batch, o_phm, scaler, ad, outputDir, verbose, job
     end_time_batch = time() - start
 
     print(f"Total time for batch {end_time_batch} seconds.", flush=True)
+
+    shutil.rmtree(ram_tmp)
 
 if __name__=='__main__':
     main()

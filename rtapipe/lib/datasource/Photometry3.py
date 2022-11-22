@@ -270,10 +270,13 @@ class OnlinePhotometry:
     
     
 
-    def integrate(self, pht_list, normalize=True, threads=10, with_metadata=False, regions_radius=None, max_offset=None, example_fits=None, add_target_region=False, remove_overlapping_regions_with_target=None, integrate_from_regions="bkg"):
+    def integrate(self, pht_list, normalize=True, threads=10, with_metadata=False, regions_radius=None, max_offset=None, example_fits=None, add_target_region=False, remove_overlapping_regions_with_target=None, integrate_from_regions="bkg", pht_list_data=None):
 
         t = time()
-        phm = Photometrics({ 'events_filename': pht_list })
+        if pht_list_data is None:
+            phm = Photometrics({ 'events_filename': pht_list })
+        else:
+            phm = Photometrics({ 'events_filename': pht_list, 'events_data': pht_list_data })
 
         if self.regions_config is None:
             self.preconfigure_regions(regions_radius, max_offset, example_fits, add_target_region, remove_overlapping_regions_with_target, compute_effective_area_for_normalization=normalize)
