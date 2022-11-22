@@ -28,6 +28,7 @@ class AnomalyDetectorBase:
         plot_predictions(X, y, self.threshold, self.reconstruct(X), self.loss_f.mse_per_sample.numpy(), self.loss_f.mse_per_sample_features.numpy(), features_names=features_names, max_plots=max_plots, epoch=epoch, showFig=showFig, saveFig=saveFig, outputDir=outputDir, figName=figName)
 
     def evaluate(self, X, y):
+        print("Using threshold", self.threshold)
         y_pred = self.predict(X)
         return self.evaluate_predictions(y, y_pred)
 
