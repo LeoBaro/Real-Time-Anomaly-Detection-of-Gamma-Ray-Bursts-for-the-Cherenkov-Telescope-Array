@@ -29,6 +29,8 @@ def main():
     parser = argparse.ArgumentParser(description='Simulate empty fields.')
     parser.add_argument('-cp', '--catalog-path', type=str, default='/scratch/baroncelli/DATA/templates/grb_afterglow/GammaCatalogV1.0', help='absolute path where cat is installed')
     parser.add_argument('-g', '--generate', type=bool, default=False, help='')
+    parser.add_argument('-p', '--plot', type=int, default=False, choices=[0,1], help='')
+    parser.add_argument('-t', '--template', type=str, default=False, help='')
     args = parser.parse_args()
     
     if args.generate:
@@ -38,6 +40,15 @@ def main():
 
     templates = [t for t in templates if "ebl" not in t.name]
 
+    if args.plot == 1:
+        fig, ax = plt.subplots(1,1,figsize=(10,10))
+        for t in templates:
+            if args.template+".fits" == t.name:
+                print(t.name)
+                ax.plot(t.time, t.flux)
+                ax.set_xlim(0, 800)
+                fig.savefig(f"template_{t.name}.png")
+                
     filtered_templates = filter_templates(templates, 1e-9)
     # write template names on file
     with open("filtered_templates.txt", "w") as f:
