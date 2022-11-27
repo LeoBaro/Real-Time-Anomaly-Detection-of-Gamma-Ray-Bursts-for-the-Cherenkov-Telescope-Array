@@ -12,7 +12,16 @@ from rtapipe.lib.datasource.Photometry3 import OnlinePhotometry
 class LiMa:
 
     @staticmethod
-    def detect(strategy, pht_list, integration_time=5, tobs=500, sigma_gt=0, get_first=False, region_radius=0.2, erange=[0.03, 1]):
+    def get_li_ma_bins(integration_time, tobs):
+        tbins = []
+        t_min=0
+        while t_min + integration_time <= tobs:
+            tbins.append(f"{t_min}-{t_min+integration_time}")
+            t_min += integration_time
+        return tbins
+
+    @staticmethod
+    def detect(strategy, pht_list, integration_time=5, stride=5, temporal_bins=[], tobs=500, sigma_gt=0, get_first=False, region_radius=0.2, erange=[0.03, 1]):
 
         if strategy not in ["binned", "cumulative"]:
             raise ValueError(f"Unknown Li&Ma strategy: {strategy}")
@@ -27,11 +36,17 @@ class LiMa:
 
         data = []
         if strategy == "binned":
-            t_min = 0
-            while t_min + integration_time <= tobs:
-                on, off, alpha, excess, sigma, err_note = phm.counting(src=target, rad=target['rad'], off_regions=off_regions, e_min=erange[0], e_max=erange[1], t_min=t_min, t_max=t_min + integration_time, draconian=False)
-                data.append([t_min, t_min + integration_time, on, off, alpha, excess, sigma, err_note])
-                t_min += 5
+            if len(temporal_bins) > 0:
+                _temporal_bins = [(float(t.split("-")[0]), float(t.split("-")[1])) for t in temporal_bins]
+                for tb in _temporal_bins:
+                    on, off, alpha, excess, sigma, err_note = phm.counting(src=target, rad=target['rad'], off_regions=off_regions, e_min=erange[0], e_max=erange[1], t_min=tb[0], t_max=tb[1], draconian=False)
+                    data.append([tb[0], tb[1], on, off, alpha, excess, sigma, err_note])
+            else:
+                t_min = 0
+                while t_min + stride <= tobs:
+                    on, off, alpha, excess, sigma, err_note = phm.counting(src=target, rad=target['rad'], off_regions=off_regions, e_min=erange[0], e_max=erange[1], t_min=t_min, t_max=t_min + integration_time, draconian=False)
+                    data.append([t_min, t_min + integration_time, on, off, alpha, excess, sigma, err_note])
+                    t_min += stride
 
         elif strategy == "cumulative":
             for tmax in range(0, tobs, 5):

@@ -58,6 +58,14 @@ class DataManager:
     def get_fits_from_template(fits_files, template):
         return [file for file in fits_files if template in file].pop()
 
+    @staticmethod
+    def get_tbin_of_sequences(number_of_sequences, integration_time, tsl, stride):
+        # TODO: consider the stride != 1
+        tbins = []
+        for index in range(number_of_sequences):
+            tbins.append(f"{index*integration_time}-{index*integration_time + integration_time*tsl}")
+        return tbins
+
     def load_saved_data(self, integration_time, tsl):
         cache_dir = self.output_dir.joinpath("data_cache")
         for file in os.listdir(cache_dir):

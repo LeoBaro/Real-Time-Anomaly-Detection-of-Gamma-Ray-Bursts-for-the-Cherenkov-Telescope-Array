@@ -64,3 +64,6 @@ def get_sigma_from_ts(pvalues_table, ts, verbose=False):
     f = interpolate.interp1d(pvalues_table["threshold"], pvalues_table["pvalue"])
 
     return get_sigma_from_pvalue(f(ts), decimals=10)
+
+def get_sigma_for_ts_array(pval_t: pd.DataFrame, ts_list: list, verbose: bool = False):
+    return [get_sigma_from_ts(pval_t, ts, verbose) for ts in ts_list] 
