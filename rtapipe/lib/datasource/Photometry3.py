@@ -86,18 +86,24 @@ class RegionsConfig:
         d = sqrt((r1.ra - r2.ra)**2 + (r1.dec - r2.dec)**2)
         return d < r1.rad + r2.rad
 
-    def compute_rings_regions(self, pointing, add_target_region=None, remove_overlapping_regions_with_target=False):
+    def compute_rings_regions(self, pointing, add_target_region=None, remove_overlapping_regions_with_target=False, rings_indexes=None):
 
         if pointing is None:
             raise ValueError("Pointing is None")
 
+        ring_index = 0
         offset = 2*self.regions_radius
         while offset <= self.max_offset:
+            if rings_indexes is not None and ring_index not in rings_indexes:
+                ring_index += 1
+                offset += 2*self.regions_radius
+                continue
             starting_region = self._add_offset_to_region(pointing, offset)
             ring_regions = Photometrics.find_off_regions('reflection', starting_region.get_dict(), pointing, self.regions_radius)
             self.rings[offset] = [Region(offset, rr["ra"], rr["dec"], self.regions_radius, {}, False) for rr in ring_regions]
             offset += 2*self.regions_radius
             offset = round(offset, 2)
+            ring_index += 1
 
         if add_target_region:
             # TODO: compute OFFSET between target and pointing.
@@ -207,14 +213,14 @@ class OnlinePhotometry:
         if max_points is not None:
             new_t_obs = max_points * integration_time
             if new_t_obs > tobs:
-                raise ValueError(f"max_points * integrationtime ({tobs}) > tobs ({tobs})")
+                raise ValueError(f"max_points ({max_points}) * integrationtime ({integration_time}) > tobs ({tobs})")
             tobs = new_t_obs
         return PhotometryUtils.getLinearWindows(0, tobs , int(integration_time), int(integration_time))
 
     def get_number_of_regions(self, regions_type="all"):
         return len(self.regions_config.get_flatten_configuration(regions_type=regions_type))
 
-    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=True):
+    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=True, rings_indexes=None):
         """
         Compute the regions configuration and the effective area for each region.
         """
@@ -229,7 +235,7 @@ class OnlinePhotometry:
         #print("Target: ", target)
         #print("Pointing: ", pointing)
 
-        self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target)
+        self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, rings_indexes=rings_indexes)
 
         if compute_effective_area_for_normalization:
             irf = Path(os.environ['CTOOLS']).joinpath("share","caldb","data","cta",self.simulation_params.caldb,"bcf",self.simulation_params.irf)

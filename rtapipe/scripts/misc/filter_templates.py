@@ -26,11 +26,17 @@ def load_data():
     return templates
 
 def main():
+    """
+    Background level: 1.226381962327406e-09 +- 9.58534594508533e-10
+    """
     parser = argparse.ArgumentParser(description='Simulate empty fields.')
     parser.add_argument('-cp', '--catalog-path', type=str, default='/scratch/baroncelli/DATA/templates/grb_afterglow/GammaCatalogV1.0', help='absolute path where cat is installed')
     parser.add_argument('-g', '--generate', type=bool, default=False, help='')
     parser.add_argument('-p', '--plot', type=int, default=False, choices=[0,1], help='')
     parser.add_argument('-t', '--template', type=str, default=False, help='')
+    parser.add_argument('-fmin', '--flux-min', type=float, default=2.678473678188729e-10, help='')
+    parser.add_argument('-fmax', '--flux-max', type=float, default=1.226381962327406e-09, help='')
+
     args = parser.parse_args()
     
     if args.generate:
@@ -49,16 +55,16 @@ def main():
                 ax.set_xlim(0, 800)
                 fig.savefig(f"template_{t.name}.png")
                 
-    filtered_templates = filter_templates(templates, 1e-9)
+    filtered_templates = filter_templates(templates, args.flux_min, args.flux_max)
     # write template names on file
-    with open("filtered_templates.txt", "w") as f:
+    with open(f"filtered_templates_fmin_{round(args.flux_min, 2)}_fmax_{round(args.flux_max, 2)}.txt", "w") as f:
         f.write("[")
         for template in filtered_templates:
             f.write(template.name.replace(".fits", "")+",")
         f.write("]")
 
     plot_max_flux_distribution(templates, "all templates", f"GammaCatalogV1.0 ({len(templates)} templates)")
-    plot_max_flux_distribution(filtered_templates, "filtered", "Flux > 1e-11")
+    plot_max_flux_distribution(filtered_templates, "filtered", f"{round(args.flux_min, 5)} < Flux < {round(args.flux_max, 5)}")
 
 def plot_max_flux_distribution(templates, name, title=""):
     max_fluxes = []
@@ -92,14 +98,15 @@ def plot_max_flux_distribution(templates, name, title=""):
 
 
 
-def filter_templates(templates, threshold):
+def filter_templates(templates, threshold_min, threshold_max):
     filtered_templates = []
     for template in templates:
         if template.name == "run0406_ID000126.fits":
             print("Max flux of run0406_ID000126: ", np.max(template.flux))
         
-        if np.max(template.flux) > threshold:
+        if np.max(template.flux) > threshold_min and np.max(template.flux) < threshold_max:
             filtered_templates.append(template)
+
     print("Number of filtered templates: ", len(filtered_templates))
     return filtered_templates
 

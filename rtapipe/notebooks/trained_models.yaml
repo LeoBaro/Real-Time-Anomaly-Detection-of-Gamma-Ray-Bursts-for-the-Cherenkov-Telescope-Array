@@ -1,23 +1,8 @@
 # array of structures
 models:
 
-  - patience: 10
-    timesteps: 5
-    nfeatures: 3
-    name: "AnomalyDetector_cnn_l2_u32"
-    path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_39"
-    epoch: 39
-    pval_path: ""
-
-  - patience: 10
-    timesteps: 5
-    nfeatures: 3
-    name: "AnomalyDetector_rnn_l2_u32"
-    path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221112-170625_T_5_TSL_5_multiple_regions/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_15"
-    epoch: 15
-    pval_path: ""
-
   - patience: 5
+    integrationtime: 5
     timesteps: 5
     nfeatures: 3
     name: "AnomalyDetector_cnn_l2_u32"
@@ -26,9 +11,29 @@ models:
     pval_path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221116-101109_mr_patience_5/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_19/pvalues/pval_20221118-113940/pvalue_bins_100_0.numpy.txt"
 
   - patience: 5
+    integrationtime: 5
     timesteps: 5
     nfeatures: 3
     name: "AnomalyDetector_rnn_l2_u32"
     path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221116-101109_mr_patience_5/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_10"
     epoch: 10
     pval_path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221116-101109_mr_patience_5/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_10/pvalues/pval_20221121-132236/pvalue_bins_100_0.numpy.txt"
+
+
+  - patience: 5
+    integrationtime: 1
+    timesteps: 5
+    nfeatures: 3
+    name: "AnomalyDetector_cnn_l2_u32"
+    path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221127-155511/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_1_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_12"
+    epoch: 12
+    pval_path: ""
+
+  - patience: 5
+    integrationtime: 1
+    timesteps: 5
+    nfeatures: 3
+    name: "AnomalyDetector_rnn_l2_u32"
+    path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221127-155511/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_1_a_tsl_5_nbins_3_tsl_3600/epochs/epoch_15"
+    epoch: 15
+    pval_path: ""

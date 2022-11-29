@@ -52,7 +52,10 @@ class AnomalyDetectorBase:
 
     def detection_delay(self, y, y_pred, number_of_files, tsl):
 
-        samples_per_file = y.shape[0] // number_of_files
+        if y.shape[0] % number_of_files == 0:
+            samples_per_file = y.shape[0] // number_of_files
+        else:
+            samples_per_file = y.shape[0] // number_of_files + 1
         #print("samples_per_file", samples_per_file)
 
         samples_index_start = [i for i in range(0, y.shape[0], samples_per_file)]
@@ -64,15 +67,18 @@ class AnomalyDetectorBase:
             while y[s + i] == 0:
                 i += 1
             anomaly_index_start.append(s + i)
-        #print("anomaly_index_start", anomaly_index_start)
         anomaly_detection_delay_avg = 0
+        #print("anomaly_index_start", anomaly_index_start)
+        #print(y_pred.shape)
         for ais in anomaly_index_start:
-            #print(y_pred[ais:ais+10])
+            if True not in y_pred[ais:ais + samples_per_file//2]:
+                continue
             delay = 0
             while not y_pred[ais + delay] and delay < samples_per_file/2:
                 delay += 1
             anomaly_detection_delay_avg += delay
             #print("anomaly_detection_delay_avg", anomaly_detection_delay_avg)
+        #print("anomaly_detection_delay_avg", anomaly_detection_delay_avg)
         anomaly_detection_delay_avg /= len(anomaly_index_start)
         #print("anomaly_detection_delay_avg", anomaly_detection_delay_avg)
         return anomaly_detection_delay_avg

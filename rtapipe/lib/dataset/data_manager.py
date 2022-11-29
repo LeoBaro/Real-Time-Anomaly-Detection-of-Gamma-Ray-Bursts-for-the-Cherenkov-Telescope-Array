@@ -76,11 +76,11 @@ class DataManager:
                     self.data[template] = np.load(cache_dir.joinpath(file))
         print(f"[{datetime.now()}] Loaded data from {cache_dir}")
 
-    def store_scaler(self, dest_path):
+    def store_scaler(self, integration_time, tsl, dest_path):
         if self.scaler is None:
             raise ValueError("Scaler is None. Call fit_scaler() first.")
         Path(dest_path).mkdir(parents=True, exist_ok=True)
-        with open(Path(dest_path).joinpath('fitted_scaler.pickle'), 'wb') as handle:
+        with open(Path(dest_path).joinpath(f'fitted_scaler_itime_{integration_time}_tsl_{tsl}.pickle'), 'wb') as handle:
             pickle.dump(self.scaler, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def load_scaler(self, scaler_path):
@@ -193,7 +193,7 @@ class DataManager:
             pickle.dump(self.scaler, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         return DataManager.scale(self.scaler, train_x), train_y, DataManager.scale(self.scaler, val_x), val_y
-
+        
     def get_test_set(self, template, onset, integration_time, sub_window_size, stride, verbose=False):
         """
         This method:
@@ -238,7 +238,20 @@ class DataManager:
             
         return test_x_tot, labels_tot
 
-
+    def get_test_set_all_templates(self, onset, integration_time, sub_window_size, stride, verbose=False):
+        test_x_tot = None
+        labels_tot = None
+        for template in self.data:
+            template_x, template_y = self.get_test_set(template, onset, integration_time, sub_window_size, stride, verbose)
+            if test_x_tot is None:
+                test_x_tot = template_x
+                labels_tot = template_y
+            else:
+                test_x_tot = np.concatenate((test_x_tot, template_x), axis=0)
+                labels_tot = np.concatenate((labels_tot, template_y), axis=0)
+        print(f"[{datetime.now()}] Total x shape shape:", test_x_tot.shape)
+        print(f"[{datetime.now()}] Total y shape shape:", labels_tot.shape)
+        return test_x_tot, labels_tot
 
     @staticmethod
     def plot_timeseries(template_name, data, trials, sim_params, output_dir, max_flux=None, labels=[]):
