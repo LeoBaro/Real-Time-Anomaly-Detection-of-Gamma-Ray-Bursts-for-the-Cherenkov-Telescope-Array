@@ -1,10 +1,12 @@
+import yaml
 from pathlib import Path
 from tensorflow import keras
 
+from rtapipe.lib.utils.misc import dotdict
+from rtapipe.lib.evaluation.pval import get_pval_table
 from rtapipe.lib.models.anomaly_detector_lstm import *
 from rtapipe.lib.models.anomaly_detector_rnn import *
 from rtapipe.lib.models.anomaly_detector_cnn import *
-from rtapipe.lib.evaluation.custom_mse import CustomMSE
 
 class AnomalyDetectorBuilder:
 
@@ -14,6 +16,22 @@ class AnomalyDetectorBuilder:
         if model_type is not None:
             models = [model for model in models if model_type in model]
         return models
+
+    @staticmethod
+    def load_model(model_id):
+        
+        with open(Path(__file__).parent.joinpath("trained_models.yaml"), "r") as f:
+            try:
+                configs = yaml.safe_load(f)
+            except yaml.YAMLError as exc:
+                print(exc)
+
+        model_config = dotdict([c for c in configs["models"] if c["id"] == model_id].pop())        
+        model_config["ad"] = AnomalyDetectorBuilder.getAnomalyDetector(name=model_config["name"], timesteps=model_config["timesteps"], nfeatures=model_config["nfeatures"], load_model="True", training_epoch_dir=model_config["path"], training=False)
+        model_config["pvalue_table"] = get_pval_table(model_config["pval_path"]) 
+        return model_config
+
+
 
     @staticmethod
     def getAnomalyDetector(name, timesteps, nfeatures, load_model=False, training_epoch_dir=None, training=True):

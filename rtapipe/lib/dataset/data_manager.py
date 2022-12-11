@@ -5,7 +5,7 @@ from tqdm import tqdm
 from pathlib import Path
 from datetime import datetime
 
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
 
 from rtapipe.lib.plotting.APPlot import APPlot
 from rtapipe.lib.rtapipeutils.FileSystemUtils import parse_params
@@ -76,11 +76,13 @@ class DataManager:
                     self.data[template] = np.load(cache_dir.joinpath(file))
         print(f"[{datetime.now()}] Loaded data from {cache_dir}")
 
-    def store_scaler(self, integration_time, tsl, dest_path):
+    def store_scaler(self, integration_time, tsl, scaler_type, dest_path):
         if self.scaler is None:
             raise ValueError("Scaler is None. Call fit_scaler() first.")
         Path(dest_path).mkdir(parents=True, exist_ok=True)
-        with open(Path(dest_path).joinpath(f'fitted_scaler_itime_{integration_time}_tsl_{tsl}.pickle'), 'wb') as handle:
+        output_file_path = Path(dest_path).joinpath(f'fitted_scaler_{scaler_type}_itime_{integration_time}_tsl_{tsl}.pickle')
+        print(f"Storing scaler to {output_file_path}")
+        with open(output_file_path, 'wb') as handle:
             pickle.dump(self.scaler, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def load_scaler(self, scaler_path):
@@ -146,11 +148,7 @@ class DataManager:
             np.save(cache_dir.joinpath(f"{runid}_it_{integration_time}_tsl_{tsl}.npy"), data)
         print(f"[{datetime.now()}] Saved data to {cache_dir}")
 
-
-
-
-
-    def get_train_set(self, template, sub_window_size, stride, validation_split=70, make_plots=False):
+    def get_train_set(self, template, sub_window_size, stride, validation_split=70, make_plots=False, scaler_type="minmax", remove_outliers=False):
         """
         This method:
             - extract subsequences from the timeseries
@@ -183,13 +181,30 @@ class DataManager:
 
         print(f"[{datetime.now()}] Train set shape: {train_x.shape} - Validation set shape: {val_x.shape}")
 
-        self.scaler = MinMaxScaler(feature_range=(0,1))
+        if remove_outliers:
+            print(f"[{datetime.now()}] Removing outliers from train set")
+            train_x, train_y = DataManager.remove_outliers(train_x, train_y)
+            print(f"[{datetime.now()}] Train set shape after removing outliers: {train_x.shape}")
+
+        if scaler_type == "minmax":
+            self.scaler = MinMaxScaler(feature_range=(0,1))
+            print(f"[{datetime.now()}] Data will be scaled to 0-1")
+        
+        elif scaler_type == "standard":
+            self.scaler = StandardScaler()
+            print(f"[{datetime.now()}] Data will be scaled to 0 mean and unit variance")
+        
+        elif scaler_type == "robust":
+            self.scaler = RobustScaler()
+            print(f"[{datetime.now()}] Data will be scaled to 0 mean and unit variance removing outliers")
+
+        else:
+            raise ValueError(f"Scaler {scaler_type} not supported")
+        
         self.scaler.fit(train_x.reshape(-1, train_x.shape[-1]))
 
-        print(f"[{datetime.now()}] Data is scaled to 0-1")
-
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        with open(self.output_dir.joinpath('fitted_scaler.pickle'), 'wb') as handle:
+        with open(self.output_dir.joinpath(f'fitted_scaler_{scaler_type}.pickle'), 'wb') as handle:
             pickle.dump(self.scaler, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         return DataManager.scale(self.scaler, train_x), train_y, DataManager.scale(self.scaler, val_x), val_y
