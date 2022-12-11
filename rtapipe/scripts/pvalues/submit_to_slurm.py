@@ -65,6 +65,21 @@ def main():
     rnn - patience 5
     submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221116-101109_mr_patience_5/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_5_a_tsl_5_nbins_3_tsl_3600 -e 10 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
 
+    rnn - patience 5 scaler robust
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221130-094250_it_5_pat_5_scaler_robust/model_AnomalyDetector_rnn_l2_u32_dataset_train_set_c_tsl_5_nbins_3_tsl_3600 -e 11 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
+
+
+
+
+
+
+    cnn - 5 epochs!
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221205-172739_5_epochs/model_AnomalyDetector_cnn_l2_u32_dataset_train_set_c_tsl_5_nbins_3_tsl_3600 -e 5 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
+
+    rnn - 5 epochs!
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221205-172739_5_epochs/model_AnomalyDetector_rnn_l2_u32_dataset_train_set_c_tsl_5_nbins_3_tsl_3600 -e 5 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
+
+
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("-tmd", "--trained-model-dir", type=str, required=True, help="")

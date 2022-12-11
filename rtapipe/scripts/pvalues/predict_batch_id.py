@@ -71,7 +71,11 @@ def main():
     ad = AnomalyDetectorBuilder.getAnomalyDetector(name=model_params["name"], timesteps=model_params["timesteps"], nfeatures=model_params["nfeatures"], load_model="True", training_epoch_dir=model_dir, training=False)
 
     # Load the fitted scaler -> must be saved on disk
-    scaler = load_scaler(Path(args.trained_model_dir).joinpath("fitted_scaler.pickle"))
+    for file_name in os.listdir(args.trained_model_dir):
+        if "fitted_scaler" in file_name:
+            scaler_path = Path(args.trained_model_dir).joinpath(file_name)
+            break
+    scaler = load_scaler(scaler_path)
 
     # Load the dataset parameters
     dataset_params = load_parameters(Path(args.trained_model_dir).joinpath("dataset_params.json"))
