@@ -124,7 +124,7 @@ def plot_recostruction_errors_distribution(recostructions, output_dir):
     fig.savefig(Path(output_dir).joinpath("reco_distributions.png"))
 
 
-def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, features_names=[], epoch="", max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
+def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, features_names=[], integration_time=5, epoch="", max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
 
     pc = PlotConfig()
 
@@ -146,8 +146,16 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
             print("Max plots reached")
             break
 
+
+
+                
+        annotations = [f"{i*integration_time}-{i*integration_time+samples.shape[1]}" for i in range(0,96)]
+        xticks = [i*5 for i in range(0,96)]
+
         current_samples = samples[start:start+max_samples, :, :]
         current_samplesLabels = samplesLabels[start:start+max_samples]
+        current_samples_annotations = annotations[start:start+max_samples]
+        current_samples_xticks = xticks[start:start+max_samples]
         current_recostructions = recostructions[start:start+max_samples, :, :]
         current_mask = mask[start:start+max_samples]
         current_mse_per_sample_features = mse_per_sample_features[start:start+max_samples]
@@ -164,8 +172,12 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
         real_labels = ["grb" if lab==1 else "bkg" for lab in current_samplesLabels ]
         pred_labels = ["grb" if lab==1 else "bkg" for lab in current_mask          ]
 
-        fig, ax = plt.subplots(n_features, max_samples, figsize=pc.fig_size)
-        fig.suptitle(f"Predictions (using threshold={round(c_threshold, 3)})")
+        fig, ax = plt.subplots(n_features, max_samples, figsize=(pc.fig_size[0]*2,pc.fig_size[1]*2))
+        fig.suptitle(f"5σ threshold={round(c_threshold, 3)}")
+        #fig.suptitle(f"Predictions (using threshold={round(c_threshold, 3)})")
+        fig.supylabel('Energy bins (TeV)')
+
+      
 
         # For each feature..
         for f in range(n_features):
@@ -181,14 +193,17 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
                 ax[f, i].plot(sample,     color="blue", marker='o', markersize=6, linestyle='dashed', label="ground truth")
                 ax[f, i].set_ylim(ymin, ymax)
 
+                
+                ax[f, i].set_xticks(current_samples_xticks, current_samples_annotations, fontsize=10)
+
                 if real_labels[i] != pred_labels[i]:
                     ax[f, i].set_facecolor('#e6e6e6')
 
                 # Only the first column will show the Y labels
                 if i == 0:
-                    ax[f, i].set_ylabel(features_names[f])
+                    ax[f, i].set_ylabel(features_names[f].split("EB_")[1].split(" TeV")[0])
 
-                ax[f, i].set_xticks([])
+
                 ax[f, i].set_xlabel("mse={:.6f}".format(current_mse_per_sample_features[i, f]))
 
                 # Only the first row will show the TN/FP/FN/TP labels and the averaged mse

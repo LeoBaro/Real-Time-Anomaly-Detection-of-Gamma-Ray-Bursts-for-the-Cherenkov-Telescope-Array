@@ -12,13 +12,13 @@ class PlotConfig:
         # compared to the content of the figure, and also ensures that if the 
         # defaults change, your plot will not.
         self.fig_size = (15, 8)
-        self.fig_suptitle_size = 20
-        self.fig_title_size = 15
+        self.fig_suptitle_size = 35
+        self.fig_title_size = 25
 
         # Choose the font family (‘serif’ or ‘sans-serif’ to match the paper, 
         # most of the time, ‘serif’ is best):
         # Set the global font to be DejaVu Sans, size 10 (or any other sans-serif font of your choice!)
-        rc('font',**{'family':'sans-serif','sans-serif':['DejaVu Sans'],'size':15})
+        rc('font',**{'family':'sans-serif','sans-serif':['DejaVu Sans'],'size':23})
 
         # Set the font used for MathJax - more on this later
         rc('mathtext',**{'default':'regular'})
@@ -38,9 +38,7 @@ class PlotConfig:
 
         self.dpi = 300
 
-    def get_histogram_colors(self):
-        return {"color" : "grey", "ec" : "black"}
-
+ 
     def test(self):
         fig = plt.figure(figsize=(4, 3))
         ax = fig.add_subplot(1, 1, 1)
