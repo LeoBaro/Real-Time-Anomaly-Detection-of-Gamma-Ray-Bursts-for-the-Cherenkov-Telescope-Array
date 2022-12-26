@@ -47,6 +47,7 @@ def main():
     parser.add_argument("-jn",  "--job_name", type=str, required=True, help="")
     parser.add_argument("-plp", "--photon_lists_pickled", type=str, required=True, help="")
     parser.add_argument("-tmd", "--trained_model_dir", type=str, required=True, help="")
+    parser.add_argument("-it",  "--integration_time", type=int, required=True, help="")
     parser.add_argument("-e",   "--epoch", type=int, required=True, help="The epoch of the training")
     parser.add_argument("-od",  "--output_dir", type=str, required=True, help="If this is not None or empty, the files containing the reconstruction errors will be placed into this folder.")
     parser.add_argument("-bs",  "--batch_size", type=int, required=False, default=0, help="The input photons lists will be divided in batches. Photometry and models predictions will be applied per-batch")
@@ -86,7 +87,7 @@ def main():
 
     # The class that will be used to do photometry
     sim_params = SimulationParams(runid=dataset_params["runid"], onset=0, emin=0.04, emax=1, tmin=0, tobs=500, offset=0.5, irf="North_z40_5h_LST", roi=2.5, caldb="prod5-v0.1", simtype="bkg")
-    o_phm = OnlinePhotometry(sim_params, integration_time=5, tsl=5, number_of_energy_bins=3)
+    o_phm = OnlinePhotometry(sim_params, integration_time=args.integration_time, tsl=5, number_of_energy_bins=3)
 
     
     # Load pickled input

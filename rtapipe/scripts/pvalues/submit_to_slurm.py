@@ -31,7 +31,7 @@ def create_input_file_for_predictions(jobName, files, jobsInputDir):
          pickle.dump(files, ff)
     return input_pickle
 
-def create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pickle, trained_model_dir, epoch, pvalueFolder, batch_size):
+def create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pickle, trained_model_dir, epoch, pvalueFolder, batch_size, integration_time):
 
     jobFile = jobsFileDir.joinpath(f"{jobName}.ll")
     jobOut = jobsOutDir.joinpath(f"{jobName}.out")
@@ -42,7 +42,7 @@ def create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pick
         jf.write(f"#SBATCH --output={jobOut}\n")
         jf.write(f"#SBATCH --cpus-per-task={CPU_PER_TASK}\n")
         jf.write(f"#SBATCH --partition={PARTITION}\n")
-        jf.write(f"predict_batch_id -jn {jobName} -plp {input_pickle} -tmd {trained_model_dir} -e {epoch} -od {pvalueFolder} -bs {batch_size} -v 0 \n")
+        jf.write(f"predict_batch_id -jn {jobName} -plp {input_pickle} -tmd {trained_model_dir} -it {integration_time} -e {epoch} -od {pvalueFolder} -bs {batch_size} -v 0 \n")
 
     return jobFile
 
@@ -80,10 +80,21 @@ def main():
     submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221205-172739_5_epochs/model_AnomalyDetector_rnn_l2_u32_dataset_train_set_c_tsl_5_nbins_3_tsl_3600 -e 5 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
 
 
+    # Integration time = 1
+       rnn - 5 epochs!
+
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221220-224157_it_1/model_AnomalyDetector_rnn_l2_u32_dataset_train_itime_1_a_tsl_5_nbins_3_tsl_500 -e 5 -it 1 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
+
+    # Integration time = 1
+       cnn - 5 epochs!
+
+    submit_to_slurm -tmd /data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221220-224157_it_1/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_1_a_tsl_5_nbins_3_tsl_500 -e 5 -it 1 -pvdp /scratch/baroncelli/DATA/obs/backgrounds_prod5b_10mln/backgrounds  -nf 9000000 -nj 100
+
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("-tmd", "--trained-model-dir", type=str, required=True, help="")
     parser.add_argument("-e", "--epoch", type=int, required=True, help="The epoch of the training")
+    parser.add_argument("-it",  "--integration_time", type=int, required=True, help="")
     parser.add_argument("-pvdp", "--pvalue_dataset_path", type=str, required=True, help="The dataset to be used for the p-value computation")
     parser.add_argument("-nf", "--num_files", type=int, required=True, help="To limit the total number of input files")
     parser.add_argument("-nj", "--num_jobs", type=int, required=True, help="The max number of jobs. The number of files per job is num_files/num_jobs")
@@ -121,7 +132,7 @@ def main():
         arguments["output_dir"] = jobName
         input_pickle = create_input_file_for_predictions(jobName, files[startId:startId+total_samples_per_job], jobsInputDir)
         jobFiles.append(
-            create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pickle, args.trained_model_dir, args.epoch, pvalueFolder, args.batch_size)
+            create_job_file_for_predictions(jobName, jobsFileDir, jobsOutDir, input_pickle, args.trained_model_dir, args.epoch, pvalueFolder, args.batch_size, args.integration_time)
         )
         startId += total_samples_per_job
 
