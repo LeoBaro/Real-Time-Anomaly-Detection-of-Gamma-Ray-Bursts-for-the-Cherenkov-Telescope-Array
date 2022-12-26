@@ -21,8 +21,11 @@ class LiMa:
         return tbins
 
     @staticmethod
-    def detect(strategy, pht_list, integration_time=5, stride=5, temporal_bins=[], tobs=500, sigma_gt=0, get_first=False, region_radius=0.2, erange=[0.03, 1]):
-
+    def detect(pht_list=None, strategy="binned", integration_time=5, stride=5, temporal_bins=[], tobs=500, sigma_gt=0, get_first=False, region_radius=0.2, erange=[0.03, 1]):
+        
+        if pht_list is None:
+            raise ValueError("No pht_list provided")
+            
         if strategy not in ["binned", "cumulative"]:
             raise ValueError(f"Unknown Li&Ma strategy: {strategy}")
 
