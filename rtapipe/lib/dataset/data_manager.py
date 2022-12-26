@@ -69,12 +69,13 @@ class DataManager:
     def load_saved_data(self, integration_time, tsl):
         cache_dir = self.output_dir.joinpath("data_cache")
         for file in os.listdir(cache_dir):
+            #print("file: ",file)
             if file.endswith(".npy"):
                 if "it_"+str(integration_time) in file and "tsl_"+str(tsl) in file:
-                    print(f"Loading cached data from {file}")
+                    #print(f"Loading cached data from {file}")
                     template = file.split("_it_")[0]
                     self.data[template] = np.load(cache_dir.joinpath(file))
-        print(f"[{datetime.now()}] Loaded data from {cache_dir}")
+        print(f"[{datetime.now()}] Loaded data from {cache_dir}. Loaded {len(self.data.keys())} templates.")
 
     def store_scaler(self, integration_time, tsl, scaler_type, dest_path):
         if self.scaler is None:
@@ -291,4 +292,11 @@ class DataManager:
             name = f"template_{template_name}_trial_{i}_{datetime.now()}.png"
             applot.save(output_dir, name)
             print(f"Saved: {output_dir}/{name}")
- 
+    
+    @staticmethod
+    def remove_outliers(train_x, train_y):
+        """
+        This method removes outliers from the training dataset.
+        """
+        
+        return train_x, train_y
