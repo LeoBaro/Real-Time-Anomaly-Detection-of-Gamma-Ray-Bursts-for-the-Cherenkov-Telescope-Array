@@ -25,17 +25,56 @@ def load_data():
     templates = np.load('templates.npy', allow_pickle=True)
     return templates
 
+
+
+
+def filter_templates(templates, threshold_min, threshold_max):
+    selected_templates = []
+    not_selected_templates = []
+    max_flux = np.max(templates[0].flux)
+    print("Filtering with threshold_min: ", threshold_min, " and threshold_max: ", threshold_max, "")
+    for template in templates:
+        if template.name == "run0406_ID000126.fits":
+            print("Max flux of run0406_ID000126: ", np.max(template.flux))
+        
+        if np.max(template.flux) >= threshold_min:
+            selected_templates.append(template)
+            if np.max(template.flux) > max_flux:
+                max_flux = np.max(template.flux)
+        else:
+            not_selected_templates.append(template)
+
+    return selected_templates, not_selected_templates, max_flux
+
+def get_max_fluxes(templates):
+    max_fluxes = []
+    for template in templates:
+        max_fluxes.append(np.max(template.flux))
+    return np.array(max_fluxes)
+
+def write_templates(templates, filename):
+    with open(f"{filename}.txt", "w") as f:
+        f.write("[")
+        for i,template in enumerate(templates):
+            f.write(template.name.replace(".fits", ""))
+            if i == len(templates)-1:
+                f.write("]")
+            else:
+                f.write(",")
+ 
+
 def main():
     """
-    Background level: 1.226381962327406e-09 +- 9.58534594508533e-10
+    Background level: 
+        2.678473678188729e-10 < 1.226381962327406e-09 (irf) < inf
     """
+
+
     parser = argparse.ArgumentParser(description='Simulate empty fields.')
     parser.add_argument('-cp', '--catalog-path', type=str, default='/scratch/baroncelli/DATA/templates/grb_afterglow/GammaCatalogV1.0', help='absolute path where cat is installed')
     parser.add_argument('-g', '--generate', type=bool, default=False, help='')
-    parser.add_argument('-p', '--plot', type=int, default=False, choices=[0,1], help='')
+    parser.add_argument('-p', '--plot', type=int, default=0, choices=[0,1], help='')
     parser.add_argument('-t', '--template', type=str, default=False, help='')
-    parser.add_argument('-fmin', '--flux-min', type=float, default=2.678473678188729e-10, help='')
-    parser.add_argument('-fmax', '--flux-max', type=float, default=1.226381962327406e-09, help='')
 
     args = parser.parse_args()
     
@@ -55,60 +94,66 @@ def main():
                 ax.set_xlim(0, 800)
                 fig.savefig(f"template_{t.name}.png")
                 
-    filtered_templates = filter_templates(templates, args.flux_min, args.flux_max)
-    # write template names on file
-    with open(f"filtered_templates_fmin_{round(args.flux_min, 2)}_fmax_{round(args.flux_max, 2)}.txt", "w") as f:
-        f.write("[")
-        for template in filtered_templates:
-            f.write(template.name.replace(".fits", "")+",")
-        f.write("]")
 
-    plot_max_flux_distribution(templates, "all templates", f"GammaCatalogV1.0 ({len(templates)} templates)")
-    plot_max_flux_distribution(filtered_templates, "filtered", f"{round(args.flux_min, 5)} < Flux < {round(args.flux_max, 5)}")
+    irf_bg = 1.226381962327406e-09
+    sigma_1_neg = 2.678473678188729e-10
+    print("Total number of templates: ", len(templates))
 
-def plot_max_flux_distribution(templates, name, title=""):
-    max_fluxes = []
-    for template in templates:
-        max_fluxes.append(np.max(template.flux))
-    max_fluxes = np.array(max_fluxes)
-    
-    #max_fluxes = (max_fluxes-max_fluxes.min())/(max_fluxes.max()-max_fluxes.min())
-    #print(max_fluxes.max(), max_fluxes.min())
-    #print(max_fluxes[0:100])
-    #max_fluxes = max_fluxes[max_fluxes<0.1] 
-    #print("Number of filtered templates < 0.1: ", len(max_fluxes))
+    test_set_H_templates, other_templates, max_flux_h = filter_templates(templates, sigma_1_neg, 1)
+    print("Number of templates in test set H: ", len(test_set_H_templates))
+    print("Number of templates in other set: ", len(other_templates))
+    print("Max flux h : ", max_flux_h)
+
+    test_set_E_templates, other_templates, max_flux_e = filter_templates(templates, irf_bg, 1)
+    print("Number of templates in test set E: ", len(test_set_E_templates))
+    print("Number of templates in other set: ", len(other_templates))
+    print("Max flux e: ", max_flux_e)
+
+
+    #flux_range_E = f"{irf_bg:.3E} <= Flux <= {max_flux_e:.3E}"
+    #flux_range_H = f"{sigma_1_neg:.3E} <= Flux <= {max_flux_h:.3E}"
+
+    write_templates(test_set_E_templates, f"selected_templates_test_set_E")
+    write_templates(test_set_H_templates, f"selected_templates_test_set_H")
+
+    plot_max_flux_distribution(get_max_fluxes(test_set_H_templates), get_max_fluxes(test_set_E_templates), get_max_fluxes(other_templates), irf_bg, sigma_1_neg)
+
+
+def plot_max_flux_distribution(test_set_H_templates, test_set_E_templates, other_templates, irf_bg, sigma_1_neg):
 
     print("Producing histogram...")
     pc = PlotConfig()
     fig, ax = plt.subplots(1,1,figsize=pc.fig_size)
     fig.suptitle(f"Distribution of the maximum flux of the templates", fontsize=pc.fig_suptitle_size)
-    ax.set_title(title, fontsize=pc.fig_title_size)
-    _ = ax.hist(max_fluxes, bins=np.logspace(np.log10(1e-11),np.log10(1e-4), 100), **pc.get_histogram_colors())
+     
+    _ = ax.hist(other_templates, label="Not selected", 
+                    bins=np.logspace(np.log10(1e-11),np.log10(1e-4), 125), 
+                    lw=0.8, ls='dashed', color="white", ec="black", alpha=0.8)
+
+    _ = ax.hist(test_set_H_templates, label="Test Set H",
+                    bins=np.logspace(np.log10(1e-11),np.log10(1e-4), 125), 
+                    lw=1.5, color="black", ec="black", alpha=0.3)
+
+    _ = ax.hist(test_set_E_templates, label="Test Set H + Test Set E",
+                    bins=np.logspace(np.log10(1e-11),np.log10(1e-4), 125), 
+                    lw=1.5, color="black", ec="black", alpha=0.8)
+
     # vertical line
-    ax.axvline(x=3.3e-09, color='grey', linestyle='--', label="run0406_ID000126", linewidth=1)
-    ax.axvline(x=1e-09, color='black', linestyle='--', label="Background for North_z40_5h_LST", linewidth=1.5)
+    #ax.axvline(x=3.3e-09, color='grey', linestyle='--', label="run0406_ID000126", linewidth=1)
+    ax.axvline(x=irf_bg, color='black', linestyle='--', linewidth=1)
+    plt.text(irf_bg, 30, f"  North_z40_5h_LST mean = {irf_bg:.3E}", fontsize=15)
+
+    ax.axvline(x=sigma_1_neg, color='black', linestyle='--', linewidth=1)
+    plt.text(sigma_1_neg, 70, f"  1-Sigma = {sigma_1_neg:.3E}", fontsize=15)
 
     ax.set_xlabel("Max flux (log)")
     ax.set_ylabel("Counts (log)")
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.legend()
-    fig.savefig(f"max_flux_distribution_{name}.png", dpi=pc.dpi) 
+    fig.tight_layout()
+    fig.savefig(f"templates_max_flux_distributions.png", dpi=pc.dpi) 
     plt.close()
-
-
-
-def filter_templates(templates, threshold_min, threshold_max):
-    filtered_templates = []
-    for template in templates:
-        if template.name == "run0406_ID000126.fits":
-            print("Max flux of run0406_ID000126: ", np.max(template.flux))
-        
-        if np.max(template.flux) > threshold_min and np.max(template.flux) < threshold_max:
-            filtered_templates.append(template)
-
-    print("Number of filtered templates: ", len(filtered_templates))
-    return filtered_templates
 
 
 if __name__=='__main__':
