@@ -2,7 +2,7 @@
 **.log
 **.pickle
 **.npy
-
+rtapipe/notebooks/logs/*
 rtapipe/notebooks/run_*/*
 rtapipe/notebooks/lstm_models_*/**
 temp/**
