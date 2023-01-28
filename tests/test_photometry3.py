@@ -16,6 +16,10 @@ def irf():
 def sim_params(request):
     return SimulationParams(runid=request.param, simtype="grb", onset=250, emin=0.04, emax=1, tmin=0, tobs=500, offset=0.5, irf="North_z40_5h_LST", roi=2.5, caldb="prod5-v0.1")
 
+@pytest.fixture
+def example_fits(request):
+    return str(Path("/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/fits_data").joinpath(f"runid_{request.param}_simtype_grb_onset_250_delay_0_offset_0.5.fits"))
+
 
 @pytest.fixture
 def output_dir():
@@ -140,7 +144,7 @@ class TestPhotometry3:
     def test_online_photometry_preconfigured_no_target(self, sim_params, output_dir):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
         add_target_region = False
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         compute_effective_area_for_normalization=False
         online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
 
@@ -148,35 +152,58 @@ class TestPhotometry3:
     def test_online_photometry_preconfigured_with_target(self, sim_params, output_dir):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
         add_target_region = True
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         compute_effective_area_for_normalization=False
         online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
         online_photometry.generate_skymap_with_regions(test_fits, output_dir)
+
+
+    @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
+    def test_online_photometry_preconfigured_with_target_overlapping_regions(self, sim_params, output_dir):
+        online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
+        add_target_region = False
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        compute_effective_area_for_normalization=False
+        offset_multiplier=1
+        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=compute_effective_area_for_normalization, offset_multiplier=offset_multiplier)
+        online_photometry.generate_skymap_with_regions(test_fits, output_dir, regions_type="bkg")
+
 
     @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
     def test_online_photometry_preconfigured_with_target_remove_overlapping(self, sim_params, output_dir):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)        
         add_target_region = True
         remove_overlapping_regions_with_target = True        
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         compute_effective_area_for_normalization=False
         online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
         online_photometry.generate_skymap_with_regions(test_fits, output_dir)
+
+    @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
+    def test_online_photometry_preconfigured_with_target_remove_overlapping_one_ring(self, sim_params, output_dir):
+        online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)        
+        add_target_region = True
+        remove_overlapping_regions_with_target = True        
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        compute_effective_area_for_normalization=False
+        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=1.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
+        online_photometry.generate_skymap_with_regions(test_fits, output_dir)
     
-    @pytest.mark.parametrize("sim_params", ['run0001_ID000048'], indirect=True)
-    def test_online_photometry_with_different_template(self, sim_params, output_dir):
+
+    @pytest.mark.parametrize(["sim_params", "example_fits"], [['run0002_ID000044', 'run0002_ID000044_trial_0000000002'] , ['run0011_ID000139', 'run0011_ID000139_trial_0000000003'], ['run0016_ID000340', 'run0016_ID000340_trial_0000000004']], indirect=True)
+    def test_online_photometry_with_different_templates(self, sim_params, output_dir, example_fits):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
         add_target_region = True
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_test/sim_output/run0001_ID000048/runid_run0001_ID000048_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         compute_effective_area_for_normalization=True
-        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=test_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=True, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
-        online_photometry.generate_skymap_with_regions(test_fits, output_dir)
+        online_photometry.preconfigure_regions(regions_radius=0.2, max_offset=2.0, example_fits=example_fits, add_target_region=add_target_region, remove_overlapping_regions_with_target=True, compute_effective_area_for_normalization=compute_effective_area_for_normalization)
+        online_photometry.generate_skymap_with_regions(example_fits, output_dir)
+
 
 
     @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
     def test_integrate_bkg_regions_with_preconfigured_regions_normalized(self, sim_params):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
         compute_effective_area_for_normalization = True
@@ -196,7 +223,7 @@ class TestPhotometry3:
     @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
     def test_integrate_bkg_regions_with_no_preconfigured_regions_normalized(self, sim_params):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
         normalize = True
@@ -214,7 +241,7 @@ class TestPhotometry3:
     @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
     def test_integrate_bkg_regions_with_preconfigured_regions_not_normalized(self, sim_params):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
         compute_effective_area_for_normalization = False
@@ -235,7 +262,7 @@ class TestPhotometry3:
     @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
     def test_integrate_bkg_regions_with_no_preconfigured_regions_not_normalized(self, sim_params):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
         normalize = False
@@ -259,7 +286,7 @@ class TestPhotometry3:
     @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
     def test_integrate_src_regions_with_preconfigured_regions_normalized(self, sim_params):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
         compute_effective_area_for_normalization = True
@@ -279,7 +306,7 @@ class TestPhotometry3:
     @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
     def test_integrate_src_regions_with_no_preconfigured_regions_normalized(self, sim_params):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
         normalize = True
@@ -297,7 +324,7 @@ class TestPhotometry3:
     @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
     def test_integrate_src_regions_with_preconfigured_regions_not_normalized(self, sim_params):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
         compute_effective_area_for_normalization = False
@@ -318,7 +345,7 @@ class TestPhotometry3:
     @pytest.mark.parametrize("sim_params", ['run0406_ID000126'], indirect=True)
     def test_integrate_src_regions_with_no_preconfigured_regions_not_normalized(self, sim_params):
         online_photometry = OnlinePhotometry(sim_params, integration_time=5, tsl=5,  number_of_energy_bins=3)
-        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/itime_5_b/fits_data/runid_run0406_ID000126_trial_0000000002_simtype_grb_onset_250_delay_0_offset_0.5.fits"
+        test_fits = "/data01/homes/baroncelli/phd/rtapipe/scripts/ml/dataset_generation/test/test_set_easy/sim_output/run0406_ID000126/runid_run0406_ID000126_trial_0000000109_simtype_grb_onset_250_delay_0_offset_0.5.fits"
         add_target_region = True
         remove_overlapping_regions_with_target = True  
         normalize = False

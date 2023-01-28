@@ -92,7 +92,7 @@ models:
     name: "AnomalyDetector_cnn_l2_u32"
     path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221220-224157_it_1/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_1_a_tsl_5_nbins_3_tsl_500/epochs/epoch_5"
     epoch: 5
-    pval_path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221220-224157_it_1/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_1_a_tsl_5_nbins_3_tsl_500/epochs/epoch_5/pvalues/pval_20221226-110743/pvalue_bins_100_0.numpy.txt"
+    pval_path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221220-224157_it_1/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_1_a_tsl_5_nbins_3_tsl_500/epochs/epoch_5/pvalues/pval_20221227-100500/pvalue_bins_100_0.numpy.txt"
     scaler_path: "/data01/homes/baroncelli/phd/rtapipe/notebooks/run_20221220-224157_it_1/model_AnomalyDetector_cnn_l2_u32_dataset_train_itime_1_a_tsl_5_nbins_3_tsl_500/fitted_scaler_minmax_itime_1_tsl_500.pickle"
 
   - id: 7
