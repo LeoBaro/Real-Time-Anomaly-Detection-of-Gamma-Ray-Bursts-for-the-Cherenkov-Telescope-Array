@@ -86,13 +86,13 @@ class RegionsConfig:
         d = sqrt((r1.ra - r2.ra)**2 + (r1.dec - r2.dec)**2)
         return d < r1.rad + r2.rad
 
-    def compute_rings_regions(self, pointing, add_target_region=None, remove_overlapping_regions_with_target=False, rings_indexes=None):
+    def compute_rings_regions(self, pointing, add_target_region=None, remove_overlapping_regions_with_target=False, rings_indexes=None, offset_multiplier=2):
 
         if pointing is None:
             raise ValueError("Pointing is None")
 
         ring_index = 0
-        offset = 2*self.regions_radius
+        offset = offset_multiplier*self.regions_radius
         while offset <= self.max_offset:
             if rings_indexes is not None and ring_index not in rings_indexes:
                 ring_index += 1
@@ -101,7 +101,7 @@ class RegionsConfig:
             starting_region = self._add_offset_to_region(pointing, offset)
             ring_regions = Photometrics.find_off_regions('reflection', starting_region.get_dict(), pointing, self.regions_radius)
             self.rings[offset] = [Region(offset, rr["ra"], rr["dec"], self.regions_radius, {}, False) for rr in ring_regions]
-            offset += 2*self.regions_radius
+            offset += offset_multiplier*self.regions_radius
             offset = round(offset, 2)
             ring_index += 1
 
@@ -220,7 +220,7 @@ class OnlinePhotometry:
     def get_number_of_regions(self, regions_type="all"):
         return len(self.regions_config.get_flatten_configuration(regions_type=regions_type))
 
-    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=True, rings_indexes=None):
+    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=True, rings_indexes=None, offset_multiplier=2):
         """
         Compute the regions configuration and the effective area for each region.
         """
@@ -235,7 +235,7 @@ class OnlinePhotometry:
         #print("Target: ", target)
         #print("Pointing: ", pointing)
 
-        self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, rings_indexes=rings_indexes)
+        self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, rings_indexes=rings_indexes, offset_multiplier=offset_multiplier)
 
         if compute_effective_area_for_normalization:
             irf = Path(os.environ['CTOOLS']).joinpath("share","caldb","data","cta",self.simulation_params.caldb,"bcf",self.simulation_params.irf)
@@ -244,7 +244,7 @@ class OnlinePhotometry:
         
         return self.regions_config
 
-    def generate_skymap_with_regions(self, pht_list, output_dir):
+    def generate_skymap_with_regions(self, pht_list, output_dir, regions_type="all"):
         plot = SkyImage()
 
         if self.regions_config is None:
@@ -257,26 +257,26 @@ class OnlinePhotometry:
         pointing = get_obs_pointing(pht_list)
         plot.set_pointing(ra=pointing["ra"], dec=pointing["dec"])
         # add timestamp to filename
-        out = Path(pht_list.replace('.fits', f'_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'))
-        out = Path(output_dir).joinpath(out.name)
+        regions = [region.get_dict() for region in self.regions_config.get_flatten_configuration(regions_type=regions_type)]
+        
 
-        regions = [region.get_dict() for region in self.regions_config.get_flatten_configuration(regions_type="all")]
-
-        print(f"Producing.. {out}")
-        plot.counts_map_with_regions(
-                pht_list, 
-                regions, 
-                trange=None, 
-                erange=[self.simulation_params.emin, self.simulation_params.emax],
-                roi=self.simulation_params.roi,
-                name=out, 
-                title="Skymap"
-        )
+        for extension in [".png", ".svg"]:
+            output_file = Path(output_dir).joinpath(Path(pht_list.replace('.fits', f'_{datetime.now().strftime("%Y%m%d_%H%M%S")}{extension}')).name)
+            print(f"Producing.. {output_file}")
+            plot.counts_map_with_regions(
+                    pht_list, 
+                    regions, 
+                    trange=None, 
+                    erange=[self.simulation_params.emin, self.simulation_params.emax],
+                    roi=self.simulation_params.roi,
+                    name=output_file, 
+                    title="Skymap"
+            )
         del plot
     
     
 
-    def integrate(self, pht_list, normalize=True, threads=10, with_metadata=False, regions_radius=None, max_offset=None, example_fits=None, add_target_region=False, remove_overlapping_regions_with_target=None, integrate_from_regions="bkg", pht_list_data=None):
+    def integrate(self, pht_list, normalize=True, threads=10, with_metadata=False, regions_radius=None, max_offset=None, example_fits=None, add_target_region=False, remove_overlapping_regions_with_target=None, integrate_from_regions="bkg", pht_list_data=None, offset_multiplier=2):
 
         t = time()
         if pht_list_data is None:
@@ -285,7 +285,7 @@ class OnlinePhotometry:
             phm = Photometrics({ 'events_filename': pht_list, 'events_data': pht_list_data })
 
         if self.regions_config is None:
-            self.preconfigure_regions(regions_radius, max_offset, example_fits, add_target_region, remove_overlapping_regions_with_target, compute_effective_area_for_normalization=normalize)
+            self.preconfigure_regions(regions_radius, max_offset, example_fits, add_target_region, remove_overlapping_regions_with_target, compute_effective_area_for_normalization=normalize, offset_multiplier=offset_multiplier)
 
         func = partial(self.extract_sequence, phm, self.regions_config.regions_radius, self.time_windows, self.energy_windows, normalize)
 

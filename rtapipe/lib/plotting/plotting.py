@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from sklearn.metrics import ConfusionMatrixDisplay
 from rtapipe.lib.plotting.PlotConfig import PlotConfig
+from rtapipe.lib.evaluation.pval import get_threshold_for_sigma
 
 COLORS = list(mcolors.BASE_COLORS)
 
@@ -124,7 +125,7 @@ def plot_recostruction_errors_distribution(recostructions, output_dir):
     fig.savefig(Path(output_dir).joinpath("reco_distributions.png"))
 
 
-def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, features_names=[], integration_time=5, epoch="", max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
+def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_per_sample, mse_per_sample_features, features_names=["EB_0.04-0.117","EB_2-0.117-0.342","EB_0.342-1"], integration_time=5, epoch="", max_plots=5, showFig=False, saveFig=True, outputDir="./", figName="predictions.png"):
 
     pc = PlotConfig()
 
@@ -233,7 +234,38 @@ def plot_predictions(samples, samplesLabels, c_threshold, recostructions, mse_pe
             fig.savefig(outputPath, dpi=200)
 
         plt.close()
+def plot_nn_metrics(metrics, model_config, output_dir, fig_name, y_lim=(0.4, 1.05), annotate_after=3, showFig=False, saveFig=True):
+    pc = PlotConfig()
+    fig, ax = plt.subplots(1,1,figsize=pc.fig_size)
+    ax.plot(metrics["threshold"], metrics["accuracy"], label="Accuracy", marker='o', markersize=3, linestyle='--')
+    for i,j in zip(metrics["threshold"][annotate_after:],metrics["accuracy"][annotate_after:]):
+        ax.annotate(str(round(j,3)),xy=(i,j), fontsize=10)    
+    
+    ax.plot(metrics["threshold"], metrics["precision"], label="Precision", marker='o', markersize=3, linestyle='--')
+    for i,j in zip(metrics["threshold"][annotate_after:],metrics["precision"][annotate_after:]):
+        ax.annotate(str(round(j,5)),xy=(i,j), fontsize=10)
 
+    ax.plot(metrics["threshold"], metrics["recall"], label="Recall", marker='o', markersize=3, linestyle='--')
+    for i,j in zip(metrics["threshold"][annotate_after:],metrics["recall"][annotate_after:]):
+        ax.annotate(str(round(j,3)),xy=(i,j), fontsize=10)
+
+    ax.set_ylabel("Metrics")
+    ax.set_xlabel("Threshold")
+    for sigma_thresh in range(1,6):
+        sigma_threshold = get_threshold_for_sigma(model_config.pvalue_table, sigma_thresh)
+        ax.axvline(x = sigma_threshold, color='grey', linestyle="dotted", alpha=0.8) 
+        ax.text(sigma_threshold+0.00001, y_lim[0]+0.05, f"{sigma_thresh}σ", fontsize = 14, color="grey")
+    
+    ax.set_ylim(y_lim)
+    ax.legend(loc='upper right', prop={'size': 15}, bbox_to_anchor=(0.9,0.98))
+    if showFig:
+        plt.show()
+
+    if saveFig:
+        fig.savefig(Path(output_dir).joinpath(f"{fig_name}.png"), dpi=pc.dpi)
+        print("Saved figure to: ", Path(output_dir).joinpath(f"{fig_name}.png"))
+        
+    plt.close()
 
 
 """
