@@ -32,15 +32,17 @@ def filter_templates(templates, threshold_min, threshold_max):
     selected_templates = []
     not_selected_templates = []
     max_flux = np.max(templates[0].flux)
+    
     print("Filtering with threshold_min: ", threshold_min, " and threshold_max: ", threshold_max, "")
+    
     for template in templates:
-        if template.name == "run0406_ID000126.fits":
-            print("Max flux of run0406_ID000126: ", np.max(template.flux))
-        
-        if np.max(template.flux) >= threshold_min:
+
+
+        if np.max(template.flux) >= threshold_min and np.max(template.flux) <= threshold_max:
             selected_templates.append(template)
             if np.max(template.flux) > max_flux:
                 max_flux = np.max(template.flux)
+
         else:
             not_selected_templates.append(template)
 
@@ -99,54 +101,57 @@ def main():
     sigma_1_neg = 2.678473678188729e-10
     print("Total number of templates: ", len(templates))
 
-    test_set_H_templates, other_templates, max_flux_h = filter_templates(templates, sigma_1_neg, 1)
+    test_set_H_templates, other_templates, max_flux_h = filter_templates(templates, sigma_1_neg, irf_bg)
     print("Number of templates in test set H: ", len(test_set_H_templates))
     print("Number of templates in other set: ", len(other_templates))
     print("Max flux h : ", max_flux_h)
 
-    test_set_E_templates, other_templates, max_flux_e = filter_templates(templates, irf_bg, 1)
-    print("Number of templates in test set E: ", len(test_set_E_templates))
+    test_set_A_templates, other_templates, max_flux_e = filter_templates(templates, sigma_1_neg, 1)
+    print("Number of templates in test set A: ", len(test_set_A_templates))
     print("Number of templates in other set: ", len(other_templates))
     print("Max flux e: ", max_flux_e)
+
+
+    
 
 
     #flux_range_E = f"{irf_bg:.3E} <= Flux <= {max_flux_e:.3E}"
     #flux_range_H = f"{sigma_1_neg:.3E} <= Flux <= {max_flux_h:.3E}"
 
-    write_templates(test_set_E_templates, f"selected_templates_test_set_E")
+    write_templates(test_set_A_templates, f"selected_templates_test_set_A")
     write_templates(test_set_H_templates, f"selected_templates_test_set_H")
 
-    plot_max_flux_distribution(get_max_fluxes(test_set_H_templates), get_max_fluxes(test_set_E_templates), get_max_fluxes(other_templates), irf_bg, sigma_1_neg)
+    plot_max_flux_distribution(get_max_fluxes(test_set_H_templates), get_max_fluxes(test_set_A_templates), get_max_fluxes(other_templates), irf_bg, sigma_1_neg)
 
 
-def plot_max_flux_distribution(test_set_H_templates, test_set_E_templates, other_templates, irf_bg, sigma_1_neg):
+def plot_max_flux_distribution(test_set_H_templates, test_set_A_templates, other_templates, irf_bg, sigma_1_neg):
 
     print("Producing histogram...")
     pc = PlotConfig()
     fig, ax = plt.subplots(1,1,figsize=pc.fig_size)
-    fig.suptitle(f"Distribution of the maximum flux of the templates", fontsize=pc.fig_suptitle_size)
+    fig.suptitle(f"Distribution of the peak flux of the templates", fontsize=pc.fig_suptitle_size)
      
     _ = ax.hist(other_templates, label="Not selected", 
                     bins=np.logspace(np.log10(1e-11),np.log10(1e-4), 125), 
                     lw=0.8, ls='dashed', color="white", ec="black", alpha=0.8)
-
+    """
     _ = ax.hist(test_set_H_templates, label="Test Set H",
                     bins=np.logspace(np.log10(1e-11),np.log10(1e-4), 125), 
                     lw=1.5, color="black", ec="black", alpha=0.3)
-
-    _ = ax.hist(test_set_E_templates, label="Test Set H + Test Set E",
+    """
+    _ = ax.hist(test_set_A_templates, label="Test Set Templates",
                     bins=np.logspace(np.log10(1e-11),np.log10(1e-4), 125), 
-                    lw=1.5, color="black", ec="black", alpha=0.8)
+                    lw=1.5, color="black", ec="black", alpha=0.3)
 
     # vertical line
     #ax.axvline(x=3.3e-09, color='grey', linestyle='--', label="run0406_ID000126", linewidth=1)
     ax.axvline(x=irf_bg, color='black', linestyle='--', linewidth=1)
-    plt.text(irf_bg, 30, f"  North_z40_5h_LST mean = {irf_bg:.3E}", fontsize=15)
+    plt.text(irf_bg, 30, f"  Background level mean = {irf_bg:.3E}", fontsize=15)
 
     ax.axvline(x=sigma_1_neg, color='black', linestyle='--', linewidth=1)
-    plt.text(sigma_1_neg, 70, f"  1-Sigma = {sigma_1_neg:.3E}", fontsize=15)
+    plt.text(sigma_1_neg, 70, f"<--- 1σ --->", fontsize=15)
 
-    ax.set_xlabel("Max flux (log)")
+    ax.set_xlabel(r"Peak flux $erg/s/cm^2$ (log)")
     ax.set_ylabel("Counts (log)")
     ax.set_xscale('log')
     ax.set_yscale('log')

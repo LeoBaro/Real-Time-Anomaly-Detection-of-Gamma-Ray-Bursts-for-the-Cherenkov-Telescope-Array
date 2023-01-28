@@ -27,13 +27,14 @@ def compute_pval(input_path, xmax=0.15):
     output_path.mkdir(parents=True, exist_ok=True)
     for nbin in [100]:
 
-        output_wilks_png = output_path.joinpath(f'ts_distribution_bins_{nbin}.png')
-        output_pvalue_png = output_path.joinpath(f'pvalue_bins_{nbin}.png')
+        for extension in [".png", ".svg"]:
+            output_wilks  = output_path.joinpath(f'ts_distribution_bins_{nbin}{extension}')
+            output_pvalue = output_path.joinpath(f'pvalue_bins_{nbin}{extension}')
 
-        print(f"Generating p-value plot: {output_pvalue_png}")
+            print(f"Generating p-value plot: {output_pvalue}")
 
-        _, _ = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0, xmax), title='TS distribution', xlabel="TS (reconstruction errors)", ylabel='Normalised counts', overlay=False, filename=output_wilks_png)
-        _, _ = p_values([data], df=1, nbin=nbin, figsize=(7, 8), title='p-values', filename=output_pvalue_png, sigma5=True, write_data=True,  overlay=False, dpi=400, fmt='+', ecolor='red', markersize=0.5, elinewidth=0.5, alpha=0.8)
+            _, _ = ts_wilks([data], df=1, nbin=nbin, figsize=(7, 8), xrange=(0, xmax), title='TS distribution', xlabel="TS (reconstruction errors)", ylabel='Normalised counts', overlay=False, filename=output_wilks)
+            _, _ = p_values([data], df=1, nbin=nbin, figsize=(7, 8), title='p-values', filename=output_pvalue, sigma5=True, write_data=True,  overlay=False, dpi=400, fmt='+', ecolor='red', markersize=0.5, elinewidth=0.5, alpha=0.8)
 
 
 def compare_pval(input_paths, output_dir):
