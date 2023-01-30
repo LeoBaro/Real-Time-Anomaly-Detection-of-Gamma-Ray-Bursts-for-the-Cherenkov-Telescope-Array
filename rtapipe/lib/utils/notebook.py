@@ -105,23 +105,6 @@ def get_detections_in_time(templates_detections, model, tmax, onset_index, sigma
     return len(dt_filterd)
 
 
-def get_dd(model, templates_detections, sigma, onset_index, integration_time, templates):
-    first_detection_indexes = []
-
-    for template_name in templates:
-
-            first_detection_index = templates_detections[template_name][model][f"{sigma}s_detections_indexes"][0]
-            
-            first_detection_indexes.append(first_detection_index)
-
-    first_detection_time_relative_to_tt = (np.array(first_detection_indexes)-onset_index)*integration_time
-
-    mean_dd = first_detection_time_relative_to_tt.mean()
-    std_dd = first_detection_time_relative_to_tt.std()
-    
-    return round(mean_dd,2), round(std_dd,2)
-
- 
 def crop_to_5(s):
     if s > 5: 
         s = 5.00001
@@ -173,11 +156,12 @@ def get_templates_detections(rnn_st, cnn_st, lima_st):
 
     return templates_detections
 
-
 def filter_templates(templates_detections, model, other_model, which, sigma, detection_index_min, detection_index_max):
 
     templates = []
-    
+    #print("detection_index_min:",detection_index_min)
+    #print("detection_index_max:",detection_index_max)
+
     for template_name, template_result in templates_detections.items():
     
         model_detected       = template_result[model][f"{sigma}s_detection"]
@@ -282,3 +266,138 @@ def evaluate_metrics(model_config, test_all_x, test_all_y, output_dir, filename,
         pickle.dump(results, f)
 
     return results
+
+
+
+
+
+
+
+
+import math
+class IncrementalMean:
+    
+    def __init__(self, model):
+        self.mean = 0.0
+        self.var = 0.0
+        self.n = 0
+        self.means = []
+        self.stds = []
+        self.model = model
+        self.tbins = []
+        
+    def update(self, tbin_max, samples):
+        for s in samples:
+            self.n += 1            
+            delta = s - self.mean
+            self.mean += delta / self.n
+            self.var += delta * (s - self.mean)
+        mean = round(self.mean,2)
+        std = math.sqrt(
+                        self.var/(self.n - 1)
+             )
+        std = round(std, 2)
+        self.means.append(mean)
+        self.stds.append(std)
+        self.tbins.append(f"{tbin_max}")
+        #print(self.means)
+
+    def __str__(self):
+        mean = round(self.mean,2)
+        std = math.sqrt(
+                        self.var/(self.n - 1)
+             )
+        std = round(std, 2)
+        #self.means.append(mean)
+        #self.stds.append(std)
+        return f"{mean} +- {std}"
+
+    def to_latex(self):
+        print(f"\n{self.model} Converting in Latex {self.tbins} ")
+        df = pd.DataFrame(
+            {
+                'tbins': self.tbins,
+                'mean': self.means,
+                'stds': self.stds
+            }
+        )  
+        #print(df)
+        name = f"./{self.model}_dd.tex"
+        df.to_latex(name, header=False, index=False)
+        # print file contenst
+        with open(name, 'r') as f:
+            print(f.read())
+
+    
+def get_new_samples(templates_detections, templates, model, sigma, onset_index, integration_time):
+    first_detection_indexes = []
+    for template_name in templates:
+        first_detection_index = templates_detections[template_name][model][f"{sigma}s_detections_indexes"][0]
+        first_detection_indexes.append(first_detection_index)
+    first_detection_time_relative_to_tt = (np.array(first_detection_indexes)-onset_index)*integration_time 
+    return first_detection_time_relative_to_tt
+
+def get_dd(model, templates_detections, sigma, onset_index, integration_time, tmin, tmaxs, show_common_only=True):
+    
+    im_model = IncrementalMean(model)
+    im_model_common_lima = IncrementalMean(model+"_common_li_ma")
+    
+    for tmax in tmaxs:
+        
+        tbin_min=f"{tmin*integration_time}-{tmin*integration_time+integration_time*5}"
+        tbin_max=f"{tmax*integration_time}-{tmax*integration_time+integration_time*5}"
+        #print(f"{tbin_min}=>{tbin_max}")
+        
+        templates = filter_templates(templates_detections, model, None, "first", sigma, tmin, tmax)
+        common_with_lima = filter_templates(templates_detections, model, "li_ma", "common", sigma, tmin, tmax)
+        
+        new_samples = get_new_samples(templates_detections, templates, model, sigma, onset_index, integration_time)
+        im_model.update(tbin_max, new_samples)
+        #print(f"{model} {im_model}")
+
+        new_samples = get_new_samples(templates_detections, common_with_lima, model, sigma, onset_index, integration_time)
+        im_model_common_lima.update(tbin_max, new_samples)
+        #print(f"{model} {im_model_common_lima} [common LiMa]\n")
+    
+    if show_common_only:
+        im_model_common_lima.to_latex()
+    else:
+        im_model.to_latex()
+        im_model_common_lima.to_latex()
+
+
+def detection_tables(templates_detections, integration_time, SIGMA, ONSET_INDEX, TMIN, TMAXs):
+    
+
+    for TMAX in TMAXs:
+        
+        print(f"\nFrom {TMIN*integration_time}-{TMIN*integration_time+integration_time*5} TO From {TMAX*integration_time}-{TMAX*integration_time+integration_time*5}")
+
+        rnn = filter_templates(templates_detections, "rnn", None, "first", SIGMA, TMIN, TMAX)
+        print("  RNN:",len(rnn))
+
+        cnn = filter_templates(templates_detections, "cnn", None, "first", SIGMA, TMIN, TMAX)
+        print("  CNN:",len(cnn))
+
+        lima = filter_templates(templates_detections, "li_ma", None, "first", SIGMA, TMIN, TMAX)
+        print("  LI_MA:",len(lima))
+
+        common_rnn_lima = filter_templates(templates_detections, "rnn", "li_ma", "common", SIGMA, TMIN, TMAX)
+        print(f"  Common RNN-LI_MA detections: {len(common_rnn_lima)}")
+        common_cnn_lima = filter_templates(templates_detections, "cnn", "li_ma", "common", SIGMA, TMIN, TMAX)
+        print(f"  Common CNN-LI_MA detections: {len(common_cnn_lima)}")
+
+        rnn_no_cnn = filter_templates(templates_detections, "rnn", "cnn", "first-only", SIGMA, TMIN, TMAX)
+        print("  RNN but no CNN",len(rnn_no_cnn))
+        rnn_no_lima = filter_templates(templates_detections, "rnn", "li_ma", "first-only", SIGMA, TMIN, TMAX)
+        print("  RNN but no LI_MA",len(rnn_no_lima))    
+
+        cnn_no_rnn = filter_templates(templates_detections, "cnn", "rnn", "first-only", SIGMA, TMIN, TMAX)
+        print("  CNN but no RNN",len(cnn_no_rnn))
+        cnn_no_lima = filter_templates(templates_detections, "cnn", "li_ma", "first-only", SIGMA, TMIN, TMAX)
+        print("  CNN but no LI_MA",len(cnn_no_lima))       
+
+        lima_no_rnn = filter_templates(templates_detections, "li_ma", "rnn", "first-only", SIGMA, TMIN, TMAX)
+        print("  LI_MA but no RNN",len(lima_no_rnn))
+        lima_no_cnn = filter_templates(templates_detections, "li_ma", "cnn", "first-only", SIGMA, TMIN, TMAX)
+        print("  LI_MA but no CNN",len(lima_no_cnn))           
