@@ -1,4 +1,4 @@
-# phd
+# Real-Time Anomaly Detection of Gamma-Ray Bursts for the Cherenkov Telescope Array using Deep Learning
 
 ## Installation
 
