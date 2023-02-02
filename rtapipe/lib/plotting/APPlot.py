@@ -35,7 +35,7 @@ class APPlot:
 
     def plot_from_numpy(self, data, params, labels=[]):
         self.fig, self.ax = plt.subplots(nrows=1, ncols=1, figsize=self.pc.fig_size)
-        self.pc.colors
+
         for i in range(data.shape[1]):
             if len(labels) > 0:
                 label = labels[i]

@@ -88,40 +88,25 @@ def filter_templates(templates_detections, model, other_model, which, sigma, det
         #othermodel_first_detection_index = template_result[other_model][f"{sigma}s_detections_indexes"][0]
     return templates
 
+
 def get_first_detections(templates_detections, model, sigma):
+    """
+    template_result[model][f"{sigma}s_detections_indexes"] contains a list of indexes, from 0 to n. 
+    Each index correspond to a time bin in which a sigma-detection has been performed. 
+    """
     first_detection_indexes = []
     for template_result in templates_detections.values():
             if len(template_result[model][f"{sigma}s_detections_indexes"]) > 0:
                 first_detection_indexes.append(template_result[model][f"{sigma}s_detections_indexes"][0])
     return np.array(sorted(first_detection_indexes))
 
-def get_detections_in_time(templates_detections, model, tmax, onset_index, sigma, integration_time):
-    first_detection_indexes = []
-    for template_result in templates_detections.values():
-        if len(template_result[model][f"{sigma}s_detections_indexes"]) > 0:
-            first_detection_indexes.append(template_result[model][f"{sigma}s_detections_indexes"][0])
-    detection_time = (np.array(first_detection_indexes)-onset_index)*integration_time
-    dt_filterd = [dt for dt in detection_time if dt <= tmax]
-    return len(dt_filterd)
-
-
 def crop_to_5(s):
     if s > 5: 
         s = 5.00001
     return s
 
-def get_sigma_table(file_path, fix_independence=False, bins_temporal_size=None):
-    sigma_table = pd.read_csv(file_path, index_col=0)
-    if fix_independence:
-        for time_bin in sigma_table.index:
-            if int(time_bin.split("-")[1])%bins_temporal_size != 0:
-                sigma_table.loc[time_bin] = 0
-
-    sigma_table = sigma_table.applymap(crop_to_5)
-    return sigma_table
-
 def get_templates_detections(rnn_st, cnn_st, lima_st):
-
+    
     templates_detections = dotdict({})
     
     for templ_det in lima_st:

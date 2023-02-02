@@ -109,7 +109,7 @@ def main():
     test_set_A_templates, other_templates, max_flux_e = filter_templates(templates, sigma_1_neg, 1)
     print("Number of templates in test set A: ", len(test_set_A_templates))
     print("Number of templates in other set: ", len(other_templates))
-    print("Max flux e: ", max_flux_e)
+    print("Max flux e: ", '{:.4E}'.format(max_flux_e))
 
 
     

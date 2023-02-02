@@ -2,6 +2,10 @@
 **.log
 **.pickle
 **.npy
+**.tex
+
+*nohup.out
+
 rtapipe/notebooks/logs/*
 rtapipe/notebooks/run_*/*
 rtapipe/notebooks/lstm_models_*/**
