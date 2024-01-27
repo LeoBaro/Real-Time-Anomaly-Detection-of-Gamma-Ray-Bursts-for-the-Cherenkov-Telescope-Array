@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from dataclasses import dataclass
 from RTAscience.lib.RTAVisualise import get_template_lc
-from rtapipe.lib.plotting.PlotConfig import PlotConfig
+from rtapipe.lib.plotting.PlotConfig2 import PlotConfig2
 @dataclass
 class Template:
     name: str
@@ -127,7 +127,14 @@ def main():
 def plot_max_flux_distribution(test_set_H_templates, test_set_A_templates, other_templates, irf_bg, sigma_1_neg):
 
     print("Producing histogram...")
-    pc = PlotConfig()
+    pc = PlotConfig2()
+    plt.rcParams.update({
+        "text.usetex": True,
+        "font.family": "Helvetica"
+
+    })        
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')    
     fig, ax = plt.subplots(1,1,figsize=pc.fig_size)
     fig.suptitle(f"Distribution of the peak flux of the templates", fontsize=pc.fig_suptitle_size)
      
@@ -139,25 +146,31 @@ def plot_max_flux_distribution(test_set_H_templates, test_set_A_templates, other
                     bins=np.logspace(np.log10(1e-11),np.log10(1e-4), 125), 
                     lw=1.5, color="black", ec="black", alpha=0.3)
     """
-    _ = ax.hist(test_set_A_templates, label="Test Set Templates",
+    _ = ax.hist(test_set_A_templates, label="Test Set",
                     bins=np.logspace(np.log10(1e-11),np.log10(1e-4), 125), 
                     lw=1.5, color="black", ec="black", alpha=0.3)
 
     # vertical line
     #ax.axvline(x=3.3e-09, color='grey', linestyle='--', label="run0406_ID000126", linewidth=1)
     ax.axvline(x=irf_bg, color='black', linestyle='--', linewidth=1)
-    plt.text(irf_bg, 30, f"  Background level mean = {irf_bg:.3E}", fontsize=15)
+
+    props = dict(boxstyle='round', facecolor='none', linestyle='--',edgecolor='black')
+    plt.text(0.51,0.7,f"Background level mean = {irf_bg:.3E}",bbox=props, horizontalalignment='center', transform=ax.transAxes, fontsize=22)
+
 
     ax.axvline(x=sigma_1_neg, color='black', linestyle='--', linewidth=1)
-    plt.text(sigma_1_neg, 70, f"<--- 1σ --->", fontsize=15)
 
-    ax.set_xlabel(r"Peak flux $erg/s/cm^2$ (log)")
+    plt.text(0.275,0.82,r"$\leftarrow1\sigma\rightarrow$", horizontalalignment='center', transform=ax.transAxes, fontsize=22)
+
+
+    ax.set_xlabel(r"Peak flux [$erg/s/cm^2$] (log)")
     ax.set_ylabel("Counts (log)")
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.legend()
+    ax.legend(prop={'size': 25})
     fig.tight_layout()
     fig.savefig(f"templates_max_flux_distributions.png", dpi=pc.dpi) 
+    fig.savefig(f"templates_max_flux_distributions.svg") 
     plt.close()
 
 

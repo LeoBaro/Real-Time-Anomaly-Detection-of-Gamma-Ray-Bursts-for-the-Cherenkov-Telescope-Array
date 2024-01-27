@@ -4,7 +4,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from sklearn.metrics import ConfusionMatrixDisplay
-from rtapipe.lib.plotting.PlotConfig import PlotConfig
+from rtapipe.lib.plotting.PlotConfig2 import PlotConfig2 as PlotConfig
 from rtapipe.lib.evaluation.pval import get_threshold_for_sigma
 
 COLORS = list(mcolors.BASE_COLORS)

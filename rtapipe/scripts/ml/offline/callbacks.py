@@ -93,7 +93,7 @@ class CustomLogCallback(keras.callbacks.Callback):
             # Plotting
             #plotting.reco_error_distribution_plot(custom_mse.mse_per_sample_features, threshold=None, title=f"Reco errors on val set ({self.metadata})", outputDir=out_dir, figName="reco_errors_distr_per_features.png", showFig=False)
             #plotting.reco_error_distribution_plot(custom_mse.mse_per_sample,          threshold=None, title=f"Reco errors on val set ({self.metadata})", outputDir=out_dir, figName="reco_errors_distr_per_sample.png", showFig=False)
-            plotting.plot_predictions(self.validation_data, self.validation_data_labels, c_threshold, recostructions, custom_mse.mse_per_sample.numpy(), custom_mse.mse_per_sample_features.numpy(), max_plots=1, showFig=False, saveFig=True, outputDir=out_dir, figName="predictions.png")
+            #plotting.plot_predictions(self.validation_data, self.validation_data_labels, c_threshold, recostructions, custom_mse.mse_per_sample.numpy(), custom_mse.mse_per_sample_features.numpy(), max_plots=1, showFig=False, saveFig=True, outputDir=out_dir, figName="predictions.png")
                                       
             # Logging to wandb
             if self.wandb_run is not None:

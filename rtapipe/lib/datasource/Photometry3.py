@@ -86,14 +86,14 @@ class RegionsConfig:
         d = sqrt((r1.ra - r2.ra)**2 + (r1.dec - r2.dec)**2)
         return d < r1.rad + r2.rad
 
-    def compute_rings_regions(self, pointing, add_target_region=None, remove_overlapping_regions_with_target=False, rings_indexes=None, offset_multiplier=2):
+    def compute_rings_regions(self, pointing, add_target_region=None, remove_overlapping_regions_with_target=False, rings_indexes=None, offset_multiplier=2, max_rings=100):
 
         if pointing is None:
             raise ValueError("Pointing is None")
 
         ring_index = 0
         offset = offset_multiplier*self.regions_radius
-        while offset <= self.max_offset:
+        while offset <= self.max_offset and ring_index < max_rings:
             if rings_indexes is not None and ring_index not in rings_indexes:
                 ring_index += 1
                 offset += 2*self.regions_radius
@@ -220,7 +220,7 @@ class OnlinePhotometry:
     def get_number_of_regions(self, regions_type="all"):
         return len(self.regions_config.get_flatten_configuration(regions_type=regions_type))
 
-    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=True, rings_indexes=None, offset_multiplier=2):
+    def preconfigure_regions(self, regions_radius, max_offset, example_fits, add_target_region=False, remove_overlapping_regions_with_target=False, compute_effective_area_for_normalization=True, rings_indexes=None, offset_multiplier=2, max_rings=100):
         """
         Compute the regions configuration and the effective area for each region.
         """
@@ -235,7 +235,7 @@ class OnlinePhotometry:
         #print("Target: ", target)
         #print("Pointing: ", pointing)
 
-        self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, rings_indexes=rings_indexes, offset_multiplier=offset_multiplier)
+        self.regions_config.compute_rings_regions(pointing, add_target_region=target, remove_overlapping_regions_with_target=remove_overlapping_regions_with_target, rings_indexes=rings_indexes, offset_multiplier=offset_multiplier, max_rings=max_rings)
 
         if compute_effective_area_for_normalization:
             irf = Path(os.environ['CTOOLS']).joinpath("share","caldb","data","cta",self.simulation_params.caldb,"bcf",self.simulation_params.irf)

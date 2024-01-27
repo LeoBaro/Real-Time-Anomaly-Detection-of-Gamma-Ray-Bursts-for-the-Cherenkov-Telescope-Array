@@ -6,6 +6,7 @@ from pathlib import Path
 from rtapipe.lib.utils.misc import dotdict
 from rtapipe.lib.models.anomaly_detector_builder import AnomalyDetectorBuilder
 from rtapipe.lib.evaluation.pval import get_pval_table, get_threshold_for_sigma
+from rtapipe.lib.plotting.PlotConfig2 import PlotConfig2
 
 def load_model(model_id):
     with open("./trained_models.yaml", "r") as f:
@@ -88,6 +89,153 @@ def filter_templates(templates_detections, model, other_model, which, sigma, det
         #othermodel_first_detection_index = template_result[other_model][f"{sigma}s_detections_indexes"][0]
     return templates
 
+class APPlot:
+
+    def __init__(self):
+        self.pc = PlotConfig2()
+        self.fig = None
+        self.ax = None
+
+    def read_data(self, csv_file_path):
+        df = pd.read_csv(str(csv_file_path))
+        if "TMIN" in df.columns:
+            df["TCENTER"] = (df["TMAX"] + df['TMIN'])/2
+        if "EMIN" in df.columns:
+            df["ECENTER"] = (df["EMAX"] + df['EMIN'])/2
+        return df
+
+    def set_layout(self, params):
+        self.ax.set_xlabel(r'Time $\left[s\right]$')
+
+        if params["normalized"]:
+            self.fig.suptitle(r"$Light curve$")
+            self.ax.set_ylabel(r'Flux $\left[\times 10^{9}\,\mathrm{ph}/\mathrm{s} / \mathrm{cm}^{2}\right]$')
+        else:
+            self.fig.suptitle(r"$Counts in region$")
+            self.ax.set_ylabel(r"$Counts$")
+
+        self.ax.set_title(f"Template: {params['runid']}, Integration time: {params['itime']}")
+        self.ax.legend(title="Energy bins [TeV]:", prop=self.pc.legend_kw, loc='upper left')
+        
+    def plot_from_numpy(self, data, params, labels=[]):
+        self.fig, self.ax = plt.subplots(nrows=1, ncols=1, figsize=self.pc.fig_size)
+        for i in range(data.shape[1]):
+            if len(labels) > 0:
+                label = labels[i]
+            else:
+                label = f"Feature {i}"   
+            error_bar_kwargs = {
+                "ls": "none",
+                "marker": 'o',
+                "color": self.pc.colors[i], 
+                "ecolor": self.pc.colors[i]
+            }     
+            #self.ax.errorbar(range(data.shape[0]), data[:,i], label=label, **self.pc.error_kw, **error_bar_kwargs)
+            number_of_points = data.shape[0]
+
+            self.ax.plot(np.array(range(0,number_of_points))*5, data[:,i]*1e9, color=self.pc.colors[i], marker='o', markersize=6, linestyle='dashed', label=label)
+        
+        number_of_points = data.shape[0]
+            
+        if data.max()*1e9 > 4:
+            #print("Exceed max: ", data.max()*1e9)
+            self.ax.set_ylim(0, data.max()*1e9+1)
+        else:
+            self.ax.set_ylim(0, 4)
+
+            
+            
+        if params["onset"] > 0:
+            pivot_idx = params["onset"]
+            self.ax.axvline(x = pivot_idx, color = "grey", linestyle = '-', alpha=0.7)
+            props = dict(boxstyle='round', facecolor='none', linestyle='-',edgecolor='grey', alpha=0.7)
+            self.ax.text(0.58,0.9,'GRB start',bbox=props, horizontalalignment='center', transform=self.ax.transAxes)
+        
+        self.set_layout(params)
+    
+
+    def save(self, outputDir, outputFilename):
+        if self.fig:
+            outputDir = Path(outputDir)
+            outputDir.mkdir(parents=True, exist_ok=True)
+            outputFilePath = outputDir.joinpath(outputFilename).with_suffix(".png")
+            self.fig.savefig(str(outputFilePath), dpi=100)
+            outputFilePath = outputDir.joinpath(outputFilename).with_suffix(".svg")
+            self.fig.savefig(str(outputFilePath))
+            #print(f"Produced: {outputFilePath}")
+            plt.close()
+            return str(outputFilePath)
+        print("No plot has been generated yet!")
+
+def plot_timeseries(template_name, data, trials, sim_params, output_dir, max_flux=None, labels=[]):
+    """
+    data has the shape (trials, timepoints, channels)
+    """
+    params = {
+        "runid":   template_name,
+        "trial":   trials,
+        "simtype": sim_params.simtype,
+        "onset":   sim_params.onset,
+        "delay":   0,
+        "offset":  0.5,
+        "itype":   "te",
+        "itime":   1,
+        "normalized": True,
+        "maxflux" : max_flux
+    }        
+    applot = APPlot()
+    for i in range(trials):
+        applot.plot_from_numpy(data[i], params, ["0.04 - 0.117", "0.117 - 0.342", "0.342 - 1"])
+        name = f"template_{template_name}_itime_1"
+        applot.save(output_dir, name)
+
+
+def plot_nn_metrics2(metrics, model_config, output_dir, fig_name, y_lim=(0.4, 1.05), annotate_after=3, title="", axtitle="", showFig=False, saveFig=True):
+    pc = PlotConfig2()
+    fig, ax = plt.subplots(1,1,figsize=(12,8))
+    ax.plot(metrics["threshold"], metrics["accuracy"], label="Accuracy", marker='o', markersize=3, linestyle='--')
+    for i,j in zip(metrics["threshold"][annotate_after:],metrics["accuracy"][annotate_after:]):
+        ax.annotate(str(round(j,3)),xy=(i,j+0.01), xytext=(0,1),  textcoords="offset points", fontsize=15)    
+    
+    ax.plot(metrics["threshold"], metrics["precision"], label="Precision", marker='o', markersize=3, linestyle='--')
+    for i,j in zip(metrics["threshold"][annotate_after:],metrics["precision"][annotate_after:]):
+        ax.annotate(str(round(j,3)),xy=(i,j+0.01), xytext=(0,1),  textcoords="offset points", fontsize=15)
+
+    ax.plot(metrics["threshold"], metrics["recall"], label="Recall", marker='o', markersize=3, linestyle='--')
+    for i,j in zip(metrics["threshold"][annotate_after:],metrics["recall"][annotate_after:]):
+        ax.annotate(str(round(j,3)),xy=(i,j+0.01), xytext=(0,1),  textcoords="offset points", fontsize=15)
+
+    fig.suptitle(title)
+    ax.set_title(axtitle, fontsize=18)
+    ax.set_ylabel("Metrics")
+    ax.set_xlabel("Threshold")
+    for sigma_thresh in range(1,6):
+        sigma_threshold = get_threshold_for_sigma(model_config.pvalue_table, sigma_thresh)
+        ax.axvline(x = sigma_threshold, color='grey', linestyle="dotted", alpha=0.8) 
+        ax.text(sigma_threshold+0.00001, y_lim[0]+0.05, f"{sigma_thresh}$\sigma$", fontsize = 18, color="grey")
+
+    xticks = [round(m, 5) for m in metrics["threshold"]]    
+    ax.set_xticks(xticks, xticks)
+    for tick in ax.get_xticklabels():
+        tick.set_rotation(-45)    
+    
+    
+    ax.set_ylim(y_lim)
+    ax.legend(loc='upper right', prop={'size': 20}, bbox_to_anchor=(0.9,0.98))
+    
+    #plt.tight_layout()
+    
+    if showFig:
+        plt.show()
+
+    if saveFig:
+        fig.savefig(Path(output_dir).joinpath(f"{fig_name}.png"), dpi=pc.dpi)
+        print("Saved figure to: ", Path(output_dir).joinpath(f"{fig_name}.png"))
+        fig.savefig(Path(output_dir).joinpath(f"{fig_name}.svg"))
+        print("Saved figure to: ", Path(output_dir).joinpath(f"{fig_name}.svg"))        
+        
+    plt.close()
+
 
 def get_first_detections(templates_detections, model, sigma):
     """
@@ -104,6 +252,15 @@ def crop_to_5(s):
     if s > 5: 
         s = 5.00001
     return s
+
+def fix_independence(df, module_val):
+    for time_bin in df.index:
+        if int(time_bin.split("-")[1])%module_val != 0:
+            df.loc[time_bin] = 0
+    return df
+
+
+
 
 def get_templates_detections(rnn_st, cnn_st, lima_st):
     

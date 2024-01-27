@@ -47,8 +47,10 @@ class DataManager:
         return scaler.transform(data.reshape(-1, data.shape[-1])).reshape(data.shape)
 
     @staticmethod
-    def load_fits_data(dataset_folder: str, limit = None):
+    def load_fits_data(dataset_folder: str, templates = None, limit = None):
         fits_files = [os.path.join(dataset_folder, file) for file in os.listdir(dataset_folder) if file.endswith(".fits")]
+        if templates:
+            fits_files = [file for file in fits_files if any([template in file for template in templates])]
         if limit:
             fits_files = fits_files[:limit]
         print("Loaded {} files".format(len(fits_files)))
@@ -66,9 +68,13 @@ class DataManager:
             tbins.append(f"{index*integration_time}-{index*integration_time + integration_time*tsl}")
         return tbins
 
-    def load_saved_data(self, integration_time, tsl):
+    def load_saved_data(self, integration_time, tsl, templates=None):
         cache_dir = self.output_dir.joinpath("data_cache")
-        for file in os.listdir(cache_dir):
+        files = os.listdir(cache_dir)
+        if templates:
+            files = [file for file in files if any([template in file for template in templates])]
+        print(f"Loading data from {cache_dir}. Found {len(files)} files.")
+        for file in files:
             #print("file: ",file)
             if file.endswith(".npy"):
                 if "it_"+str(integration_time) in file and "tsl_"+str(tsl) in file:
